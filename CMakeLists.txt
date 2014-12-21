@@ -45,11 +45,20 @@ add_definitions( -DGLM_FORCE_RADIANS )
 #
 # Other libs
 #
-set(FREEIMAGE_LIBRARIES freeimage)
+find_library(FREEIMAGE_LIB freeimage)
+if("${FREEIMAGE_LIB}" STREQUAL "")
+    message(FATAL_ERROR "FreeImage library not found")
+else()
+    message(STATUS "FreeImage found")
+endif()
 
-add_executable(demo ${SRCS} ${HDRS})
+find_library(ASSIMP_LIB assimp)
+if("${ASSIMP_LIB}" STREQUAL "")
+    message(FATAL_ERROR "AssImp library not found")
+else()
+    message(STATUS "AssImp found")
+endif()
 
-target_link_libraries(demo ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARIES} ${Boost_LIBRARIES} ${GLFW_LIBRARIES} ${FREEIMAGE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+add_executable(grapro ${SRCS} ${HDRS})
 
-
-install(TARGETS demo DESTINATION bin)
+target_link_libraries(grapro ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARIES} ${Boost_LIBRARIES} ${GLFW_LIBRARIES} ${FREEIMAGE_LIB} ${ASSIMP_LIB} ${CMAKE_THREAD_LIBS_INIT})

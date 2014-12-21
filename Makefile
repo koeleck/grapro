@@ -2,7 +2,9 @@
 
 
 all: build/Makefile
-	make -C build -j
+	@make -C build -j
+	@mkdir -p bin
+	@cp build/grapro bin
 
 build/Makefile: CMakeLists.txt
 	@mkdir -p build
