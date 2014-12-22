@@ -54,7 +54,10 @@ flags = [
 '-isystem',
 '/usr/include/c++/v1',
 '-I',
-'./src'
+'./src',
+'-DGLFW_INCLUDE_NONE',
+'-DGLM_FORCE_RADIANS'
+'-DGLEW_NO_GLU'
 ]
 
 

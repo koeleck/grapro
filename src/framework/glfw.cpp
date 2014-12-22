@@ -1,0 +1,44 @@
+#include "glfw.h"
+
+#include "log/log.h"
+
+//////////////////////////////////////////////////////////////////////////
+
+namespace
+{
+
+void glfw_error_callback(int error, const char* const msg) noexcept
+{
+    LOG_ERROR(logtag::GLFW, "[", error, "] ", msg);
+}
+
+} // anonymous namespace
+
+//////////////////////////////////////////////////////////////////////////
+
+namespace framework
+{
+
+//////////////////////////////////////////////////////////////////////////
+
+bool initGLFW()
+{
+    if (!glfwInit()) {
+        LOG_ERROR("Failed to initialize GLFW!");
+        return false;
+    }
+    glfwSetErrorCallback(glfw_error_callback);
+    return true;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+bool terminateGLFW()
+{
+    glfwTerminate();
+    return true;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+} // namespace framework
