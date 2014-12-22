@@ -1,0 +1,10 @@
+LOG_TAG(System)
+LOG_TAG(Import)
+LOG_TAG(OpenGL)
+LOG_TAG(FreeImage)
+LOG_TAG(ConfigFile)
+LOG_TAG(GLFW)
+
+// More tags here...
+
+LOG_TAG(NUM_TAGS) //!< Total number of tags.

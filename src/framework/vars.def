@@ -1,0 +1,22 @@
+// DEF_VAR(name, type, default value)
+// Allowed types:
+//      (const) int, float, double, long double, std::string, bool
+// e.g.
+// DEF_VAR(foo, std::string, "Hallo")
+// DEF_VAR(bar, const int, 15)
+//
+// Wrap arguments with comma in VAR_ARG:
+//  DEF_VAR(field, VAR_ARG(std::array<int, 5>), VAR_ARG(5, 4, 3))
+
+DEF_VAR(VERSION_MAJOR, const int, 0)
+DEF_VAR(VERSION_MINOR, const int, 1)
+
+/***************************************************************
+ *
+ *  OpenGL
+ *
+ **************************************************************/
+DEF_VAR(gl_version_major, int, 4)
+DEF_VAR(gl_version_minor, int, 4)
+DEF_VAR(gl_debug_context, bool, false)
+DEF_VAR(gl_debug_break, bool, false)

@@ -2,6 +2,7 @@
 *.log
 *.tmp
 *.swp
+*.pyc
 bin/
 build/
 cache/
