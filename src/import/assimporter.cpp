@@ -580,9 +580,10 @@ char* dumpMesh(char* ptr, const std::pair<std::string, AssimpMesh>& mesh)
 
     my_mesh->vertices = reinterpret_cast<glm::vec3*>(ptr);
     ptr += aimesh->mNumVertices * sizeof(glm::vec3);
+    my_mesh->bbox = core::AABB();
     for (unsigned int i = 0; i < aimesh->mNumVertices; ++i) {
         my_mesh->vertices[i] = to_glm(aimesh->mVertices[i]);
-        // TODO bounding box
+        my_mesh->bbox.expandBy(my_mesh->vertices[i]);
     }
 
     my_mesh->normals = reinterpret_cast<glm::vec3*>(ptr);
