@@ -11,6 +11,9 @@ struct Node
 {
     static constexpr int VERSION = 1;
 
+    void makePointersRelative();
+    void makePointersAbsolute();
+
     const char*     name;
     glm::vec3       position;
     glm::vec3       scale;

@@ -164,6 +164,7 @@ std::unique_ptr<Scene> assimport(const std::string& filename)
     std::strcpy(data, filename.c_str());
     data += filename.size() + 1;
 
+    my_scene->size = static_cast<std::uint32_t>(scene_size);
     my_scene->num_materials = static_cast<std::uint32_t>(materials.size());
     my_scene->num_textures = static_cast<std::uint32_t>(textures.size());
     my_scene->num_meshes = static_cast<std::uint32_t>(meshes.size());
@@ -172,24 +173,49 @@ std::unique_ptr<Scene> assimport(const std::string& filename)
     my_scene->num_nodes = static_cast<std::uint32_t>(nodes.size());
 
     // arrays
-    my_scene->materials = reinterpret_cast<Material**>(data);
-    data += my_scene->num_materials * sizeof(Material*);
+    if (my_scene->num_materials > 0) {
+        my_scene->materials = reinterpret_cast<Material**>(data);
+        data += my_scene->num_materials * sizeof(Material*);
+    } else {
+        my_scene->materials = nullptr;
+    }
 
-    my_scene->meshes = reinterpret_cast<Mesh**>(data);
-    data += my_scene->num_meshes * sizeof(Mesh*);
+    if (my_scene->num_meshes > 0) {
+        my_scene->meshes = reinterpret_cast<Mesh**>(data);
+        data += my_scene->num_meshes * sizeof(Mesh*);
+    } else {
+        my_scene->meshes = nullptr;
+    }
 
-    my_scene->lights = reinterpret_cast<Light**>(data);
-    data += my_scene->num_lights * sizeof(Light*);
+    if (my_scene->num_lights > 0) {
+        my_scene->lights = reinterpret_cast<Light**>(data);
+        data += my_scene->num_lights * sizeof(Light*);
+    } else {
+        my_scene->lights = nullptr;
+    }
 
-    my_scene->textures = reinterpret_cast<Texture**>(data);
-    data += my_scene->num_textures * sizeof(Texture**);
+    if (my_scene->num_textures > 0) {
+        my_scene->textures = reinterpret_cast<Texture**>(data);
+        data += my_scene->num_textures * sizeof(Texture**);
+    } else {
+        my_scene->textures = nullptr;
+    }
 
-    my_scene->cameras = reinterpret_cast<Camera**>(data);
-    data += my_scene->num_cameras * sizeof(Camera*);
+    if (my_scene->num_cameras > 0) {
+        my_scene->cameras = reinterpret_cast<Camera**>(data);
+        data += my_scene->num_cameras * sizeof(Camera*);
+    } else {
+        my_scene->cameras = nullptr;
+    }
 
-    my_scene->nodes = reinterpret_cast<Node**>(data);
-    data += my_scene->num_nodes * sizeof(Node*);
+    if (my_scene->num_nodes > 0) {
+        my_scene->nodes = reinterpret_cast<Node**>(data);
+        data += my_scene->num_nodes * sizeof(Node*);
+    } else {
+        my_scene->nodes = nullptr;
+    }
 
+    // dump data
     for (std::size_t i = 0; i < materials.size(); ++i) {
         my_scene->materials[i] = reinterpret_cast<Material*>(data);
         data = dumpMaterial(data, materials[i]);

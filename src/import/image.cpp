@@ -176,6 +176,13 @@ Image::operator bool() const noexcept
 
 /////////////////////////////////////////////////////////////////////
 
+bool Image::operator!() const noexcept
+{
+    return m_obj == nullptr;
+}
+
+/////////////////////////////////////////////////////////////////////
+
 bool Image::save(const std::string& filename,
         const FREE_IMAGE_FORMAT fif,
         const int flags) const

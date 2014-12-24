@@ -16,6 +16,9 @@ struct Camera
     glm::vec3   up;
     float       aspect_ratio;
     float       hfov;
+
+    void makePointersRelative();
+    void makePointersAbsolute();
 };
 
 } // namespace import

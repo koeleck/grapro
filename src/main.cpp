@@ -4,8 +4,7 @@
 #include "log/ostream_sink.h"
 #include "log/relay.h"
 
-#include "import/assimporter.h"
-#include "import/scene.h"
+#include "import/import.h"
 
 int main()
 {
@@ -13,7 +12,7 @@ int main()
     std::shared_ptr<logging::Sink> sink = std::make_shared<logging::OStreamSink>(std::cout);
     logging::Relay::get().registerSink(sink);
 
-    auto res = import::assimport("scenes/sponza/sponza.obj");
+    auto res = import::importSceneFile("scenes/sponza/sponza.obj");
 
     logging::Relay::shutdown();
 }

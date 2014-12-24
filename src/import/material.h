@@ -11,6 +11,9 @@ struct Material
 {
     static constexpr int VERSION = 1;
 
+    void makePointersRelative();
+    void makePointersAbsolute();
+
     const char*     name;
     std::int32_t    diffuse_texture;
     std::int32_t    specular_texture;

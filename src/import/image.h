@@ -35,6 +35,8 @@ public:
 
     explicit operator bool() const noexcept;
 
+    bool operator!() const noexcept;
+
     bool save(const std::string& filename,
             FREE_IMAGE_FORMAT fif,
             int flags = 0) const;

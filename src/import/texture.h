@@ -10,6 +10,9 @@ struct Texture
 {
     static constexpr int VERSION = 1;
 
+    void makePointersRelative();
+    void makePointersAbsolute();
+
     const char* name;
     Image*      image;
 };

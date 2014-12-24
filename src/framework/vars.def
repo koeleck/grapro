@@ -11,6 +11,9 @@
 DEF_VAR(VERSION_MAJOR, const int, 0)
 DEF_VAR(VERSION_MINOR, const int, 1)
 
+// Paths
+DEF_VAR(cache_dir, std::string, "cache/")
+
 /***************************************************************
  *
  *  OpenGL
