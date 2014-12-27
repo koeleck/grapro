@@ -13,6 +13,7 @@ DEF_VAR(VERSION_MINOR, const int, 1)
 
 // Paths
 DEF_VAR(cache_dir, std::string, "cache/")
+DEF_VAR(shader_dir, std::string, "shaders/")
 
 /***************************************************************
  *

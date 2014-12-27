@@ -11,19 +11,6 @@ namespace gl
 
 class ShaderSource
 {
-public: // static functions
-    /*!
-     * \brief Set directory containg shaders.
-     * \return **false** on error.
-     */
-    static bool setRootDir(const std::string& root);
-
-    /*!
-     * \brief Get root directory.
-     * \return Root directory.
-     */
-    static std::string getRootDir();
-
 public: // member functions
     /*!
      * \brief Constructor.
@@ -113,7 +100,9 @@ public: // member functions
      * \brief Get names of shader file and all included files.
      * \return Vector with filenames.
      */
-    const std::vector<std::string> filenames() const noexcept;
+    const std::vector<std::string>& filenames() const noexcept;
+    std::vector<std::string>& filenames() noexcept;
+
 
     /*!
      * \brief Add define to code.
@@ -140,6 +129,8 @@ public: // member functions
 
 
 private:
+    void readFile(const std::string& filename);
+
     std::string                 m_code;
     std::vector<std::string>    m_filenames;
     bool                        m_valid;

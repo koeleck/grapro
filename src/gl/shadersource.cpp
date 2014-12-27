@@ -12,6 +12,7 @@
 using namespace boost::filesystem;
 
 #include "log/log.h"
+#include "framework/vars.h"
 
 /////////////////////////////////////////////////////////////////////
 
@@ -41,7 +42,6 @@ constexpr unsigned int MAX_DEPTH = 12;
 //        std::regex_constants::ECMAScript | std::regex_constants::optimize};
 boost::regex includeRegex("^[[:space:]]*#[[:space:]]*include[[:space:]]+"
         "([\"<])([^[:space:]]+)([\">])[[:space:]]*$");
-path rootPath("./");
 
 /////////////////////////////////////////////////////////////////////
 
@@ -77,7 +77,8 @@ std::pair<RegexResult, std::string> checkLine(const std::string& line)
 /////////////////////////////////////////////////////////////////////
 
 bool readFile(std::ostringstream& out, std::vector<std::string>& filenames,
-        const path& file, unsigned int depth)
+        const path& file, unsigned int depth,
+        const std::vector<std::string>* defines)
 {
     if (depth > MAX_DEPTH) {
         LOG_ERROR(logtag::OpenGL, "ShaderSource reached maximum recursion depth. "
@@ -105,6 +106,10 @@ bool readFile(std::ostringstream& out, std::vector<std::string>& filenames,
 
         // for defines:
         if (depth == 0 && lineNumber == 2) {
+            if (defines != nullptr) {
+                for (const auto& s : *defines)
+                    out << s << '\n';
+            }
             out << "#line 2 0\n";
         }
 
@@ -119,11 +124,11 @@ bool readFile(std::ostringstream& out, std::vector<std::string>& filenames,
                     nextFile = canonical(nextFile);
                 } catch (filesystem_error& err) {
                     // try root path instead
-                    nextFile = rootPath;
+                    nextFile = vars.shader_dir;
                     nextFile /= res.second;
                 }
             } else {
-                nextFile = rootPath;
+                nextFile = vars.shader_dir;
                 nextFile /= res.second;
             }
             try {
@@ -134,7 +139,7 @@ bool readFile(std::ostringstream& out, std::vector<std::string>& filenames,
             }
             // replace include-statement with comment
             out << "// include " << nextFile.c_str() << '\n';
-            if (false == readFile(out, filenames, nextFile, depth + 1)) {
+            if (false == readFile(out, filenames, nextFile, depth + 1, nullptr)) {
                 return false;
             }
             // place comment at end of include statement
@@ -163,62 +168,44 @@ namespace gl
 
 /////////////////////////////////////////////////////////////////////
 
-bool ShaderSource::setRootDir(const std::string& root)
-{
-    try {
-        rootPath = canonical(root);
-    } catch (filesystem_error& err) {
-        return false;
-    }
-    return true;
-}
-
-/////////////////////////////////////////////////////////////////////
-
-std::string ShaderSource::getRootDir()
-{
-    return rootPath.native();
-}
-
-/////////////////////////////////////////////////////////////////////
-
 ShaderSource::ShaderSource(const std::string& filename)
   : m_valid{false},
     m_srcPtr{nullptr}
 {
-    path file;
-    try {
-        file = canonical(rootPath / filename);
-    } catch (filesystem_error& err) {
-        LOG_ERROR(err.what());
-        return;
-    }
-
-    std::ostringstream out;
-    m_valid = readFile(out, m_filenames, file, 0);
-
-    m_code = out.str();
-    m_srcPtr = m_code.c_str();
-
-    //LOG_INFO("Shader source (", filename, "):\n", m_code);
+    readFile(filename);
 }
 
 /////////////////////////////////////////////////////////////////////
 
 ShaderSource::ShaderSource(const std::string& filename,
         const std::string& defines)
-  : ShaderSource(filename)
+  : m_valid{false},
+    m_srcPtr{nullptr}
 {
-    addDefines(defines);
+    boost::char_separator<char> sep(",");
+    boost::tokenizer<boost::char_separator<char>> tokens(defines, sep);
+    for (const auto& d : tokens) {
+        if (std::find(m_defines.begin(), m_defines.end(), d) != m_defines.end())
+            continue;
+        m_defines.push_back(d);
+    }
+
+    readFile(filename);
 }
 
 /////////////////////////////////////////////////////////////////////
 
 ShaderSource::ShaderSource(const std::string& filename,
         std::initializer_list<std::string> defines)
-  : ShaderSource(filename)
+  : m_valid{false},
+    m_srcPtr{nullptr}
 {
-    addDefines(defines);
+    for (const auto& d : defines) {
+        if (std::find(m_defines.begin(), m_defines.end(), d) != m_defines.end())
+            continue;
+        m_defines.push_back(d);
+    }
+    readFile(filename);
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -323,8 +310,15 @@ const noexcept
 
 /////////////////////////////////////////////////////////////////////
 
-const std::vector<std::string> ShaderSource::filenames()
+const std::vector<std::string>& ShaderSource::filenames()
 const noexcept
+{
+    return m_filenames;
+}
+
+/////////////////////////////////////////////////////////////////////
+
+std::vector<std::string>& ShaderSource::filenames() noexcept
 {
     return m_filenames;
 }
@@ -353,6 +347,8 @@ void ShaderSource::addDefines(const std::string& defines)
     boost::char_separator<char> sep(",");
     boost::tokenizer<boost::char_separator<char>> tokens(defines, sep);
     for (const auto& d : tokens) {
+        if (std::find(m_defines.begin(), m_defines.end(), d) != m_defines.end())
+            continue;
         m_defines.push_back(d);
 
         std::string tmp{d};
@@ -373,11 +369,13 @@ void ShaderSource::addDefines(std::initializer_list<std::string> defines)
     size_t pos = m_code.find("#line 2 0");
     if (pos == std::string::npos) {
         LOG_ERROR(logtag::OpenGL, "ShaderSource cannot find position to "
-            "append defines! (", m_filenames.front(), ')');
+            "insert defines! (", m_filenames.front(), ')');
         return;
     }
 
     for (const auto& d : defines) {
+        if (std::find(m_defines.begin(), m_defines.end(), d) != m_defines.end())
+            continue;
         m_defines.push_back(d);
 
         std::string tmp{d};
@@ -386,6 +384,25 @@ void ShaderSource::addDefines(std::initializer_list<std::string> defines)
         pos += tmp.length();
     }
 
+    m_srcPtr = m_code.c_str();
+}
+
+/////////////////////////////////////////////////////////////////////
+
+void ShaderSource::readFile(const std::string& filename)
+{
+    path file;
+    try {
+        file = canonical(vars.shader_dir / filename);
+    } catch (filesystem_error& err) {
+        LOG_ERROR(err.what());
+        return;
+    }
+
+    std::ostringstream out;
+    m_valid = ::readFile(out, m_filenames, file, 0, &m_defines);
+
+    m_code = out.str();
     m_srcPtr = m_code.c_str();
 }
 
