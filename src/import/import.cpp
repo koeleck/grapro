@@ -1,6 +1,7 @@
 #include <fstream>
 #include <cstring>
 
+#include "log/log.h"
 #include "framework/vars.h"
 #include "import.h"
 #include "assimporter.h"
@@ -42,6 +43,19 @@ std::unique_ptr<Scene> getCachedData(const std::string& scenefile)
     path file = vars.cache_dir / path(scenefile);
     if (!exists(file) || !is_regular_file(file)) {
         return result;
+    }
+
+    if (last_write_time(file) < last_write_time(scenefile)) {
+        std::remove(file.c_str());
+        return result;
+    }
+    // special case for wavefront obj's
+    if (std::strcmp(file.extension().c_str(), ".obj") == 0) {
+        path mtl_file(scenefile.substr(0, scenefile.size() - 3) + "mtl");
+        if (exists(mtl_file) && (last_write_time(file) < last_write_time(mtl_file))) {
+            std::remove(file.c_str());
+            return result;
+        }
     }
 
     std::ifstream is(file.c_str(), std::ios::in | std::ios::binary);
@@ -115,6 +129,11 @@ void writeDataToCache(const Scene* data, const std::string& scenefile)
 
 std::unique_ptr<Scene> importSceneFile(const std::string& filename)
 {
+    if (!exists(filename)) {
+        LOG_ERROR(logtag::Import, "File not found: ", filename);
+        return nullptr;
+    }
+
     std::unique_ptr<Scene> result = getCachedData(filename);
     if (!result) {
         result = assimport(filename);
