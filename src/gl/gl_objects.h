@@ -58,7 +58,7 @@ public:
 
     void swap(GLObject& other) noexcept
     {
-        const auto tmp{m_handle};
+        const type tmp{m_handle};
         m_handle = other.m_handle;
         other.m_handle = tmp;
     }

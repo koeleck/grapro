@@ -11,6 +11,11 @@
 DEF_VAR(VERSION_MAJOR, const int, 0)
 DEF_VAR(VERSION_MINOR, const int, 1)
 
+// Window
+DEF_VAR(title, std::string, "grapro")
+DEF_VAR(screen_width, int, 640)
+DEF_VAR(screen_height, int, 480)
+
 // Paths
 DEF_VAR(cache_dir, std::string, "cache/")
 DEF_VAR(shader_dir, std::string, "shaders/")

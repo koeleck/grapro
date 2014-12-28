@@ -7,6 +7,7 @@
 #include "glfw.h"
 #include "gl/gl_sys.h"
 #include "log/log.h"
+#include "vars.h"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -106,6 +107,8 @@ void Window::window_position(const int /*xpos*/, const int /*ypos*/)
 
 void Window::window_size(const int width, const int height)
 {
+    vars.screen_width = width;
+    vars.screen_height = height;
     glViewport(0, 0, width, height);
 }
 

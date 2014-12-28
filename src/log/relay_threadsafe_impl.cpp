@@ -123,11 +123,14 @@ void RelayThreadsafeImpl::process_entry() noexcept
         return;
     Entry e = std::move(m_queue.front());
     m_queue.pop_front();
+    const bool do_flush = e.severity == Severity::Error;
     {
         std::unique_lock<std::mutex> sink_lock(m_sink_lock);
         for (auto& s : m_sinks) {
             try {
                 s->addEntry(e);
+                if (do_flush)
+                    s->flush();
             } catch (...) {
             }
         }
