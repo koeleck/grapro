@@ -131,10 +131,16 @@ std::unique_ptr<Scene> assimport(const std::string& filename)
 {
     Assimp::Importer importer;
 
+    importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE,
+            aiPrimitiveType_POINT | aiPrimitiveType_LINE);
+
     const aiScene* scene = importer.ReadFile(filename.c_str(),
             aiProcess_CalcTangentSpace | aiProcess_JoinIdenticalVertices |
             aiProcess_Triangulate | aiProcess_GenSmoothNormals |
-            aiProcess_ImproveCacheLocality | aiProcess_RemoveRedundantMaterials);
+            aiProcess_ImproveCacheLocality | aiProcess_RemoveRedundantMaterials |
+            aiProcess_FindDegenerates | aiProcess_SortByPType |
+            aiProcess_ValidateDataStructure | aiProcess_FindInvalidData |
+            aiProcess_FindInstances);
 
     if (!scene) {
         LOG_ERROR(importer.GetErrorString());
