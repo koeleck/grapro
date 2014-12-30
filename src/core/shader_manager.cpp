@@ -184,7 +184,6 @@ void ShaderManager::registerShader(const std::string& name, const std::string& f
         info.filename = filename;
         info.type = shader_type;
         info.defines = defines;
-
     }
     m_shader_names.emplace(name, idx);
 }
@@ -241,6 +240,9 @@ void ShaderManager::registerProgram(const std::string& name, const bool is_separ
         auto& info = m_programs.back();
         info.shaders = std::move(shader_names);
         info.is_separable = is_separable;
+
+        if (vars.preload_programs)
+            link_program(info, true);
     }
 
     m_program_names.emplace(name, idx);
