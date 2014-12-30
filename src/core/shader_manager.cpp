@@ -37,6 +37,71 @@ struct CacheFile
 namespace core
 {
 
+/*****************************************************************************
+ *
+ * Program
+ *
+ ****************************************************************************/
+
+Program::operator const gl::Program &() const
+{
+    return shader_manager->getProgram(m_idx);
+}
+
+/****************************************************************************/
+
+Program::Program(const std::size_t idx)
+  : m_idx{idx}
+{
+}
+
+/*****************************************************************************
+ *
+ * Shader
+ *
+ ****************************************************************************/
+
+Shader::operator const gl::Shader &() const
+{
+    return shader_manager->getShader(m_idx);
+}
+
+/****************************************************************************/
+
+Shader::Shader(const std::size_t idx)
+  : m_idx{idx}
+{
+}
+
+/*****************************************************************************
+ *
+ * ProgramPipeline
+ *
+ ****************************************************************************/
+
+ProgramPipeline::operator const gl::ProgramPipeline &() const
+{
+    return shader_manager->getProgramPipeline(m_idx);
+}
+
+/****************************************************************************/
+
+ProgramPipeline::ProgramPipeline(const std::size_t idx)
+  : m_idx{idx}
+{
+}
+
+/****************************************************************************/
+
+/*****************************************************************************
+ *
+ * ShaderManager
+ *
+ ****************************************************************************/
+
+// Global Shader Manager
+ShaderManager* shader_manager;
+
 /****************************************************************************/
 
 struct ShaderManager::ShaderInfo
@@ -73,6 +138,12 @@ struct ShaderManager::PipelineInfo
 
 ShaderManager::ShaderManager()
   : m_timestamp{std::time(nullptr)}
+{
+}
+
+/****************************************************************************/
+
+ShaderManager::~ShaderManager()
 {
 }
 
@@ -654,6 +725,76 @@ void ShaderManager::setup_pipeline(PipelineInfo& p) const
     }
 
     p.pipeline = std::move(pipeline);
+}
+
+/****************************************************************************/
+
+const gl::Shader& ShaderManager::getShader(const std::size_t idx) const
+{
+    ShaderInfo& shader = m_shaders[idx];
+    if (shader.shader.get() == 0) {
+        compile_shader(shader);
+    }
+    return shader.shader;
+}
+
+/****************************************************************************/
+
+const gl::Program& ShaderManager::getProgram(const std::size_t idx) const
+{
+    ProgramInfo& prog = m_programs[idx];
+    if (prog.program.get() == 0) {
+        link_program(prog, true);
+    }
+    return prog.program;
+}
+
+/****************************************************************************/
+
+const gl::ProgramPipeline& ShaderManager::getProgramPipeline(const std::size_t idx)
+        const
+{
+    PipelineInfo& pl = m_pipelines[idx];
+    if (pl.pipeline.get() == 0) {
+        setup_pipeline(pl);
+    }
+    return pl.pipeline;
+}
+
+/****************************************************************************/
+
+Shader ShaderManager::getShader(const std::string& name) const
+{
+    auto it = m_shader_names.find(name);
+    if (it == m_shader_names.end()) {
+        LOG_ERROR("Shader not found: ", name);
+        abort();
+    }
+    return Shader(it->second);
+}
+
+/****************************************************************************/
+
+Program ShaderManager::getProgram(const std::string& name) const
+{
+    auto it = m_program_names.find(name);
+    if (it == m_program_names.end()) {
+        LOG_ERROR("Program not found: ", name);
+        abort();
+    }
+    return Program(it->second);
+}
+
+/****************************************************************************/
+
+ProgramPipeline ShaderManager::getProgramPipeline(const std::string& name) const
+{
+    auto it = m_pipeline_names.find(name);
+    if (it == m_pipeline_names.end()) {
+        LOG_ERROR("Program pipeline not found: ", name);
+        abort();
+    }
+    return ProgramPipeline(it->second);
 }
 
 /****************************************************************************/

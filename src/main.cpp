@@ -13,6 +13,8 @@
 #include "import/import.h"
 #include "gl/gl_sys.h"
 
+#include "core/shader_manager.h"
+
 #include "grapro.h"
 
 namespace
@@ -46,6 +48,8 @@ int main(int argc, const char** argv)
     gl::initGL();
 
     try {
+        // INIT CORE
+        core::shader_manager = new core::ShaderManager();
 
         GraPro* win = new GraPro(main_window);
 
@@ -65,6 +69,9 @@ int main(int argc, const char** argv)
             win->resetInput();
             glfwPollEvents();
         }
+
+        // TERMINATE
+        delete core::shader_manager;
     } catch (...) {
         LOG_ERROR("Error"); // TODO
     }

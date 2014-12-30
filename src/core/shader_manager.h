@@ -7,19 +7,53 @@
 #include <string>
 #include <initializer_list>
 
-#include "gl/gl_sys.h"
-namespace gl {
-class Program;
-class Shader;
-} // namespace gl
+#include "gl/opengl.h"
+
 
 namespace core
 {
+
+/****************************************************************************/
+
+class Program
+{
+public:
+    operator const gl::Program&() const;
+private:
+    friend class ShaderManager;
+    Program(std::size_t idx);
+    std::size_t m_idx;
+};
+
+/****************************************************************************/
+
+class Shader
+{
+public:
+    operator const gl::Shader&() const;
+private:
+    friend class ShaderManager;
+    Shader(std::size_t idx);
+    std::size_t m_idx;
+};
+
+/****************************************************************************/
+
+class ProgramPipeline
+{
+public:
+    operator const gl::ProgramPipeline&() const;
+    ProgramPipeline(std::size_t idx);
+    std::size_t m_idx;
+};
+
+/****************************************************************************/
 
 class ShaderManager
 {
 public:
     ShaderManager();
+    ~ShaderManager();
 
     ShaderManager(const ShaderManager&) = delete;
     ShaderManager& operator=(const ShaderManager&) = delete;
@@ -33,6 +67,11 @@ public:
     void registerProgramPipeline(const std::string& name,
             std::initializer_list<std::string> programs);
 
+    Shader getShader(const std::string& name) const;
+
+    Program getProgram(const std::string& name) const;
+
+    ProgramPipeline getProgramPipeline(const std::string& name) const;
 
     void setDefines(const std::string& defines);
     void addDefines(const std::string& defines);
@@ -43,6 +82,14 @@ public:
     bool preloadAll();
 
 private:
+    friend class Shader;
+    friend class Program;
+    friend class ProgramPipeline;
+
+    const gl::Shader& getShader(std::size_t idx) const;
+    const gl::Program& getProgram(std::size_t idx) const;
+    const gl::ProgramPipeline& getProgramPipeline(std::size_t idx) const;
+
 
     struct ShaderInfo;
     struct ProgramInfo;
@@ -67,6 +114,8 @@ private:
     std::time_t                                     m_timestamp;
 
 };
+
+extern ShaderManager* shader_manager;
 
 } // namespace core
 
