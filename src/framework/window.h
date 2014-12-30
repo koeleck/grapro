@@ -43,6 +43,8 @@ protected:
     virtual void mouse_enter(bool entered);
     virtual void mouse_scroll(double xoffset, double yoffset);
     virtual void key_event(int key, int scancode, int action, int mods);
+    virtual void char_input(unsigned int codepoint);
+
 
 private:
     static void cb_winpos(GLFWwindow*, int, int) noexcept;
@@ -54,6 +56,7 @@ private:
     static void cb_mouseenter(GLFWwindow*, int);
     static void cb_mousescroll(GLFWwindow*, double, double) noexcept;
     static void cb_keyevent(GLFWwindow*, int, int, int, int) noexcept;
+    static void cb_charinput(GLFWwindow*, unsigned int) noexcept;
 
     GLFWwindow*         m_window;
 };
@@ -61,3 +64,4 @@ private:
 } // namespace framework
 
 #endif // FRAMEWORK_WINDOW_H
+

@@ -31,3 +31,4 @@ private:
 extern framework::Variables vars;
 
 #endif // FRAMEWORK_VARS_H
+

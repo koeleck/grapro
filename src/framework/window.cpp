@@ -36,7 +36,8 @@ Window::Window(GLFWwindow* window)
 {
 
 #ifndef NDEBUG
-    if (nullptr != glfwGetCurrentContext()) {
+    GLFWwindow* last_context = glfwGetCurrentContext();
+    if (nullptr != last_context && last_context != window) {
         LOG_WARNING(logtag::System, "Current OpenGL context "
                 "replaced in glfw::Window constructor");
     }
@@ -44,7 +45,6 @@ Window::Window(GLFWwindow* window)
     glfwMakeContextCurrent(m_window);
     gl::initGL();
 
-    glfwSetInputMode(m_window, GLFW_STICKY_KEYS, GL_TRUE);
     glfwSetWindowUserPointer(m_window, this);
 
     // set callbacks
@@ -57,6 +57,7 @@ Window::Window(GLFWwindow* window)
     glfwSetCursorEnterCallback(m_window, cb_mouseenter);
     glfwSetScrollCallback(m_window, cb_mousescroll);
     glfwSetKeyCallback(m_window, cb_keyevent);
+    glfwSetCharCallback(m_window, cb_charinput);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -107,9 +108,6 @@ void Window::window_position(const int /*xpos*/, const int /*ypos*/)
 
 void Window::window_size(const int width, const int height)
 {
-    vars.screen_width = width;
-    vars.screen_height = height;
-    glViewport(0, 0, width, height);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -154,6 +152,12 @@ void Window::mouse_scroll(const double /*xoffset*/, const double /*yoffset*/)
 
 void Window::key_event(const int /*key*/, const int /*scancode*/,
         const int /*action*/, const int /*mods*/)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void Window::char_input(const unsigned int /* codepoint */)
 {
 }
 
@@ -266,6 +270,18 @@ void Window::cb_keyevent(GLFWwindow* const window, const int key,
 {
     try {
         getWindowPtr(window)->key_event(key, scancode, action, mods);
+    } catch (...) {
+        // TODO
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void Window::cb_charinput(GLFWwindow* const window,
+        const unsigned int codepoint) noexcept
+{
+    try {
+        getWindowPtr(window)->char_input(codepoint);
     } catch (...) {
         // TODO
     }
