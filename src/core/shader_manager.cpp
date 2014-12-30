@@ -545,7 +545,7 @@ std::string ShaderManager::program_id(const ProgramInfo& p) const
 
 bool ShaderManager::load_cached_program(ProgramInfo& p, const std::string& id) const
 {
-    const path cache_file = vars.cache_dir / std::to_string(m_hasher(id));
+    const path cache_file = vars.cache_dir / "shaders" / std::to_string(m_hasher(id));
 
     if (!exists(cache_file) || !is_regular_file(cache_file)) {
         return false;
@@ -645,7 +645,7 @@ bool ShaderManager::load_cached_program(ProgramInfo& p, const std::string& id) c
 
 void ShaderManager::save_program(const ProgramInfo& info, const std::string& id) const
 {
-    path cache_file = vars.cache_dir / std::to_string(m_hasher(id));
+    path cache_file = vars.cache_dir / "shaders" / std::to_string(m_hasher(id));
 
     std::ofstream os(cache_file.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
     if (!os)
