@@ -190,8 +190,9 @@ void ShaderManager::registerShader(const std::string& name, const std::string& f
 
 /****************************************************************************/
 
-void ShaderManager::registerProgram(const std::string& name, const bool is_separable,
-        std::initializer_list<std::string> shaders)
+void ShaderManager::registerProgram(const std::string& name,
+        std::initializer_list<std::string> shaders,
+        const bool is_separable)
 {
     std::vector<std::string> shader_names(shaders);
     std::sort(shader_names.begin(), shader_names.end());

@@ -108,7 +108,7 @@ bool readFile(std::ostringstream& out, std::vector<std::string>& filenames,
         if (depth == 0 && lineNumber == 2) {
             if (defines != nullptr) {
                 for (const auto& s : *defines)
-                    out << s << '\n';
+                    out << "#define " << s << '\n';
             }
             out << "#line 2 0\n";
         }
@@ -351,8 +351,7 @@ void ShaderSource::addDefines(const std::string& defines)
             continue;
         m_defines.push_back(d);
 
-        std::string tmp{d};
-        tmp.push_back('\n');
+        std::string tmp{"#define " + d + '\n'};
         m_code.insert(pos, tmp);
         pos += tmp.length();
     }
@@ -378,8 +377,7 @@ void ShaderSource::addDefines(std::initializer_list<std::string> defines)
             continue;
         m_defines.push_back(d);
 
-        std::string tmp{d};
-        tmp.push_back('\n');
+        std::string tmp{"#define " + d + '\n'};
         m_code.insert(pos, tmp);
         pos += tmp.length();
     }
