@@ -99,6 +99,18 @@ bitfield<T> operator|(const bitfield<T>& bf0, const bitfield<T>& bf1) noexcept
     return bf0() | bf1();
 }
 
+template <typename T>
+bitfield<T> operator^(const bitfield<T>& bf0, const bitfield<T>& bf1) noexcept
+{
+    return bf0() ^ bf1();
+}
+
+template <typename T>
+bool operator==(const bitfield<T>& bf0, const bitfield<T>& bf1) noexcept
+{
+    return bf0() == bf1();
+}
+
 } // namespace util
 
 #endif // UTIL_BITFIELD_H
