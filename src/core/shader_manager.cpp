@@ -150,8 +150,33 @@ ShaderManager::~ShaderManager()
 /****************************************************************************/
 
 void ShaderManager::registerShader(const std::string& name, const std::string& filename,
-        const GLenum shader_type, const std::string& defines)
+        const GLenum shader_type, std::string defines)
 {
+    if (defines.empty() == false)
+        defines += ',';
+    switch (shader_type) {
+    case GL_VERTEX_SHADER:
+        defines += "VERTEX_SHADER";
+        break;
+    case GL_TESS_CONTROL_SHADER:
+        defines += "TESS_CONTROL_SHADER";
+        break;
+    case GL_TESS_EVALUATION_SHADER:
+        defines += "TESS_EVALUATION_SHADER";
+        break;
+    case GL_GEOMETRY_SHADER:
+        defines += "GEOMETRY_SHADER";
+        break;
+    case GL_FRAGMENT_SHADER:
+        defines += "FRAGMENT_SHADER";
+        break;
+    case GL_COMPUTE_SHADER:
+        defines += "COMPUTE_SHADER";
+        break;
+    default:
+        abort();
+    }
+
     auto it = m_shader_names.find(name);
     if (it != m_shader_names.end()) {
         const auto& info = m_shaders[it->second];
@@ -183,7 +208,7 @@ void ShaderManager::registerShader(const std::string& name, const std::string& f
         auto& info = m_shaders.back();
         info.filename = filename;
         info.type = shader_type;
-        info.defines = defines;
+        info.defines = std::move(defines);
     }
     m_shader_names.emplace(name, idx);
 }
@@ -412,30 +437,6 @@ bool ShaderManager::compile_shader(ShaderInfo& info) const
         defines += ',';
     }
     defines += info.defines;
-    if (defines.empty() == false)
-        defines += ',';
-    switch (info.type) {
-    case GL_VERTEX_SHADER:
-        defines += "VERTEX_SHADER";
-        break;
-    case GL_TESS_CONTROL_SHADER:
-        defines += "TESS_CONTROL_SHADER";
-        break;
-    case GL_TESS_EVALUATION_SHADER:
-        defines += "TESS_EVALUATION_SHADER";
-        break;
-    case GL_GEOMETRY_SHADER:
-        defines += "GEOMETRY_SHADER";
-        break;
-    case GL_FRAGMENT_SHADER:
-        defines += "FRAGMENT_SHADER";
-        break;
-    case GL_COMPUTE_SHADER:
-        defines += "COMPUTE_SHADER";
-        break;
-    default:
-        abort();
-    }
 
     gl::ShaderSource source(info.filename, defines);
 
@@ -516,6 +517,7 @@ bool ShaderManager::link_program(ProgramInfo& p, const bool use_cache) const
     std::sort(p.files.begin(), p.files.end());
     p.files.erase(std::unique(p.files.begin(), p. files.end()), p.files.end());
 
+    p.program = std::move(prog);
     save_program(p, id);
 
     return true;
@@ -646,8 +648,10 @@ bool ShaderManager::load_cached_program(ProgramInfo& p, const std::string& id) c
 
 void ShaderManager::save_program(const ProgramInfo& info, const std::string& id) const
 {
-    path cache_file = vars.cache_dir / "shaders" / std::to_string(m_hasher(id));
+    path cache_dir = vars.cache_dir / "shaders";
+    path cache_file = cache_dir / std::to_string(m_hasher(id));
 
+    create_directories(cache_dir);
     std::ofstream os(cache_file.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
     if (!os)
         return;

@@ -59,7 +59,7 @@ public:
     ShaderManager& operator=(const ShaderManager&) = delete;
 
     void registerShader(const std::string& name, const std::string& filename,
-            GLenum shader_type, const std::string& defines = "");
+            GLenum shader_type, std::string defines = "");
 
     void registerProgram(const std::string& name,
             std::initializer_list<std::string> shaders,
