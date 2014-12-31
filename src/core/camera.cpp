@@ -3,24 +3,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "camera.h"
+#include "shader_interface.h"
 
 #include "log/log.h"
-
-//////////////////////////////////////////////////////////////////////////
-
-namespace
-{
-
-// keep in sync with shaders/common/camera.glsl
-struct CameraStruct
-{
-    glm::mat4                       ViewMatrix;
-    glm::mat4                       ProjMatrix;
-    glm::mat4                       ProjViewMatrix;
-    glm::vec4                       CameraPosition;
-};
-
-} // anonymous namespace
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -35,22 +20,24 @@ namespace core
 
 //////////////////////////////////////////////////////////////////////////
 
-Camera::Camera(const glm::dvec3& pos, const glm::dvec3& center)
+Camera::Camera(const glm::dvec3& pos, const glm::dvec3& center,
+        const CameraType camtype, void* const ptr)
   : m_modified{true},
     m_useFixedYawAxis{false},
+    m_type{camtype},
     m_position{pos},
     m_orientation{},
-    m_data{nullptr}
+    m_data{ptr}
 {
     lookAt(center);
 
-    glBindBuffer(m_buffer, GL_UNIFORM_BUFFER);
-    glBufferStorage(GL_UNIFORM_BUFFER, sizeof(CameraStruct), nullptr,
-            GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
-    m_data = glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(CameraStruct),
-            GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT |
-            GL_MAP_INVALIDATE_BUFFER_BIT);
-    assert(m_data != nullptr);
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+CameraType Camera::type() const
+{
+    return m_type;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -285,20 +272,13 @@ void Camera::updateBuffer() const
 
     update();
 
-    CameraStruct data;
+    shader::CameraStruct data;
     data.ViewMatrix = glm::mat4(m_viewmat);
     data.ProjMatrix = glm::mat4(m_projmat);
     data.ProjViewMatrix = glm::mat4(m_projviewmat);
     data.CameraPosition = glm::vec4(m_position, 1.0);
 
-    std::memcpy(m_data, &data, sizeof(CameraStruct));
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-void Camera::bindBuffer(GLuint index) const
-{
-    glBindBufferBase(GL_UNIFORM_BUFFER, index, m_buffer);
+    std::memcpy(m_data, &data, sizeof(shader::CameraStruct));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -311,8 +291,8 @@ void Camera::bindBuffer(GLuint index) const
 
 PerspectiveCamera::PerspectiveCamera(const glm::dvec3& pos,
         const glm::dvec3& center, const double fovy,
-        const double aspect_ratio, const double near)
-  : Camera(pos, center),
+        const double aspect_ratio, const double near, void* ptr)
+  : Camera(pos, center, CameraType::PERSPECTIVE, ptr),
     m_fovy{fovy},
     m_aspect_ratio{aspect_ratio},
     m_near{near}
@@ -384,8 +364,8 @@ void PerspectiveCamera::updateProjMat() const
 OrthogonalCamera::OrthogonalCamera(const glm::dvec3& pos,
         const glm::dvec3& center, const double left, const double right,
         const double bottom, const double top, const double zNear,
-        const double zFar)
-  : Camera(pos, center),
+        const double zFar, void* ptr)
+  : Camera(pos, center, CameraType::ORTHOGONAL, ptr),
     m_left{left},
     m_right{right},
     m_bottom{bottom},

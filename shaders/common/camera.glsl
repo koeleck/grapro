@@ -1,16 +1,25 @@
 #ifndef SHADERS_COMMON_CAMERA_GLSL
 #define SHADERS_COMMON_CAMERA_GLSL
 
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-//!!  keep in sync with 3d/camera.cpp !!
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#include "bindings.glsl"
 
-// TODO assign binding index somewhere else
-layout(std140, binding = 0) uniform CameraBlock {
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//!!                                                 !!
+//!!  keep in sync with src/core/shader_interface.h  !!
+//!!                                                 !!
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+struct Camera
+{
     mat4        ViewMatrix;
     mat4        ProjMatrix;
     mat4        ProjViewMatrix;
     vec4        CameraPosition;
+};
+
+layout(std430, binding = CAMERA_BINDING) restrict readonly buffer CameraBlock
+{
+    Camera  cam;
 };
 
 #endif // SHADERS_COMMON_CAMERA_GLSL

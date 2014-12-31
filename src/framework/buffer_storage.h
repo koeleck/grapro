@@ -21,6 +21,8 @@ public:
     bool hasPersistentMapping() const;
     void* baseAddress() const;
 
+    const gl::Buffer& buffer() const;
+
 private:
     struct Segment;
 

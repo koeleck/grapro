@@ -180,5 +180,12 @@ void BufferStorage::clear()
 
 /****************************************************************************/
 
+const gl::Buffer& BufferStorage::buffer() const
+{
+    return m_buffer;
+}
+
+/****************************************************************************/
+
 } // namespace framework
 

@@ -3,10 +3,15 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include "gl/gl_objects.h"
 
 namespace core
 {
+
+enum class CameraType : unsigned char
+{
+    PERSPECTIVE = 0x01,
+    ORTHOGONAL = 0x02
+};
 
 /*************************************************************************
  *
@@ -16,10 +21,6 @@ namespace core
 class Camera
 {
 public:
-    Camera(const glm::dvec3& pos, const glm::dvec3& center);
-
-    virtual ~Camera() = default;
-
     const glm::dmat4& getProjMatrix() const;
 
     const glm::dmat4& getViewMatrix() const;
@@ -64,10 +65,12 @@ public:
 
     void updateBuffer() const;
 
-    void bindBuffer(GLuint index) const;
-
+    CameraType type() const;
 
 protected:
+    Camera(const glm::dvec3& pos, const glm::dvec3& center,
+            CameraType type, void* ptr);
+    virtual ~Camera() = default;
 
     virtual void updateProjMat() const = 0;
     void invalidate();
@@ -75,10 +78,11 @@ protected:
     mutable glm::dmat4  m_projmat;
 
 private:
+    friend class CameraManager;
+
     mutable bool        m_modified;
     bool                m_useFixedYawAxis;
-
-    gl::Buffer          m_buffer;
+    CameraType          m_type;
     glm::dvec3          m_position;
     glm::dquat          m_orientation;
     glm::dvec3          m_fixedYawAxis;
@@ -97,9 +101,6 @@ class PerspectiveCamera
   : public Camera
 {
 public:
-    PerspectiveCamera(const glm::dvec3& pos, const glm::dvec3& center,
-            double fovy, double aspect_ratio, double near);
-
     void setFOVY(double fovy);
     double getFOVY() const;
 
@@ -109,7 +110,16 @@ public:
     void setNear(double near);
     double getNear() const;
 
+protected:
+    PerspectiveCamera(const glm::dvec3& pos, const glm::dvec3& center,
+            double fovy, double aspect_ratio, double near,
+            void* ptr);
+
+    virtual ~PerspectiveCamera() = default;
+
 private:
+    friend class CameraManager;
+
 
     virtual void updateProjMat() const override;
 
@@ -128,10 +138,6 @@ class OrthogonalCamera
   : public Camera
 {
 public:
-    OrthogonalCamera(const glm::dvec3& pos, const glm::dvec3& center,
-            double left, double right, double bottom, double top,
-            double zNear, double zFar);
-
     void setLeft(double left);
     double getLeft() const;
 
@@ -150,7 +156,16 @@ public:
     void setZFar(double left);
     double getZFar() const;
 
+protected:
+    OrthogonalCamera(const glm::dvec3& pos, const glm::dvec3& center,
+            double left, double right, double bottom, double top,
+            double zNear, double zFar, void* ptr);
+
+    virtual ~OrthogonalCamera() = default;
+
 private:
+    friend class CameraManager;
+
     virtual void updateProjMat() const override;
 
     double          m_left;
