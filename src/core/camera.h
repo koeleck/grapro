@@ -21,6 +21,8 @@ enum class CameraType : unsigned char
 class Camera
 {
 public:
+    virtual ~Camera() = default;
+
     const glm::dmat4& getProjMatrix() const;
 
     const glm::dmat4& getViewMatrix() const;
@@ -70,7 +72,6 @@ public:
 protected:
     Camera(const glm::dvec3& pos, const glm::dvec3& center,
             CameraType type, void* ptr);
-    virtual ~Camera() = default;
 
     virtual void updateProjMat() const = 0;
     void invalidate();
@@ -101,6 +102,8 @@ class PerspectiveCamera
   : public Camera
 {
 public:
+    virtual ~PerspectiveCamera() = default;
+
     void setFOVY(double fovy);
     double getFOVY() const;
 
@@ -114,8 +117,6 @@ protected:
     PerspectiveCamera(const glm::dvec3& pos, const glm::dvec3& center,
             double fovy, double aspect_ratio, double near,
             void* ptr);
-
-    virtual ~PerspectiveCamera() = default;
 
 private:
     friend class CameraManager;
@@ -138,6 +139,8 @@ class OrthogonalCamera
   : public Camera
 {
 public:
+    virtual ~OrthogonalCamera() = default;
+
     void setLeft(double left);
     double getLeft() const;
 
@@ -160,8 +163,6 @@ protected:
     OrthogonalCamera(const glm::dvec3& pos, const glm::dvec3& center,
             double left, double right, double bottom, double top,
             double zNear, double zFar, void* ptr);
-
-    virtual ~OrthogonalCamera() = default;
 
 private:
     friend class CameraManager;

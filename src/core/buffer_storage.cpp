@@ -26,7 +26,7 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space)
 }
 }
 
-namespace framework
+namespace core
 {
 
 /****************************************************************************/
@@ -64,6 +64,10 @@ BufferStorage::BufferStorage(const GLenum target, const std::size_t size,
 
     m_freelist.emplace_back(0, 0, size);
 }
+
+/****************************************************************************/
+
+BufferStorage::~BufferStorage() = default;
 
 /****************************************************************************/
 
@@ -187,5 +191,5 @@ const gl::Buffer& BufferStorage::buffer() const
 
 /****************************************************************************/
 
-} // namespace framework
+} // namespace core
 

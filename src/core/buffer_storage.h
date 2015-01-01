@@ -1,17 +1,18 @@
-#ifndef FRAMEWORK_BUFFER_STORAGE_H
-#define FRAMEWORK_BUFFER_STORAGE_H
+#ifndef CORE_BUFFER_STORAGE_H
+#define CORE_BUFFER_STORAGE_H
 
 #include "gl/gl_objects.h"
 #include <cstddef>
 #include <vector>
 
-namespace framework
+namespace core
 {
 
 class BufferStorage
 {
 public:
     BufferStorage(GLenum target, std::size_t size, GLenum flags);
+    ~BufferStorage();
 
     GLintptr alloc(std::size_t size, std::size_t alignment);
     void free(GLintptr offset);
@@ -33,7 +34,7 @@ private:
     void*                   m_persistent_ptr;
 };
 
-} // namespace framework
+} // namespace core
 
-#endif // FRAMEWORK_BUFFER_STORAGE_H
+#endif // CORE_BUFFER_STORAGE_H
 

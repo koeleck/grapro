@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <memory>
 
-#include "framework/buffer_storage.h"
+#include "buffer_storage.h"
 #include "camera.h"
 
 namespace core
@@ -42,7 +42,7 @@ private:
     using CameraVector = std::vector<std::unique_ptr<Camera>>;
     CameraMap                   m_camera_names;
     CameraVector                m_cameras;
-    framework::BufferStorage    m_camera_buffer;
+    BufferStorage               m_camera_buffer;
     Camera*                     m_default_cam;
 };
 
