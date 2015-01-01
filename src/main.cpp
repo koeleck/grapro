@@ -49,7 +49,7 @@ int main(int argc, const char** argv)
 
     try {
         // INIT CORE
-        core::shader_manager = new core::ShaderManager();
+        core::initializeManagers();
 
         GraPro* win = new GraPro(main_window);
 
@@ -71,7 +71,7 @@ int main(int argc, const char** argv)
         }
 
         // TERMINATE
-        delete core::shader_manager;
+        core::terminateManagers();
     } catch (...) {
         LOG_ERROR("Error"); // TODO
     }

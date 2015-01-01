@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cmath>
 #include <utility>
 #include <stdexcept>
 
@@ -498,6 +499,72 @@ GLenum Image::gl_format(const bool normalized) const
     }
 
     return format;
+}
+
+/////////////////////////////////////////////////////////////////////
+
+int Image::maxNumMipMaps() const
+{
+    check_obj(m_obj, "Not a valid image object");
+    auto sz = std::max(width(), height());
+    return 1 + static_cast<int>(std::floor(std::log2(sz)));
+}
+
+/////////////////////////////////////////////////////////////////////
+
+int Image::numChannels() const
+{
+    check_obj(m_obj, "Not a valid image object");
+
+    const auto t = type();
+    switch (t) {
+    case FIT_BITMAP:
+    {
+        const auto ct = color_type();
+        switch (ct) {
+        case FIC_MINISBLACK:
+        case FIC_MINISWHITE:
+            return 1;
+
+        case FIC_RGB:
+            return 3;
+
+        case FIC_RGBALPHA:
+            return 4;
+
+        case FIC_PALETTE:
+        case FIC_CMYK:
+        default:
+            throw std::runtime_error("Unsupported/Unkown format");
+            break;
+        }
+        break;
+    }
+
+    case FIT_INT16:
+    case FIT_UINT16:
+    case FIT_INT32:
+    case FIT_UINT32:
+    case FIT_FLOAT:
+        return 1;
+
+    case FIT_RGB16:
+    case FIT_RGBF:
+        return 3;
+
+    case FIT_RGBA16:
+    case FIT_RGBAF:
+        return 4;
+
+    case FIT_COMPLEX:
+    case FIT_DOUBLE:
+    case FIT_UNKNOWN:
+    default:
+        throw std::runtime_error("Unsupported/Unkown format");
+        break;
+    }
+
+    return 0;
 }
 
 /////////////////////////////////////////////////////////////////////

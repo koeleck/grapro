@@ -3,6 +3,8 @@
 
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
+#include <glm/vec2.hpp>
+#include <glm/integer.hpp>
 
 namespace core
 {
@@ -18,6 +20,7 @@ namespace bindings
 
 // Shader storage buffers:
 constexpr int CAMERA = 0;
+constexpr int TEXTURE = 1;
 
 } // namespace bindings
 
@@ -34,6 +37,13 @@ struct CameraStruct
 
 struct MeshStruct
 {
+};
+
+struct TextureStruct
+{
+    glm::uvec2                      handle;
+    glm::int32_t                    num_channels;
+    glm::int32_t                    padding;
 };
 
 } // namespace shader

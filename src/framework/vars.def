@@ -11,6 +11,11 @@
 DEF_VAR(VERSION_MAJOR, const int, 0)
 DEF_VAR(VERSION_MINOR, const int, 1)
 
+// Textures
+DEF_VAR(tex_mag_filter, std::string, "none")
+DEF_VAR(tex_min_filter, std::string, "none")
+DEF_VAR(tex_max_anisotropy, float, 1.0)
+
 // Window
 DEF_VAR(title, std::string, "grapro")
 DEF_VAR(screen_width, int, 640)

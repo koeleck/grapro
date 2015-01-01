@@ -7,6 +7,7 @@
 
 #include "buffer_storage.h"
 #include "camera.h"
+#include "managers.h"
 
 namespace core
 {

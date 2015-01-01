@@ -5,5 +5,6 @@
 
 // Shader storage buffers
 #define CAMERA_BINDING 0
+#define TEXTURE_BINDING 1
 
 #endif // SHADERS_COMMON_BINDINGS_GLSL

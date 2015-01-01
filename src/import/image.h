@@ -79,6 +79,10 @@ public:
 
     GLenum gl_format(bool normalized = true) const;
 
+    int maxNumMipMaps() const;
+
+    int numChannels() const;
+
 private:
     Image(FIBITMAP* obj) noexcept;
 

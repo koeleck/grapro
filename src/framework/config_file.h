@@ -38,7 +38,7 @@ public:
         const auto* ptr = getValue<T>(*var);
         if (ptr == nullptr)
             return false;
-        v = *ptr;
+        v = static_cast<T>(*ptr);
         return true;
     }
 

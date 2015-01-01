@@ -1,4 +1,6 @@
 #include <sstream>
+#include <algorithm>
+#include <unordered_map>
 
 #include "gl_sys.h"
 #include "log/log.h"
@@ -11,6 +13,8 @@ namespace
 {
 
 bool initialized = false;
+
+std::unordered_map<GLenum, std::string> tokens;
 
 void debug_callback(const GLenum source, const GLenum type, const GLuint id,
         const GLenum severity, const GLsizei /*length*/,
@@ -108,6 +112,18 @@ void debug_callback(const GLenum source, const GLenum type, const GLuint id,
 
     } catch (...) {
     }
+
+}
+
+void populateEnumMap()
+{
+#define ADD_ENUM(A) tokens.emplace(A, #A)
+    ADD_ENUM(GL_LINEAR);
+    ADD_ENUM(GL_NEAREST);
+    ADD_ENUM(GL_NEAREST_MIPMAP_NEAREST);
+    ADD_ENUM(GL_LINEAR_MIPMAP_NEAREST);
+    ADD_ENUM(GL_NEAREST_MIPMAP_LINEAR);
+    ADD_ENUM(GL_LINEAR_MIPMAP_LINEAR);
 }
 
 } // anonymous namespace
@@ -179,8 +195,38 @@ bool initGL()
         LOG_INFO(logtag::OpenGL, msg.str());
     }
 
+    populateEnumMap();
+
     initialized = true;
     return true;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+std::string enumToString(const GLenum e)
+{
+    auto it = tokens.find(e);
+    if (it == tokens.end()) {
+        LOG_ERROR("Didn't find GLenum: ", e);
+        return "FUCK";
+    }
+    return it->second;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+GLenum stringToEnum(const std::string& s)
+{
+    auto it = std::find_if(tokens.begin(), tokens.end(), [&s]
+            (std::unordered_map<GLenum, std::string>::const_reference el) -> bool
+            {
+                return el.second == s;
+            });
+    if (it == tokens.end()) {
+        LOG_ERROR("Can't convert string to GLenum: ", s);
+        return 0;
+    }
+    return it->first;
 }
 
 //////////////////////////////////////////////////////////////////////////

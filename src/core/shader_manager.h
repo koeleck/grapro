@@ -8,44 +8,13 @@
 #include <initializer_list>
 
 #include "gl/opengl.h"
-
+#include "managers.h"
+#include "shader.h"
+#include "program.h"
+#include "program_pipeline.h"
 
 namespace core
 {
-
-/****************************************************************************/
-
-class Program
-{
-public:
-    operator const gl::Program&() const;
-private:
-    friend class ShaderManager;
-    Program(std::size_t idx);
-    std::size_t m_idx;
-};
-
-/****************************************************************************/
-
-class Shader
-{
-public:
-    operator const gl::Shader&() const;
-private:
-    friend class ShaderManager;
-    Shader(std::size_t idx);
-    std::size_t m_idx;
-};
-
-/****************************************************************************/
-
-class ProgramPipeline
-{
-public:
-    operator const gl::ProgramPipeline&() const;
-    ProgramPipeline(std::size_t idx);
-    std::size_t m_idx;
-};
 
 /****************************************************************************/
 
@@ -115,8 +84,6 @@ private:
     std::time_t                                     m_timestamp;
 
 };
-
-extern ShaderManager* shader_manager;
 
 } // namespace core
 
