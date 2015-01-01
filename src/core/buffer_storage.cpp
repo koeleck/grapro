@@ -191,5 +191,24 @@ const gl::Buffer& BufferStorage::buffer() const
 
 /****************************************************************************/
 
+void* BufferStorage::offsetToPointer(const GLintptr offset) const
+{
+    if (m_persistent_ptr == nullptr)
+        return nullptr;
+    const auto tmp = static_cast<char*>(m_persistent_ptr);
+    return static_cast<void*>(tmp + offset);
+}
+
+/****************************************************************************/
+
+GLintptr BufferStorage::pointerToOffset(const void* const ptr) const
+{
+    if (m_persistent_ptr == nullptr)
+        return reinterpret_cast<GLintptr>(ptr);
+    return static_cast<const char*>(ptr) - static_cast<const char*>(m_persistent_ptr);
+}
+
+/****************************************************************************/
+
 } // namespace core
 

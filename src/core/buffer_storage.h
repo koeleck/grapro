@@ -22,6 +22,9 @@ public:
     bool hasPersistentMapping() const;
     void* baseAddress() const;
 
+    void* offsetToPointer(GLintptr offset) const;
+    GLintptr pointerToOffset(const void* ptr) const;
+
     const gl::Buffer& buffer() const;
 
 private:

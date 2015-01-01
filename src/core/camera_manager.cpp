@@ -35,7 +35,7 @@ PerspectiveCamera* CameraManager::createPerspectiveCam(const std::string& name,
     }
 
     const auto offset = m_camera_buffer.alloc(sizeof(shader::CameraStruct), 16);
-    void* const ptr = reinterpret_cast<char*>(m_camera_buffer.baseAddress()) + offset;
+    void* const ptr = m_camera_buffer.offsetToPointer(offset);
 
     m_cameras.emplace_back(new PerspectiveCamera(pos, center, fovy, aspect_ratio, near, ptr));
     m_camera_names.emplace(name, m_cameras.size());
@@ -61,7 +61,7 @@ OrthogonalCamera* CameraManager::createOrthogonalCam(const std::string& name,
     }
 
     const auto offset = m_camera_buffer.alloc(sizeof(shader::CameraStruct), 16);
-    void* const ptr = reinterpret_cast<char*>(m_camera_buffer.baseAddress()) + offset;
+    void* const ptr = m_camera_buffer.offsetToPointer(offset);
 
     m_cameras.emplace_back(new OrthogonalCamera(pos, center, left, right, bottom, top, zNear, zFar, ptr));
     m_camera_names.emplace(name, m_cameras.size());
@@ -97,8 +97,7 @@ void CameraManager::makeDefault(const Camera* cam)
     if (m_default_cam != nullptr) {
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, bindings::CAMERA,
                 m_camera_buffer.buffer(),
-                reinterpret_cast<const char*>(m_default_cam->m_data) -
-                        reinterpret_cast<const char*>(m_camera_buffer.baseAddress()),
+                m_camera_buffer.pointerToOffset(cam->m_data),
                 sizeof(shader::CameraStruct));
     }
 }
