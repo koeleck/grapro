@@ -37,6 +37,11 @@ struct CameraStruct
 
 struct MeshStruct
 {
+    glm::uint                       first;
+    glm::uint                       stride;
+
+    // (0) normal (1) texcoord (2) tangent (3) vertex color
+    glm::bvec4                      components;
 };
 
 struct TextureStruct
