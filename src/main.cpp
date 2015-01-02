@@ -62,6 +62,10 @@ int main(int argc, const char** argv)
             time = time_cur;
 
             win->update(delta_t);
+
+            // upload data
+            glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
+
             win->render();
 
             glfwSwapBuffers(*win);

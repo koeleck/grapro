@@ -42,25 +42,16 @@ struct BufferStorage::Segment
 
 /****************************************************************************/
 
-BufferStorage::BufferStorage(const GLenum target, const std::size_t size,
-        const GLbitfield flags)
+BufferStorage::BufferStorage(const GLenum target, const std::size_t size)
   : m_size{size},
     m_persistent_ptr{nullptr}
 {
     glBindBuffer(target, m_buffer);
 
-    glBufferStorage(target, size, nullptr, flags);
+    glBufferStorage(target, size, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
 
-    if (flags & GL_MAP_PERSISTENT_BIT) {
-        GLbitfield map_flags = GL_MAP_PERSISTENT_BIT;
-        if (flags & GL_MAP_READ_BIT)
-            map_flags |= GL_MAP_READ_BIT;
-        if (flags & GL_MAP_WRITE_BIT)
-            map_flags |= GL_MAP_WRITE_BIT;
-        if (flags & GL_MAP_COHERENT_BIT)
-            map_flags |= GL_MAP_COHERENT_BIT;
-        m_persistent_ptr = glMapBufferRange(target, 0, size, map_flags);
-    }
+    m_persistent_ptr = glMapBufferRange(target, 0, size,
+            GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 
     m_freelist.emplace_back(0, 0, size);
 }
@@ -161,13 +152,6 @@ void BufferStorage::free(GLintptr offset)
 
 /****************************************************************************/
 
-bool BufferStorage::hasPersistentMapping() const
-{
-    return m_persistent_ptr != nullptr;
-}
-
-/****************************************************************************/
-
 void* BufferStorage::baseAddress() const
 {
     return m_persistent_ptr;
@@ -193,8 +177,6 @@ const gl::Buffer& BufferStorage::buffer() const
 
 void* BufferStorage::offsetToPointer(const GLintptr offset) const
 {
-    if (m_persistent_ptr == nullptr)
-        return nullptr;
     const auto tmp = static_cast<char*>(m_persistent_ptr);
     return static_cast<void*>(tmp + offset);
 }
@@ -203,8 +185,6 @@ void* BufferStorage::offsetToPointer(const GLintptr offset) const
 
 GLintptr BufferStorage::pointerToOffset(const void* const ptr) const
 {
-    if (m_persistent_ptr == nullptr)
-        return reinterpret_cast<GLintptr>(ptr);
     return static_cast<const char*>(ptr) - static_cast<const char*>(m_persistent_ptr);
 }
 

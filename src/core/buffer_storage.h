@@ -11,7 +11,7 @@ namespace core
 class BufferStorage
 {
 public:
-    BufferStorage(GLenum target, std::size_t size, GLenum flags);
+    BufferStorage(GLenum target, std::size_t size);
     ~BufferStorage();
 
     GLintptr alloc(std::size_t size, std::size_t alignment);
@@ -19,7 +19,6 @@ public:
 
     void clear();
 
-    bool hasPersistentMapping() const;
     void* baseAddress() const;
 
     void* offsetToPointer(GLintptr offset) const;

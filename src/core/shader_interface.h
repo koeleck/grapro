@@ -1,6 +1,7 @@
 #ifndef CORE_OPENGL_INTERFACE_H
 #define CORE_OPENGL_INTERFACE_H
 
+#include "gl/gl_sys.h"
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 #include <glm/vec2.hpp>
@@ -19,8 +20,9 @@ namespace bindings
 {
 
 // Shader storage buffers:
-constexpr int CAMERA = 0;
-constexpr int TEXTURE = 1;
+constexpr int CAMERA    = 0;
+constexpr int TEXTURE   = 1;
+constexpr int MESH      = 2;
 
 } // namespace bindings
 
@@ -37,18 +39,18 @@ struct CameraStruct
 
 struct MeshStruct
 {
-    glm::uint                       first;
-    glm::uint                       stride;
+    GLuint                          first;
+    GLuint                          stride;
 
     // (0) normal (1) texcoord (2) tangent (3) vertex color
-    glm::bvec4                      components;
+    GLboolean                       components[4];
 };
 
 struct TextureStruct
 {
-    glm::uvec2                      handle;
-    glm::int32_t                    num_channels;
-    glm::int32_t                    padding;
+    GLuint64                        handle;
+    GLuint                          num_channels;
+    GLuint                          padding;
 };
 
 } // namespace shader

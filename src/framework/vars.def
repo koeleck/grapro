@@ -11,6 +11,9 @@
 DEF_VAR(VERSION_MAJOR, const int, 0)
 DEF_VAR(VERSION_MINOR, const int, 1)
 
+// Meshes
+DEF_VAR(vertex_buffer_size, int, 268435456)
+
 // Textures
 DEF_VAR(tex_mag_filter, std::string, "GL_NEAREST")
 DEF_VAR(tex_min_filter, std::string, "GL_NEAREST")

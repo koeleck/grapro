@@ -1,5 +1,3 @@
-#include <cstring>
-
 #include "texture_manager.h"
 #include "shader_interface.h"
 #include "log/log.h"
@@ -71,14 +69,13 @@ void TextureManager::addTexture(const std::string& name, gl::Texture&& texture,
 
     GLuint64 handle = glGetTextureHandleARB(texture);
     glMakeTextureHandleResidentARB(handle);
+
     GLintptr offset = m_texture_buffer.alloc();
     GLintptr index = offset / static_cast<GLintptr>(sizeof(shader::TextureStruct));
 
-    shader::TextureStruct dta;
-    dta.handle = *reinterpret_cast<glm::uvec2*>(&handle);
-    dta.num_channels = num_channels;
-
-    std::memcpy(m_texture_buffer.offsetToPointer(offset), &dta, sizeof(shader::TextureStruct));
+    auto* tex_info = reinterpret_cast<shader::TextureStruct*>(m_texture_buffer.offsetToPointer(offset));
+    tex_info->handle = handle;
+    tex_info->num_channels = static_cast<unsigned int>(num_channels);
 
     m_textures.emplace(name, std::unique_ptr<Texture>(new Texture(std::move(texture), handle, index)));
 }
