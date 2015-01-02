@@ -23,6 +23,7 @@ namespace bindings
 constexpr int CAMERA    = 0;
 constexpr int TEXTURE   = 1;
 constexpr int MESH      = 2;
+constexpr int MATERIAL  = 3;
 
 } // namespace bindings
 
@@ -51,6 +52,23 @@ struct TextureStruct
     GLuint64                        handle;
     GLuint                          num_channels;
     GLuint                          padding;
+};
+
+struct MaterialStruct
+{
+    GLuint                          diffuseTex;
+    GLuint                          specularTex;
+    GLuint                          glossyTex;
+    GLuint                          normalTex;
+    GLuint                          emissiveTex;
+    GLuint                          alphaTex;
+    GLfloat                         diffuseColor[3];
+    GLfloat                         specularColor[3];
+    GLfloat                         ambientColor[3];
+    GLfloat                         emissiveColor[3];
+    GLfloat                         transparentColor[3];
+    GLfloat                         glossiness;
+    GLfloat                         opacity;
 };
 
 } // namespace shader

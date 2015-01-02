@@ -10,7 +10,7 @@ namespace core
 
 /****************************************************************************/
 
-Texture::Texture(gl::Texture&& texture, const GLuint64 handle, const GLintptr index)
+Texture::Texture(gl::Texture&& texture, const GLuint64 handle, const GLuint index)
   : m_texture{std::move(texture)},
     m_handle{handle},
     m_index{index}
@@ -39,7 +39,7 @@ GLuint64 Texture::getTextureHandle() const
 
 /****************************************************************************/
 
-GLintptr Texture::getTextureIndex() const
+GLuint Texture::getTextureIndex() const
 {
     return m_index;
 }

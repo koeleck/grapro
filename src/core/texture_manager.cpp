@@ -71,7 +71,7 @@ void TextureManager::addTexture(const std::string& name, gl::Texture&& texture,
     glMakeTextureHandleResidentARB(handle);
 
     GLintptr offset = m_texture_buffer.alloc();
-    GLintptr index = offset / static_cast<GLintptr>(sizeof(shader::TextureStruct));
+    GLuint index = static_cast<GLuint>(offset / static_cast<GLintptr>(sizeof(shader::TextureStruct)));
 
     auto* tex_info = reinterpret_cast<shader::TextureStruct*>(m_texture_buffer.offsetToPointer(offset));
     tex_info->handle = handle;

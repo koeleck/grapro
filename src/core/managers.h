@@ -7,12 +7,14 @@ namespace core
 class ShaderManager;
 class CameraManager;
 class TextureManager;
+class MaterialManager;
 
 namespace res
 {
 extern ShaderManager* shaders;
 extern CameraManager* cameras;
 extern TextureManager* textures;
+extern MaterialManager* materials;
 } // namespace res
 
 
