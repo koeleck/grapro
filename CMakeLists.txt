@@ -31,6 +31,7 @@ find_package(PkgConfig REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 pkg_search_module(GLFW REQUIRED glfw3)
+set(GLFW_LIBRARIES "${GLFW_LIBRARIES} -lX11 -lXrandr -lXi -lXxf86vm")
 find_package(Threads)
 
 add_definitions( -DGLEW_NO_GLU ) # we don't use GLU
