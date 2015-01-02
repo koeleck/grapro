@@ -5,9 +5,10 @@
 #include <unordered_map>
 #include <memory>
 
-#include "buffer_storage.h"
+#include "buffer_storage_pool.h"
 #include "camera.h"
 #include "managers.h"
+#include "shader_interface.h"
 
 namespace core
 {
@@ -41,9 +42,10 @@ public:
 private:
     using CameraMap = std::unordered_map<std::string, std::size_t>;
     using CameraVector = std::vector<std::unique_ptr<Camera>>;
+    using Pool = BufferStoragePool<sizeof(shader::CameraStruct)>;
     CameraMap                   m_camera_names;
     CameraVector                m_cameras;
-    BufferStorage               m_camera_buffer;
+    Pool                        m_camera_buffer;
     Camera*                     m_default_cam;
 };
 

@@ -7,9 +7,10 @@
 #include <vector>
 
 #include "managers.h"
-#include "buffer_storage.h"
+#include "buffer_storage_pool.h"
 #include "gl/gl_objects.h"
 #include "texture.h"
+#include "shader_interface.h"
 
 namespace import
 {
@@ -26,7 +27,7 @@ public:
     ~TextureManager();
 
     void addTexture(const std::string& name, const import::Image& image);
-    void addTexture(const std::string& name, gl::Texture&& texture);
+    void addTexture(const std::string& name, gl::Texture&& texture, int num_channels);
 
     Texture* getTexture(const std::string& name);
     const Texture* getTexture(const std::string& name) const;
@@ -35,9 +36,10 @@ private:
     friend class Texture;
 
     using TextureMap = std::unordered_map<std::string, std::unique_ptr<Texture>>;
+    using TexturePool = BufferStoragePool<sizeof(shader::TextureStruct)>;
 
     TextureMap                              m_textures;
-    BufferStorage                           m_texture_buffer;
+    TexturePool                             m_texture_buffer;
 };
 
 } // namespace core

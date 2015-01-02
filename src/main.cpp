@@ -39,7 +39,6 @@ int main(int argc, const char** argv)
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, vars.gl_debug_context ? GL_TRUE : GL_FALSE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    LOG_INFO(vars.gl_debug_context);
     GLFWwindow* main_window = glfwCreateWindow(vars.screen_width, vars.screen_height,
             vars.title.c_str(), nullptr, nullptr);
     if (!main_window)

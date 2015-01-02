@@ -18,13 +18,11 @@ public:
 
 private:
     friend class TextureManager;
-    Texture(gl::Texture&&);
+    Texture(gl::Texture&&, GLuint64, GLintptr);
 
-    void makeResident() const;
-
-    gl::Texture         m_texture;
-    mutable GLuint64    m_handle;
-    mutable GLintptr    m_index;
+    gl::Texture m_texture;
+    GLuint64    m_handle;
+    GLintptr    m_index;
 };
 
 } // namespace core

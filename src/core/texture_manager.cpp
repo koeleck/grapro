@@ -14,9 +14,11 @@ namespace core
 static constexpr int MAX_NUM_TEXTURES = 1024;
 
 TextureManager::TextureManager()
-  : m_texture_buffer(GL_SHADER_STORAGE_BUFFER, MAX_NUM_TEXTURES * sizeof(shader::TextureStruct),
-          GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT)
+  : m_texture_buffer(GL_SHADER_STORAGE_BUFFER, MAX_NUM_TEXTURES)
 {
+    // reserve the first texture as sort of nullptr
+    auto offset = m_texture_buffer.alloc();
+    assert(offset == 0);
 }
 
 /****************************************************************************/
@@ -53,12 +55,13 @@ void TextureManager::addTexture(const std::string& name, const import::Image& im
     glGenerateTextureMipmapEXT(tex, GL_TEXTURE_2D);
 
 
-    addTexture(name, std::move(tex));
+    addTexture(name, std::move(tex), numChannels);
 }
 
 /****************************************************************************/
 
-void TextureManager::addTexture(const std::string& name, gl::Texture&& texture)
+void TextureManager::addTexture(const std::string& name, gl::Texture&& texture,
+        const int num_channels)
 {
     auto it = m_textures.find(name);
     if (it != m_textures.end()) {
@@ -66,7 +69,18 @@ void TextureManager::addTexture(const std::string& name, gl::Texture&& texture)
         abort();
     }
 
-    m_textures.emplace(name, std::unique_ptr<Texture>(new Texture(std::move(texture))));
+    GLuint64 handle = glGetTextureHandleARB(texture);
+    glMakeTextureHandleResidentARB(handle);
+    GLintptr offset = m_texture_buffer.alloc();
+    GLintptr index = offset / static_cast<GLintptr>(sizeof(shader::TextureStruct));
+
+    shader::TextureStruct dta;
+    dta.handle = *reinterpret_cast<glm::uvec2*>(&handle);
+    dta.num_channels = num_channels;
+
+    std::memcpy(m_texture_buffer.offsetToPointer(offset), &dta, sizeof(shader::TextureStruct));
+
+    m_textures.emplace(name, std::unique_ptr<Texture>(new Texture(std::move(texture), handle, index)));
 }
 
 /****************************************************************************/

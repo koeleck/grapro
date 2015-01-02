@@ -12,8 +12,7 @@ namespace core
 static constexpr int MAX_CAMERAS = 1024;
 
 CameraManager::CameraManager()
-  : m_camera_buffer(GL_SHADER_STORAGE_BUFFER, MAX_CAMERAS * sizeof(shader::CameraStruct),
-          GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT),
+  : m_camera_buffer(GL_SHADER_STORAGE_BUFFER, MAX_CAMERAS),
     m_default_cam{nullptr}
 {
 }
@@ -34,7 +33,7 @@ PerspectiveCamera* CameraManager::createPerspectiveCam(const std::string& name,
         abort();
     }
 
-    const auto offset = m_camera_buffer.alloc(sizeof(shader::CameraStruct), 16);
+    const auto offset = m_camera_buffer.alloc();
     void* const ptr = m_camera_buffer.offsetToPointer(offset);
 
     m_cameras.emplace_back(new PerspectiveCamera(pos, center, fovy, aspect_ratio, near, ptr));
@@ -60,7 +59,7 @@ OrthogonalCamera* CameraManager::createOrthogonalCam(const std::string& name,
         abort();
     }
 
-    const auto offset = m_camera_buffer.alloc(sizeof(shader::CameraStruct), 16);
+    const auto offset = m_camera_buffer.alloc();
     void* const ptr = m_camera_buffer.offsetToPointer(offset);
 
     m_cameras.emplace_back(new OrthogonalCamera(pos, center, left, right, bottom, top, zNear, zFar, ptr));
