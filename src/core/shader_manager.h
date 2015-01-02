@@ -27,14 +27,14 @@ public:
     ShaderManager(const ShaderManager&) = delete;
     ShaderManager& operator=(const ShaderManager&) = delete;
 
-    void registerShader(const std::string& name, const std::string& filename,
+    Shader registerShader(const std::string& name, const std::string& filename,
             GLenum shader_type, std::string defines = "");
 
-    void registerProgram(const std::string& name,
+    Program registerProgram(const std::string& name,
             std::initializer_list<std::string> shaders,
             bool is_separable = false);
 
-    void registerProgramPipeline(const std::string& name,
+    ProgramPipeline registerProgramPipeline(const std::string& name,
             std::initializer_list<std::string> programs);
 
     Shader getShader(const std::string& name) const;

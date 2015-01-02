@@ -82,7 +82,7 @@ ShaderManager::~ShaderManager() = default;
 
 /****************************************************************************/
 
-void ShaderManager::registerShader(const std::string& name, const std::string& filename,
+Shader ShaderManager::registerShader(const std::string& name, const std::string& filename,
         const GLenum shader_type, std::string defines)
 {
     if (defines.empty() == false)
@@ -120,7 +120,7 @@ void ShaderManager::registerShader(const std::string& name, const std::string& f
             LOG_ERROR("Redefinition of already existing shader '", name,"'");
             abort();
         }
-        return;
+        return Shader(it->second);
     }
 
     // check if the same shader (with different name) already exists
@@ -143,12 +143,13 @@ void ShaderManager::registerShader(const std::string& name, const std::string& f
         info.type = shader_type;
         info.defines = std::move(defines);
     }
-    m_shader_names.emplace(name, idx);
+    auto res = m_shader_names.emplace(name, idx);
+    return Shader(res.first->second);
 }
 
 /****************************************************************************/
 
-void ShaderManager::registerProgram(const std::string& name,
+Program ShaderManager::registerProgram(const std::string& name,
         std::initializer_list<std::string> shaders,
         const bool is_separable)
 {
@@ -165,7 +166,7 @@ void ShaderManager::registerProgram(const std::string& name,
             LOG_ERROR("Redefinition of already existing program '", name,"'");
             abort();
         }
-        return;
+        return Program(it->second);
     }
 
     it = m_pipeline_names.find(name);
@@ -204,12 +205,13 @@ void ShaderManager::registerProgram(const std::string& name,
             link_program(info, true);
     }
 
-    m_program_names.emplace(name, idx);
+    auto res = m_program_names.emplace(name, idx);
+    return Program(res.first->second);
 }
 
 /****************************************************************************/
 
-void ShaderManager::registerProgramPipeline(const std::string& name,
+ProgramPipeline ShaderManager::registerProgramPipeline(const std::string& name,
         std::initializer_list<std::string> program_names)
 {
     std::vector<std::string> programs(program_names);
@@ -225,7 +227,7 @@ void ShaderManager::registerProgramPipeline(const std::string& name,
             LOG_ERROR("Redefinition of already existing program pipeline '", name,"'");
             abort();
         }
-        return;
+        return ProgramPipeline(it->second);
     }
 
     it = m_program_names.find(name);
@@ -259,7 +261,8 @@ void ShaderManager::registerProgramPipeline(const std::string& name,
         info.programs = std::move(programs);
     }
 
-    m_program_names.emplace(name, idx);
+    auto res = m_program_names.emplace(name, idx);
+    return ProgramPipeline(res.first->second);
 }
 
 /****************************************************************************/

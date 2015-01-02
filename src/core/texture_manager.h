@@ -26,8 +26,8 @@ public:
     TextureManager();
     ~TextureManager();
 
-    void addTexture(const std::string& name, const import::Image& image);
-    void addTexture(const std::string& name, gl::Texture&& texture, int num_channels);
+    Texture* addTexture(const std::string& name, const import::Image& image);
+    Texture* addTexture(const std::string& name, gl::Texture&& texture, int num_channels);
 
     Texture* getTexture(const std::string& name);
     const Texture* getTexture(const std::string& name) const;

@@ -25,7 +25,7 @@ TextureManager::~TextureManager() = default;
 
 /****************************************************************************/
 
-void TextureManager::addTexture(const std::string& name, const import::Image& image)
+Texture* TextureManager::addTexture(const std::string& name, const import::Image& image)
 {
     const int numChannels = image.numChannels();
     GLenum internal_format = GL_RGBA8;
@@ -53,18 +53,17 @@ void TextureManager::addTexture(const std::string& name, const import::Image& im
     glGenerateTextureMipmapEXT(tex, GL_TEXTURE_2D);
 
 
-    addTexture(name, std::move(tex), numChannels);
+    return addTexture(name, std::move(tex), numChannels);
 }
 
 /****************************************************************************/
 
-void TextureManager::addTexture(const std::string& name, gl::Texture&& texture,
+Texture* TextureManager::addTexture(const std::string& name, gl::Texture&& texture,
         const int num_channels)
 {
     auto it = m_textures.find(name);
     if (it != m_textures.end()) {
-        LOG_ERROR("Texture already exists: ", name);
-        abort();
+        LOG_WARNING("Overwriting already existing texture: ", name);
     }
 
     GLuint64 handle = glGetTextureHandleARB(texture);
@@ -77,7 +76,8 @@ void TextureManager::addTexture(const std::string& name, gl::Texture&& texture,
     tex_info->handle = handle;
     tex_info->num_channels = static_cast<unsigned int>(num_channels);
 
-    m_textures.emplace(name, std::unique_ptr<Texture>(new Texture(std::move(texture), handle, index)));
+    auto res = m_textures.emplace(name, std::unique_ptr<Texture>(new Texture(std::move(texture), handle, index)));
+    return res.first->second.get();
 }
 
 /****************************************************************************/
@@ -85,8 +85,10 @@ void TextureManager::addTexture(const std::string& name, gl::Texture&& texture,
 Texture* TextureManager::getTexture(const std::string& name)
 {
     auto it = m_textures.find(name);
-    if (it == m_textures.end())
+    if (it == m_textures.end()) {
+        LOG_ERROR("Unkown texture: ", name);
         return nullptr;
+    }
     return it->second.get();
 }
 
@@ -95,8 +97,10 @@ Texture* TextureManager::getTexture(const std::string& name)
 const Texture* TextureManager::getTexture(const std::string& name) const
 {
     auto it = m_textures.find(name);
-    if (it == m_textures.end())
+    if (it == m_textures.end()) {
+        LOG_ERROR("Unkown texture: ", name);
         return nullptr;
+    }
     return it->second.get();
 }
 

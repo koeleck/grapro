@@ -24,7 +24,7 @@ public:
     MeshManager();
     ~MeshManager();
 
-    void addMesh(const import::Mesh* mesh);
+    Mesh* addMesh(const import::Mesh* mesh);
     Mesh* getMesh(const char* name);
     const Mesh* getMesh(const char* name) const;
 

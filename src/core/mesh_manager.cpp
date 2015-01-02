@@ -21,13 +21,14 @@ MeshManager::~MeshManager() = default;
 
 /****************************************************************************/
 
-void MeshManager::addMesh(const import::Mesh* mesh)
+Mesh* MeshManager::addMesh(const import::Mesh* mesh)
 {
     std::string name = mesh->name;
 
-    if (m_meshes.find(name) != m_meshes.end()) {
-        LOG_ERROR("Mesh already added: ", name);
-        abort();
+    auto it = m_meshes.find(name);
+    if (it != m_meshes.end()) {
+        LOG_INFO("Mesh already added: ", name);
+        return it->second.get();
     }
 
     std::size_t per_vertex_size = 3 * sizeof(float);
@@ -113,11 +114,12 @@ void MeshManager::addMesh(const import::Mesh* mesh)
 
 
     auto mesh_index = mesh_offset / static_cast<GLintptr>(sizeof(shader::MeshStruct));
-    m_meshes.emplace(std::move(name),
+    auto res = m_meshes.emplace(std::move(name),
             std::unique_ptr<Mesh>(
                 new Mesh(GL_TRIANGLES, index_ptr,
                 static_cast<GLsizei>(mesh->num_indices), index_type,
                 mesh_index, offset)));
+    return res.first->second.get();
 }
 
 /****************************************************************************/
