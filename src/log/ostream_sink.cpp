@@ -37,7 +37,7 @@ std::string OStreamSink::format(const Entry& e)
 ///////////////////////////////////////////////////////////////////////////
 
 OStreamSink::OStreamSink(std::ostream& out)
-  : m_out{out}
+  : m_out(out)
 {
 }
 
