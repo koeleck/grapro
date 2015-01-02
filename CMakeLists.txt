@@ -40,8 +40,7 @@ find_package(Boost REQUIRED COMPONENTS system filesystem regex program_options)
 add_definitions( -DBOOST_FILESYSTEM_NO_DEPRECATED -DBOOST_FILESYSTEM_VERSION=3)
 
 # glm
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem contrib/glm")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -isystem contrib/glm")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem ${PROJECT_SOURCE_DIR}/contrib/glm")
 add_definitions( -DGLM_FORCE_RADIANS )
 
 #
