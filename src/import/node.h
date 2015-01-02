@@ -3,13 +3,14 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/mat4x4.hpp>
 
 namespace import
 {
 
 struct Node
 {
-    static constexpr int VERSION = 1;
+    static constexpr int VERSION = 2;
 
     void makePointersRelative();
     void makePointersAbsolute();
@@ -18,6 +19,7 @@ struct Node
     glm::vec3       position;
     glm::vec3       scale;
     glm::quat       rotation;
+    glm::mat4       transformation;
     std::uint32_t   mesh_index;
 };
 

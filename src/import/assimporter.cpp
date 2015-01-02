@@ -685,6 +685,8 @@ char* dumpNode(char* ptr, const std::pair<std::string, AssimpNode>& node)
     const aiNode* ainode = node.second.ptr;
     glm::mat4 transformation = to_glm(ainode->mTransformation);
 
+    my_node->transformation = transformation;
+
     my_node->position = glm::vec3(transformation[3]);
 
     glm::mat3 rot{glm::uninitialize};
@@ -700,6 +702,11 @@ char* dumpNode(char* ptr, const std::pair<std::string, AssimpNode>& node)
     axis = glm::vec3(transformation[2]);
     my_node->scale.z = glm::length(axis);
     rot[2] = axis / my_node->scale.z;
+
+    if (glm::dot(rot[0], glm::cross(rot[1], rot[2])) < .0f) {
+        my_node->scale.x *= -1.f;
+        rot[0] = -rot[0];
+    }
 
     my_node->rotation = glm::quat_cast(rot);
 
