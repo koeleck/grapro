@@ -4,15 +4,22 @@
 #include <vector>
 #include <glm/vec3.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include "gl/gl_sys.h"
 
 namespace core
 {
 
+// Forward declarations:
+namespace shader
+{
+struct InstanceStruct;
+} // namespace shader
+class Mesh;
+class Material;
+
 class Instance
 {
 public:
-    Instance(Instance* parent);
-
     virtual ~Instance() = default;
 
     const glm::mat4& getTransformationMatrix() const;
@@ -46,8 +53,19 @@ public:
 
     void update();
 
+    GLuint getIndex() const;
+
+    const Mesh* getMesh() const;
+    void setMesh(const Mesh* mesh);
+
+    const Material* getMaterial() const;
+    void setMaterial(const Material* material);
 
 protected:
+    friend class InstanceManager;
+    Instance(const Mesh* mesh, const Material* material,
+            GLuint index, GLvoid* data);
+
     virtual void update_impl();
 
     glm::mat4       m_transformation;
@@ -60,6 +78,10 @@ private:
     glm::vec3       m_fixedYawAxis;
     bool            m_hasFixedYawAxis;
     bool            m_modified;
+    const Mesh*     m_mesh;
+    const Material* m_material;
+    GLuint          m_index;
+    shader::InstanceStruct*     m_data;
 };
 
 } // namespace core

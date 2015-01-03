@@ -113,7 +113,7 @@ Mesh* MeshManager::addMesh(const import::Mesh* mesh)
     mesh_info->components[3] = mesh->hasVertexColors();
 
 
-    auto mesh_index = mesh_offset / static_cast<GLintptr>(sizeof(shader::MeshStruct));
+    auto mesh_index = static_cast<GLuint>(mesh_offset / static_cast<GLintptr>(sizeof(shader::MeshStruct)));
     auto res = m_meshes.emplace(std::move(name),
             std::unique_ptr<Mesh>(
                 new Mesh(GL_TRIANGLES, index_ptr,

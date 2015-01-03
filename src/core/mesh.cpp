@@ -6,7 +6,7 @@ namespace core
 /****************************************************************************/
 
 Mesh::Mesh(const GLenum mode, GLvoid* const indices, const GLsizei count,
-        const GLenum type, const GLintptr index, const GLintptr offset)
+        const GLenum type, const GLuint index, const GLintptr offset)
   : m_mode{mode},
     m_indices{indices},
     m_count{count},
@@ -14,6 +14,13 @@ Mesh::Mesh(const GLenum mode, GLvoid* const indices, const GLsizei count,
     m_index{index},
     m_offset{offset}
 {
+}
+
+/****************************************************************************/
+
+GLuint Mesh::getIndex() const
+{
+    return m_index;
 }
 
 /****************************************************************************/

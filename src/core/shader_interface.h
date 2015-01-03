@@ -71,6 +71,14 @@ struct MaterialStruct
     GLfloat                         opacity;
 };
 
+struct InstanceStruct
+{
+    glm::mat4                       modelMatrix;
+    GLuint                          meshID;
+    GLuint                          materialID;
+    GLuint                          _padding[2];
+};
+
 } // namespace shader
 
 } // namespace core

@@ -1,18 +1,26 @@
 #include "instance.h"
+#include "shader_interface.h"
+#include "mesh.h"
+#include "material.h"
 
 namespace core
 {
 
 /****************************************************************************/
 
-Instance::Instance(Instance* parent)
+Instance::Instance(const Mesh* mesh, const Material* material,
+            GLuint index, GLvoid* data)
   : m_transformation{},
     m_position{.0f},
     m_scale{1.f},
     m_orientation{},
     m_fixedYawAxis{false},
     m_hasFixedYawAxis{},
-    m_modified{true}
+    m_modified{true},
+    m_mesh{mesh},
+    m_material{material},
+    m_index{index},
+    m_data{static_cast<shader::InstanceStruct*>(data)}
 {
     setModified();
 }
@@ -189,6 +197,9 @@ void Instance::update()
 
         update_impl();
 
+        m_data->modelMatrix = m_transformation;
+        m_data->meshID = m_mesh->getIndex();
+        m_data->materialID = m_material->getIndex();
         m_modified = false;
     }
 }
@@ -197,6 +208,43 @@ void Instance::update()
 
 void Instance::update_impl()
 {
+}
+
+/****************************************************************************/
+
+GLuint Instance::getIndex() const
+{
+    return m_index;
+}
+
+/****************************************************************************/
+
+const Mesh* Instance::getMesh() const
+{
+    return m_mesh;
+}
+
+/****************************************************************************/
+
+void Instance::setMesh(const Mesh* mesh)
+{
+    m_mesh = mesh;
+    setModified();
+}
+
+/****************************************************************************/
+
+const Material* Instance::getMaterial() const
+{
+    return m_material;
+}
+
+/****************************************************************************/
+
+void Instance::setMaterial(const Material* material)
+{
+    m_material = material;
+    setModified();
 }
 
 /****************************************************************************/
