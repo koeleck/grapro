@@ -11,6 +11,8 @@
 DEF_VAR(VERSION_MAJOR, const int, 0)
 DEF_VAR(VERSION_MINOR, const int, 1)
 
+DEF_VAR(scene_files, std::string, "")
+
 // Meshes
 DEF_VAR(vertex_buffer_size, int, 268435456)
 

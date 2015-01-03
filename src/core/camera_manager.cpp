@@ -39,6 +39,10 @@ PerspectiveCamera* CameraManager::createPerspectiveCam(const std::string& name,
     m_cameras.emplace_back(new PerspectiveCamera(pos, center, fovy, aspect_ratio, near, ptr));
     m_camera_names.emplace(name, m_cameras.size());
 
+    if (m_cameras.size() == 1) {
+        makeDefault(m_cameras.back().get());
+    }
+
     return reinterpret_cast<PerspectiveCamera*>(m_cameras.back().get());
 }
 
@@ -64,6 +68,10 @@ OrthogonalCamera* CameraManager::createOrthogonalCam(const std::string& name,
 
     m_cameras.emplace_back(new OrthogonalCamera(pos, center, left, right, bottom, top, zNear, zFar, ptr));
     m_camera_names.emplace(name, m_cameras.size());
+
+    if (m_cameras.size() == 1) {
+        makeDefault(m_cameras.back().get());
+    }
 
     return reinterpret_cast<OrthogonalCamera*>(m_cameras.back().get());
 }

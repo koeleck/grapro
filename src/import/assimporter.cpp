@@ -759,7 +759,9 @@ std::string getName(const aiMesh* mesh)
 
 std::string getName(const aiNode* node)
 {
-    return getName(node->mName, DEFAULT_NODE_NAME, node_counter);
+    //return getName(node->mName, DEFAULT_NODE_NAME, node_counter);
+    aiString tmp;
+    return getName(tmp, DEFAULT_NODE_NAME, node_counter);
 }
 
 /***************************************************************************/

@@ -152,6 +152,19 @@ bool initGL()
     // check
     //
     // ...
+    if (!glewIsSupported("GL_ARB_bindless_texture")) {
+        LOG_ERROR(logtag::OpenGL, "GL_ARB_bindless_texture not available");
+        abort();
+    }
+    if (!glewIsSupported("GL_EXT_direct_state_access")) {
+        LOG_ERROR(logtag::OpenGL, "GL_EXT_direct_state_access not available");
+        abort();
+    }
+    // This is broken with current glew (version 1.11.0)
+    //if (!glewIsSupported("GL_EXT_texture_filter_anisotropic")) {
+    //    LOG_ERROR(logtag::OpenGL, "GL_EXT_texture_filter_anisotropic not available");
+    //    abort();
+    //}
 
     if (vars.gl_debug_context) {
         if (!glewIsSupported("GL_ARB_debug_output")) {

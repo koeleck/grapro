@@ -24,14 +24,22 @@ MaterialManager::~MaterialManager() = default;
 
 Material* MaterialManager::addMaterial(const std::string& name,
         const import::Material* material,
-        const import::Texture** textures)
+        const import::Texture* const* textures)
 {
-    Material* result = getMaterial(name);
-    if (result != nullptr) {
+    Material* result;
+    auto it = m_materials.find(name);
+    if (it != m_materials.end()) {
         LOG_WARNING("Overwriting existing material '", name,
                 "' with imported material: ", material->name);
+        result = it->second.get();
     } else {
-        result = addMaterial(name);
+        GLintptr offset = m_material_buffer.alloc();
+
+        std::unique_ptr<Material> mat{new Material(
+                static_cast<GLuint>(offset / static_cast<GLintptr>(sizeof(shader::MaterialStruct))),
+                m_material_buffer.offsetToPointer(offset))};
+        auto res = m_materials.emplace(name, std::move(mat));
+        result = res.first->second.get();
     }
 
     if (material->hasDiffuseTexture()) {
@@ -67,10 +75,10 @@ Material* MaterialManager::addMaterial(const std::string& name,
 
 Material* MaterialManager::addMaterial(const std::string& name)
 {
-    Material* avail = getMaterial(name);
-    if (avail != nullptr) {
+    auto it = m_materials.find(name);
+    if (it != m_materials.end()) {
         LOG_INFO("Material already exists: ", name);
-        return avail;
+        return it->second.get();
     }
 
     GLintptr offset = m_material_buffer.alloc();

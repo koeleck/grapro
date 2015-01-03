@@ -3,6 +3,7 @@
 #include "texture_manager.h"
 #include "camera_manager.h"
 #include "material_manager.h"
+#include "mesh_manager.h"
 #include "instance_manager.h"
 
 namespace core
@@ -17,6 +18,7 @@ CameraManager* cameras;
 TextureManager* textures;
 MaterialManager* materials;
 InstanceManager* instances;
+MeshManager* meshes;
 } // namespace res
 
 /***************************************************************************/
@@ -28,6 +30,7 @@ void initializeManagers()
     res::textures = new TextureManager();
     res::materials = new MaterialManager();
     res::instances = new InstanceManager();
+    res::meshes = new MeshManager();
 }
 
 /***************************************************************************/
@@ -39,6 +42,7 @@ void terminateManagers()
     delete res::textures;
     delete res::materials;
     delete res::instances;
+    delete res::meshes;
 }
 
 /***************************************************************************/

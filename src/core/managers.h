@@ -9,6 +9,7 @@ class CameraManager;
 class TextureManager;
 class MaterialManager;
 class InstanceManager;
+class MeshManager;
 
 namespace res
 {
@@ -17,6 +18,7 @@ extern CameraManager* cameras;
 extern TextureManager* textures;
 extern MaterialManager* materials;
 extern InstanceManager* instances;
+extern MeshManager* meshes;
 } // namespace res
 
 

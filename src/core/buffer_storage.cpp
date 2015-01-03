@@ -7,9 +7,9 @@
 namespace
 {
 // from LLVM's libc++ (because gcc's libstdc++ doesn't provide std::align ... stupid gcc)
-void* align(size_t alignment, size_t size, void*& ptr, size_t& space)
+bool align(size_t alignment, size_t size, void*& ptr, size_t& space)
 {
-    void* r = nullptr;
+    bool success = false;
     if (size <= space)
     {
         char* p1 = static_cast<char*>(ptr);
@@ -17,12 +17,12 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space)
         size_t d = static_cast<size_t>(p2 - p1);
         if (d <= space - size)
         {
-            r = p2;
-            ptr = r;
+            ptr = p2;
             space -= d;
+            success = true;
         }
     }
-    return r;
+    return success;
 }
 }
 
@@ -73,10 +73,9 @@ GLintptr BufferStorage::alloc(const std::size_t size, const std::size_t alignmen
             continue;
 
         void* ptr = reinterpret_cast<void*>(it->begin);
-        void* res = align(alignment, size, ptr, space);
 
         // first fit
-        if (res != nullptr) {
+        if (align(alignment, size, ptr, space)) {
             const std::size_t start = reinterpret_cast<std::size_t>(ptr);
 
             Segment used(it->begin, start, start + size);

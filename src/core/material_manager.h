@@ -11,8 +11,8 @@
 
 namespace import
 {
-class Material;
-class Texture;
+struct Material;
+struct Texture;
 } // namespace import
 
 namespace core
@@ -25,7 +25,7 @@ public:
     ~MaterialManager();
 
     Material* addMaterial(const std::string& name, const import::Material* material,
-            const import::Texture** textures);
+            const import::Texture* const * textures);
     Material* addMaterial(const std::string& name);
 
     Material* getMaterial(const std::string& name);

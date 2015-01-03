@@ -13,7 +13,8 @@
 #include "import/import.h"
 #include "gl/gl_sys.h"
 
-#include "core/shader_manager.h"
+#include "core/loader.h"
+#include "core/managers.h"
 
 #include "grapro.h"
 
@@ -25,7 +26,7 @@ bool parseCommandLine(int argc, const char** argv);
 int main(int argc, const char** argv)
 {
     logging::Relay::initialize();
-    std::shared_ptr<logging::Sink> sink = std::make_shared<logging::OStreamSink>(std::cout);
+    std::shared_ptr<logging::Sink> sink = std::make_shared<logging::OStreamSink>(std::cerr);
     logging::Relay::get().registerSink(sink);
 
     if (!parseCommandLine(argc, argv)) {
@@ -49,6 +50,7 @@ int main(int argc, const char** argv)
     try {
         // INIT CORE
         core::initializeManagers();
+        core::loadScenefiles(vars.scene_files);
 
         GraPro* win = new GraPro(main_window);
 
@@ -75,6 +77,8 @@ int main(int argc, const char** argv)
 
         // TERMINATE
         core::terminateManagers();
+
+        delete win;
     } catch (...) {
         LOG_ERROR("Error"); // TODO
     }

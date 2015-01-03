@@ -15,23 +15,35 @@ void Mesh::makePointersRelative()
 
     name = reinterpret_cast<const char*>(pos - offset);
 
-    pos = reinterpret_cast<const char*>(indices);
-    indices = reinterpret_cast<std::uint32_t*>(pos - offset);
+    if (indices != nullptr) {
+        pos = reinterpret_cast<const char*>(indices);
+        indices = reinterpret_cast<std::uint32_t*>(pos - offset);
+    }
 
-    pos = reinterpret_cast<const char*>(vertices);
-    vertices = reinterpret_cast<glm::vec3*>(pos - offset);
+    if (vertices != nullptr) {
+        pos = reinterpret_cast<const char*>(vertices);
+        vertices = reinterpret_cast<glm::vec3*>(pos - offset);
+    }
 
-    pos = reinterpret_cast<const char*>(normals);
-    normals = reinterpret_cast<glm::vec3*>(pos - offset);
+    if (normals != nullptr) {
+        pos = reinterpret_cast<const char*>(normals);
+        normals = reinterpret_cast<glm::vec3*>(pos - offset);
+    }
 
-    pos = reinterpret_cast<const char*>(tangents);
-    tangents = reinterpret_cast<glm::vec3*>(pos - offset);
+    if (tangents != nullptr) {
+        pos = reinterpret_cast<const char*>(tangents);
+        tangents = reinterpret_cast<glm::vec3*>(pos - offset);
+    }
 
-    pos = reinterpret_cast<const char*>(vertex_colors);
-    vertex_colors = reinterpret_cast<glm::vec3*>(pos - offset);
+    if (vertex_colors != nullptr) {
+        pos = reinterpret_cast<const char*>(vertex_colors);
+        vertex_colors = reinterpret_cast<glm::vec3*>(pos - offset);
+    }
 
-    pos = reinterpret_cast<const char*>(texcoords);
-    texcoords = reinterpret_cast<glm::vec2*>(pos - offset);
+    if (texcoords != nullptr) {
+        pos = reinterpret_cast<const char*>(texcoords);
+        texcoords = reinterpret_cast<glm::vec2*>(pos - offset);
+    }
 }
 
 /****************************************************************************/
@@ -46,23 +58,35 @@ void Mesh::makePointersAbsolute()
 
     name = reinterpret_cast<const char*>(offset + pos);
 
-    pos = reinterpret_cast<std::size_t>(indices);
-    indices = reinterpret_cast<std::uint32_t*>(offset + pos);
+    if (indices != nullptr) {
+        pos = reinterpret_cast<std::size_t>(indices);
+        indices = reinterpret_cast<std::uint32_t*>(offset + pos);
+    }
 
-    pos = reinterpret_cast<std::size_t>(vertices);
-    vertices = reinterpret_cast<glm::vec3*>(offset + pos);
+    if (vertices != nullptr) {
+        pos = reinterpret_cast<std::size_t>(vertices);
+        vertices = reinterpret_cast<glm::vec3*>(offset + pos);
+    }
 
-    pos = reinterpret_cast<std::size_t>(normals);
-    normals = reinterpret_cast<glm::vec3*>(offset + pos);
+    if (normals != nullptr) {
+        pos = reinterpret_cast<std::size_t>(normals);
+        normals = reinterpret_cast<glm::vec3*>(offset + pos);
+    }
 
-    pos = reinterpret_cast<std::size_t>(tangents);
-    tangents = reinterpret_cast<glm::vec3*>(offset + pos);
+    if (tangents != nullptr) {
+        pos = reinterpret_cast<std::size_t>(tangents);
+        tangents = reinterpret_cast<glm::vec3*>(offset + pos);
+    }
 
-    pos = reinterpret_cast<std::size_t>(vertex_colors);
-    vertex_colors = reinterpret_cast<glm::vec3*>(offset + pos);
+    if (vertex_colors != nullptr) {
+        pos = reinterpret_cast<std::size_t>(vertex_colors);
+        vertex_colors = reinterpret_cast<glm::vec3*>(offset + pos);
+    }
 
-    pos = reinterpret_cast<std::size_t>(texcoords);
-    texcoords = reinterpret_cast<glm::vec2*>(offset + pos);
+    if (texcoords != nullptr) {
+        pos = reinterpret_cast<std::size_t>(texcoords);
+        texcoords = reinterpret_cast<glm::vec2*>(offset + pos);
+    }
 }
 
 /****************************************************************************/
