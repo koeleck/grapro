@@ -31,6 +31,10 @@ public:
     std::vector<Instance*> getInstances();
     std::vector<const Instance*> getInstances() const;
 
+    bool isModified() const;
+    void setModified();
+    bool update();
+
 private:
     using InstanceList = std::vector<std::unique_ptr<Instance>>;
     using InstancePool = BufferStoragePool<sizeof(shader::InstanceStruct)>;
@@ -40,6 +44,8 @@ private:
     InstancePool        m_instance_buffer;
     InstanceMap         m_instance_names;
     InstanceList        m_instances;
+
+    bool                m_isModified;
 };
 
 } // namespace core

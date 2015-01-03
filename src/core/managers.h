@@ -8,6 +8,7 @@ class ShaderManager;
 class CameraManager;
 class TextureManager;
 class MaterialManager;
+class InstanceManager;
 
 namespace res
 {
@@ -15,6 +16,7 @@ extern ShaderManager* shaders;
 extern CameraManager* cameras;
 extern TextureManager* textures;
 extern MaterialManager* materials;
+extern InstanceManager* instances;
 } // namespace res
 
 

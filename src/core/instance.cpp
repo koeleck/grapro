@@ -2,6 +2,7 @@
 #include "shader_interface.h"
 #include "mesh.h"
 #include "material.h"
+#include "instance_manager.h"
 
 namespace core
 {
@@ -181,6 +182,7 @@ bool Instance::modified() const
 void Instance::setModified()
 {
     m_modified = true;
+    res::instances->setModified();
 }
 
 /****************************************************************************/

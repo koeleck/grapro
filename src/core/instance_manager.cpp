@@ -7,7 +7,8 @@ namespace core
 
 constexpr int MAX_NUM_INSTANCES = 1024;
 InstanceManager::InstanceManager()
-  : m_instance_buffer(GL_SHADER_STORAGE_BUFFER, MAX_NUM_INSTANCES)
+  : m_instance_buffer(GL_SHADER_STORAGE_BUFFER, MAX_NUM_INSTANCES),
+    m_isModified{true}
 {
 }
 
@@ -82,6 +83,32 @@ std::vector<const Instance*> InstanceManager::getInstances() const
     for (const auto& ptr : m_instances)
         result.emplace_back(ptr.get());
     return result;
+}
+
+/****************************************************************************/
+
+bool InstanceManager::isModified() const
+{
+    return m_isModified;
+}
+
+/****************************************************************************/
+
+void InstanceManager::setModified()
+{
+    m_isModified = true;
+}
+
+/****************************************************************************/
+
+bool InstanceManager::update()
+{
+    if (!m_isModified)
+        return false;
+    for (auto& instance : m_instances) {
+        instance->update();
+    }
+    return true;
 }
 
 /****************************************************************************/
