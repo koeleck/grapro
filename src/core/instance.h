@@ -1,18 +1,19 @@
-#ifndef CORE_NODE_H
-#define CORE_NODE_H
+#ifndef CORE_INSTANCE_H
+#define CORE_INSTANCE_H
 
+#include <vector>
 #include <glm/vec3.hpp>
 #include <glm/gtc/quaternion.hpp>
 
 namespace core
 {
 
-class Node
+class Instance
 {
 public:
-    Node(Node* parent);
+    Instance(Instance* parent);
 
-    virtual ~Node() = default;
+    virtual ~Instance() = default;
 
     const glm::mat4& getTransformationMatrix() const;
 
@@ -37,12 +38,14 @@ public:
     bool hasFixedYawAxis() const;
     const glm::vec3& getFixedYawAxis() const;
 
+    const glm::vec3& getScale() const;
+    void setScale(const glm::vec3& scale);
+
     bool modified() const;
     void setModified();
 
     void update();
 
-    Node* getParent() const;
 
 protected:
     virtual void update_impl();
@@ -52,14 +55,14 @@ protected:
 private:
 
     glm::vec3       m_position;
+    glm::vec3       m_scale;
     glm::quat       m_orientation;
     glm::vec3       m_fixedYawAxis;
     bool            m_hasFixedYawAxis;
     bool            m_modified;
-    Node*           m_parent;
 };
 
 } // namespace core
 
-#endif // CORE_NODE_H
+#endif // CORE_INSTANCE_H
 

@@ -1,31 +1,32 @@
-#include "node.h"
+#include "instance.h"
 
 namespace core
 {
 
 /****************************************************************************/
 
-Node::Node(Node* parent)
+Instance::Instance(Instance* parent)
   : m_transformation{},
     m_position{.0f},
+    m_scale{1.f},
     m_orientation{},
     m_fixedYawAxis{false},
     m_hasFixedYawAxis{},
-    m_modified{true},
-    m_parent{parent}
+    m_modified{true}
 {
+    setModified();
 }
 
 /****************************************************************************/
 
-const glm::mat4& Node::getTransformationMatrix() const
+const glm::mat4& Instance::getTransformationMatrix() const
 {
     return m_transformation;
 }
 
 /****************************************************************************/
 
-void Node::move(const glm::vec3& dir)
+void Instance::move(const glm::vec3& dir)
 {
     m_position += dir;
     setModified();
@@ -33,7 +34,7 @@ void Node::move(const glm::vec3& dir)
 
 /****************************************************************************/
 
-void Node::setPosition(const glm::vec3& pos)
+void Instance::setPosition(const glm::vec3& pos)
 {
     m_position = pos;
     setModified();
@@ -41,14 +42,14 @@ void Node::setPosition(const glm::vec3& pos)
 
 /****************************************************************************/
 
-const glm::vec3& Node::getPosition() const
+const glm::vec3& Instance::getPosition() const
 {
     return m_position;
 }
 
 /****************************************************************************/
 
-void Node::setOrientation(const glm::quat& orientation)
+void Instance::setOrientation(const glm::quat& orientation)
 {
     m_orientation = glm::normalize(orientation);
     setModified();
@@ -56,35 +57,35 @@ void Node::setOrientation(const glm::quat& orientation)
 
 /****************************************************************************/
 
-const glm::quat& Node::getOrientation() const
+const glm::quat& Instance::getOrientation() const
 {
     return m_orientation;
 }
 
 /****************************************************************************/
 
-glm::vec3 Node::getForward() const
+glm::vec3 Instance::getForward() const
 {
     return m_orientation * glm::vec3(.0f, .0f, -1.f); // ???
 }
 
 /****************************************************************************/
 
-glm::vec3 Node::getRight() const
+glm::vec3 Instance::getRight() const
 {
     return m_orientation * glm::vec3(1.f, .0f, .0f);
 }
 
 /****************************************************************************/
 
-glm::vec3 Node::getUp() const
+glm::vec3 Instance::getUp() const
 {
     return m_orientation * glm::vec3(.0f, 1.f, .0f);
 }
 
 /****************************************************************************/
 
-void Node::rotate(const glm::vec3& axis, float angle)
+void Instance::rotate(const glm::vec3& axis, float angle)
 {
     glm::quat q = glm::angleAxis(angle, glm::normalize(axis));
     m_orientation = glm::normalize(m_orientation * q);
@@ -93,7 +94,7 @@ void Node::rotate(const glm::vec3& axis, float angle)
 
 /****************************************************************************/
 
-void Node::yaw(float angle)
+void Instance::yaw(float angle)
 {
     if (m_hasFixedYawAxis) {
         m_orientation = glm::normalize(glm::angleAxis(angle, m_fixedYawAxis) * m_orientation);
@@ -105,7 +106,7 @@ void Node::yaw(float angle)
 
 /****************************************************************************/
 
-void Node::roll(float angle)
+void Instance::roll(float angle)
 {
     m_orientation = glm::normalize(m_orientation * glm::angleAxis(angle, glm::vec3(.0f, .0f, 1.f)));
     setModified();
@@ -113,7 +114,7 @@ void Node::roll(float angle)
 
 /****************************************************************************/
 
-void Node::pitch(float angle)
+void Instance::pitch(float angle)
 {
     m_orientation = glm::normalize(m_orientation * glm::angleAxis(angle, glm::vec3(1.f, .0f, .0f)));
     setModified();
@@ -121,7 +122,22 @@ void Node::pitch(float angle)
 
 /****************************************************************************/
 
-void Node::setFixedYawAxis(const glm::vec3* axis)
+const glm::vec3& Instance::getScale() const
+{
+    return m_scale;
+}
+
+/****************************************************************************/
+
+void Instance::setScale(const glm::vec3& scale)
+{
+    m_scale = scale;
+    setModified();
+}
+
+/****************************************************************************/
+
+void Instance::setFixedYawAxis(const glm::vec3* axis)
 {
     if (axis == nullptr) {
         m_hasFixedYawAxis = false;
@@ -133,40 +149,43 @@ void Node::setFixedYawAxis(const glm::vec3* axis)
 
 /****************************************************************************/
 
-bool Node::hasFixedYawAxis() const
+bool Instance::hasFixedYawAxis() const
 {
     return m_hasFixedYawAxis;
 }
 
 /****************************************************************************/
 
-const glm::vec3& Node::getFixedYawAxis() const
+const glm::vec3& Instance::getFixedYawAxis() const
 {
     return m_fixedYawAxis;
 }
 
 /****************************************************************************/
 
-bool Node::modified() const
+bool Instance::modified() const
 {
     return m_modified;
 }
 
 /****************************************************************************/
 
-void Node::setModified()
+void Instance::setModified()
 {
     m_modified = true;
 }
 
 /****************************************************************************/
 
-void Node::update()
+void Instance::update()
 {
     if (m_modified) {
         glm::mat4 translation;
         translation[3] = glm::vec4(m_position, 1.f);
         m_transformation = translation * glm::mat4_cast(m_orientation);
+        m_transformation[0] *= m_scale.x;
+        m_transformation[1] *= m_scale.y;
+        m_transformation[2] *= m_scale.z;
 
         update_impl();
 
@@ -176,17 +195,11 @@ void Node::update()
 
 /****************************************************************************/
 
-void Node::update_impl()
+void Instance::update_impl()
 {
-}
-
-/****************************************************************************/
-
-Node* Node::getParent() const
-{
-    return m_parent;
 }
 
 /****************************************************************************/
 
 } // namespace core
+
