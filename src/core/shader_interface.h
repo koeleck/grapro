@@ -38,15 +38,18 @@ struct CameraStruct
     glm::mat4                       ProjViewMatrix;
     glm::vec4                       CameraPosition;
 };
+static_assert(sizeof(CameraStruct) == 208 && sizeof(CameraStruct) % 16 == 0, "");
 
 struct MeshStruct
 {
+    static_assert(4 * sizeof(GLboolean) == sizeof(GLuint), "");
     GLuint                          first;
     GLuint                          stride;
 
     // (0) normal (1) texcoord (2) tangent (3) vertex color
     GLboolean                       components[4];
 };
+static_assert(sizeof(MeshStruct) == 12 && sizeof(MeshStruct) % 4 == 0, "");
 
 struct TextureStruct
 {
@@ -54,6 +57,7 @@ struct TextureStruct
     GLuint                          num_channels;
     GLuint                          padding;
 };
+static_assert(sizeof(TextureStruct) == 16 && sizeof(TextureStruct) % 8 == 0, "");
 
 struct MaterialStruct
 {
@@ -63,14 +67,15 @@ struct MaterialStruct
     GLuint                          normalTex;
     GLuint                          emissiveTex;
     GLuint                          alphaTex;
-    GLfloat                         diffuseColor[3];
-    GLfloat                         specularColor[3];
-    GLfloat                         ambientColor[3];
-    GLfloat                         emissiveColor[3];
-    GLfloat                         transparentColor[3];
+    GLfloat                         diffuseColor[4];
+    GLfloat                         specularColor[4];
+    GLfloat                         ambientColor[4];
+    GLfloat                         emissiveColor[4];
+    GLfloat                         transparentColor[4];
     GLfloat                         glossiness;
     GLfloat                         opacity;
 };
+static_assert(sizeof(MaterialStruct) == 112 && sizeof(MaterialStruct) % 4 == 0, "");
 
 struct InstanceStruct
 {
@@ -79,6 +84,7 @@ struct InstanceStruct
     GLuint                          materialID;
     GLuint                          _padding[2];
 };
+static_assert(sizeof(InstanceStruct) == 80 && sizeof(InstanceStruct) % 16 == 0, "");
 
 } // namespace shader
 
