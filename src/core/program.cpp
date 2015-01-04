@@ -1,3 +1,5 @@
+#include <limits>
+
 #include "program.h"
 #include "gl/program.h"
 #include "shader_manager.h"
@@ -6,11 +8,22 @@
 namespace core
 {
 
+constexpr auto INVALID = std::numeric_limits<std::size_t>::max();
+
 /****************************************************************************/
 
-Program::operator const gl::Program &() const
+Program::Program()
+  : m_idx{INVALID}
 {
-    return res::shaders->getProgram(m_idx);
+}
+
+/****************************************************************************/
+
+Program::operator GLuint() const
+{
+    if (m_idx != INVALID)
+        return res::shaders->getProgram(m_idx).get();
+    return 0;
 }
 
 /****************************************************************************/

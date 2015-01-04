@@ -1,5 +1,4 @@
 #include <iostream>
-#include <chrono>
 #include <boost/program_options.hpp>
 
 #include "log/log.h"
@@ -54,16 +53,8 @@ int main(int argc, const char** argv)
 
         GraPro* win = new GraPro(main_window);
 
-        auto time = std::chrono::high_resolution_clock::now();
         while (!glfwWindowShouldClose(*win)) {
-            const auto time_cur = std::chrono::high_resolution_clock::now();
-
-            const double delta_t =
-                    static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>
-                            (time_cur - time).count()) / 1000000.;
-            time = time_cur;
-
-            win->update(delta_t);
+            win->update();
 
             // upload data
             glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
@@ -71,7 +62,6 @@ int main(int argc, const char** argv)
             win->render();
 
             glfwSwapBuffers(*win);
-            win->resetInput();
             glfwPollEvents();
         }
 

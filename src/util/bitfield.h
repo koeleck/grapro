@@ -94,6 +94,21 @@ bitfield<T> operator&(const bitfield<T>& bf0, const bitfield<T>& bf1) noexcept
 }
 
 template <typename T>
+bitfield<T> operator&(const bitfield<T>& bf, const T v) noexcept
+{
+    bitfield<T> res = bf;
+    return res &= v;
+}
+
+template <typename T>
+bitfield<T> operator&(const T v, const bitfield<T>& bf) noexcept
+{
+    bitfield<T> res = bf;
+    return res &= v;
+}
+
+
+template <typename T>
 bitfield<T> operator|(const bitfield<T>& bf0, const bitfield<T>& bf1) noexcept
 {
     return bf0() | bf1();

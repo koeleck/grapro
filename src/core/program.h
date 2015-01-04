@@ -2,6 +2,7 @@
 #define CORE_PROGRAM_H
 
 #include <cstddef>
+#include "gl/gl_sys.h"
 
 namespace gl
 {
@@ -14,7 +15,9 @@ namespace core
 class Program
 {
 public:
-    operator const gl::Program&() const;
+    Program();
+    operator GLuint() const;
+
 private:
     friend class ShaderManager;
     Program(std::size_t idx);
