@@ -10,6 +10,7 @@ InstanceManager::InstanceManager()
   : m_instance_buffer(GL_SHADER_STORAGE_BUFFER, MAX_NUM_INSTANCES),
     m_isModified{true}
 {
+    bind();
 }
 
 /****************************************************************************/
@@ -109,6 +110,14 @@ bool InstanceManager::update()
         instance->update();
     }
     return true;
+}
+
+/****************************************************************************/
+
+void InstanceManager::bind() const
+{
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindings::INSTANCE,
+            m_instance_buffer.buffer());
 }
 
 /****************************************************************************/

@@ -31,6 +31,8 @@ public:
     Material* getMaterial(const std::string& name);
     const Material* getMaterial(const std::string& name) const;
 
+    void bind() const;
+
 private:
     using MaterialPool = BufferStoragePool<sizeof(shader::MaterialStruct)>;
     using MaterialMap = std::unordered_map<std::string, std::unique_ptr<Material>>;

@@ -10,6 +10,9 @@ class Mesh
 {
 public:
     GLuint getIndex() const;
+    GLenum type() const;
+    GLenum mode() const;
+    GLvoid* indirect() const;
 
 private:
     friend class MeshManager;

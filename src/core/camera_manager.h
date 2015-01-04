@@ -39,6 +39,10 @@ public:
 
     const Camera* getDefaultCam() const;
 
+    bool isModified() const;
+    void setModified();
+    bool update();
+
 private:
     using CameraMap = std::unordered_map<std::string, std::size_t>;
     using CameraVector = std::vector<std::unique_ptr<Camera>>;
@@ -47,6 +51,7 @@ private:
     CameraVector                m_cameras;
     Pool                        m_camera_buffer;
     Camera*                     m_default_cam;
+    bool                        m_isModified;
 };
 
 } // namespace core

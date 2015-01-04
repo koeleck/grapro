@@ -14,6 +14,7 @@ constexpr int MAX_NUM_MATERIALS = 256;
 MaterialManager::MaterialManager()
   : m_material_buffer(GL_SHADER_STORAGE_BUFFER, MAX_NUM_MATERIALS)
 {
+    bind();
 }
 
 /****************************************************************************/
@@ -112,6 +113,14 @@ const Material* MaterialManager::getMaterial(const std::string& name) const
         return nullptr;
     }
     return it->second.get();
+}
+
+/****************************************************************************/
+
+void MaterialManager::bind() const
+{
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindings::MATERIAL,
+            m_material_buffer.buffer());
 }
 
 /****************************************************************************/

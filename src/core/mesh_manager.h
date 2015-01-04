@@ -28,6 +28,8 @@ public:
     Mesh* getMesh(const char* name);
     const Mesh* getMesh(const char* name) const;
 
+    void bind() const;
+
 private:
     using MeshMap = std::unordered_map<std::string, std::unique_ptr<Mesh>>;
     using MeshPool = BufferStoragePool<sizeof(shader::MeshStruct)>;

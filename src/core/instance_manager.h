@@ -35,6 +35,8 @@ public:
     void setModified();
     bool update();
 
+    void bind() const;
+
 private:
     using InstanceList = std::vector<std::unique_ptr<Instance>>;
     using InstancePool = BufferStoragePool<sizeof(shader::InstanceStruct)>;

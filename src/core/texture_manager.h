@@ -32,6 +32,8 @@ public:
     Texture* getTexture(const std::string& name);
     const Texture* getTexture(const std::string& name) const;
 
+    void bind() const;
+
 private:
     friend class Texture;
 

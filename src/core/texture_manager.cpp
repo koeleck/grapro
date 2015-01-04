@@ -17,6 +17,8 @@ TextureManager::TextureManager()
     // reserve the first texture as sort of nullptr
     auto offset = m_texture_buffer.alloc();
     assert(offset == 0);
+
+    bind();
 }
 
 /****************************************************************************/
@@ -102,6 +104,14 @@ const Texture* TextureManager::getTexture(const std::string& name) const
         return nullptr;
     }
     return it->second.get();
+}
+
+/****************************************************************************/
+
+void TextureManager::bind() const
+{
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindings::TEXTURE,
+            m_texture_buffer.buffer());
 }
 
 /****************************************************************************/

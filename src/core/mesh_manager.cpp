@@ -13,6 +13,7 @@ MeshManager::MeshManager()
   : m_vertex_buffer(GL_SHADER_STORAGE_BUFFER, static_cast<std::size_t>(vars.vertex_buffer_size)),
     m_mesh_buffer(GL_SHADER_STORAGE_BUFFER, MAX_NUM_MESHES)
 {
+    bind();
 }
 
 /****************************************************************************/
@@ -144,6 +145,15 @@ const Mesh* MeshManager::getMesh(const char* name) const
         return nullptr;
     }
     return it->second.get();
+}
+
+/****************************************************************************/
+
+void MeshManager::bind() const
+{
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindings::MESH,
+            m_mesh_buffer.buffer());
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_mesh_buffer.buffer());
 }
 
 /****************************************************************************/

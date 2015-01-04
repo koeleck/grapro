@@ -13,7 +13,8 @@ static constexpr int MAX_CAMERAS = 1024;
 
 CameraManager::CameraManager()
   : m_camera_buffer(GL_SHADER_STORAGE_BUFFER, MAX_CAMERAS),
-    m_default_cam{nullptr}
+    m_default_cam{nullptr},
+    m_isModified{true}
 {
 }
 
@@ -121,6 +122,33 @@ Camera* CameraManager::getDefaultCam()
 const Camera* CameraManager::getDefaultCam() const
 {
     return m_default_cam;
+}
+
+/****************************************************************************/
+
+bool CameraManager::isModified() const
+{
+    return m_isModified;
+}
+
+/****************************************************************************/
+
+void CameraManager::setModified()
+{
+    m_isModified = true;
+}
+
+/****************************************************************************/
+
+bool CameraManager::update()
+{
+    if (!m_isModified)
+        return false;
+    for (auto& cam : m_cameras) {
+        cam->update();
+    }
+    m_isModified = false;
+    return true;
 }
 
 /****************************************************************************/

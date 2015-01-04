@@ -24,6 +24,7 @@ constexpr int CAMERA    = 0;
 constexpr int TEXTURE   = 1;
 constexpr int MESH      = 2;
 constexpr int MATERIAL  = 3;
+constexpr int INSTANCE  = 4;
 
 } // namespace bindings
 

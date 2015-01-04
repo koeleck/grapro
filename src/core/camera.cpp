@@ -4,6 +4,7 @@
 
 #include "camera.h"
 #include "shader_interface.h"
+#include "camera_manager.h"
 
 #include "log/log.h"
 
@@ -45,6 +46,7 @@ CameraType Camera::type() const
 void Camera::invalidate()
 {
     m_modified = true;
+    res::cameras->setModified();
 }
 
 //////////////////////////////////////////////////////////////////////////
