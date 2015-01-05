@@ -166,7 +166,7 @@ void Camera::setDirection(const glm::dvec3& dir)
 
 glm::dvec3 Camera::getDirection() const
 {
-    return m_orientation * glm::dvec3(0.0, 0.0, 1.0);
+    return m_orientation * glm::dvec3(0.0, 0.0, -1.0);
 }
 
 //////////////////////////////////////////////////////////////////////////

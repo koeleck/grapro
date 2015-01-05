@@ -220,13 +220,13 @@ void MainWindow::key_event(const int key, int, const int action, const int mods)
     auto& state = m_keys[key];
     switch (action) {
     case GLFW_PRESS:
-        state = KeyState::PRESS;
+        state |= KeyState::PRESS;
         break;
     case GLFW_REPEAT:
-        state = KeyState::REPEAT;
+        state |= KeyState::REPEAT;
         break;
     case GLFW_RELEASE:
-        state = KeyState::RELEASE;
+        state |= KeyState::RELEASE;
         break;
     default:
         return;

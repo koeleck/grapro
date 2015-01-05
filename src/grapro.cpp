@@ -54,13 +54,14 @@ void GraPro::update_gui(const double delta_t)
 
 void GraPro::handle_keyboard(const double delta_t)
 {
+    // Camera:
     double movement_scale = 2.0;
     if (glfwGetKey(*this, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         movement_scale *= 5.0;
     if (glfwGetKey(*this, GLFW_KEY_W) == GLFW_PRESS)
-        m_cam->move(movement_scale * glm::dvec3(0.0, 0.0, -1.0));
-    if (glfwGetKey(*this, GLFW_KEY_S) == GLFW_PRESS)
         m_cam->move(movement_scale * glm::dvec3(0.0, 0.0, 1.0));
+    if (glfwGetKey(*this, GLFW_KEY_S) == GLFW_PRESS)
+        m_cam->move(movement_scale * glm::dvec3(0.0, 0.0, -1.0));
     if (glfwGetKey(*this, GLFW_KEY_D) == GLFW_PRESS)
         m_cam->move(movement_scale * glm::dvec3(1.0, 0.0, 0.0));
     if (glfwGetKey(*this, GLFW_KEY_A) == GLFW_PRESS)
@@ -69,6 +70,10 @@ void GraPro::handle_keyboard(const double delta_t)
         m_cam->move(movement_scale * glm::dvec3(0.0, 1.0, 0.0));
     if (glfwGetKey(*this, GLFW_KEY_F) == GLFW_PRESS)
         m_cam->move(movement_scale * glm::dvec3(0.0, -1.0, 0.0));
+
+    // misc:
+    if (getKey(GLFW_KEY_T) & framework::KeyState::PRESS)
+        m_showgui = !m_showgui;
 }
 
 /****************************************************************************/
