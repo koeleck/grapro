@@ -17,11 +17,13 @@ public:
     void render();
 
 private:
+    struct DrawCmd;
+
     using ProgramMap = std::unordered_map<unsigned char, core::Program>;
 
     std::vector<const core::Instance*>  m_geometry;
     ProgramMap                          m_programs;
-
+    std::vector<DrawCmd>                m_drawlist;
 };
 
 #endif // RENDERER_H

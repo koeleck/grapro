@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "renderer.h"
@@ -9,6 +10,34 @@
 #include "core/material_manager.h"
 #include "core/texture_manager.h"
 #include "log/log.h"
+
+/****************************************************************************/
+
+struct Renderer::DrawCmd
+{
+    DrawCmd(const core::Instance* instance_, core::Program prog_,
+            GLuint vao_, GLenum mode_, GLsizei count_, GLenum type_,
+            GLvoid* indices_, GLint basevertex_)
+      : instance{instance_},
+        prog{prog_},
+        vao{vao_},
+        mode{mode_},
+        count{count_},
+        type{type_},
+        indices{indices_},
+        basevertex{basevertex_}
+    {
+    }
+
+    const core::Instance*   instance;
+    core::Program           prog;
+    GLuint                  vao;
+    GLenum                  mode;
+    GLsizei                 count;
+    GLenum                  type;
+    GLvoid*                 indices;
+    GLint                   basevertex;
+};
 
 /****************************************************************************/
 
@@ -56,6 +85,23 @@ Renderer::~Renderer() = default;
 void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
 {
     m_geometry = std::move(geometry);
+
+    std::sort(m_geometry.begin(), m_geometry.end(),
+            [] (const core::Instance* g0, const core::Instance* g1) -> bool
+            {
+                return g0->getMesh()->components() < g1->getMesh()->components();
+            });
+
+    m_drawlist.clear();
+    m_drawlist.reserve(m_geometry.size());
+    for (const auto* g : m_geometry) {
+        const auto* mesh = g->getMesh();
+        const auto prog = m_programs[mesh->components()()];
+        GLuint vao = core::res::meshes->getVAO(mesh);
+        m_drawlist.emplace_back(g, prog, vao, mesh->mode(),
+                mesh->count(), mesh->type(),
+                mesh->indices(), mesh->basevertex());
+    }
 }
 
 /****************************************************************************/
@@ -73,32 +119,30 @@ void Renderer::render()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
-    for (auto g : m_geometry) {
-        const auto* mesh = g->getMesh();
-        GLuint prog = m_programs[mesh->components()()];
-        GLuint vao = core::res::meshes->getVAO(mesh);
-        glUseProgram(prog);
-        glBindVertexArray(vao);
+    GLuint prog = 0;
+    GLuint vao = 0;
+
+    for (const auto& cmd : m_drawlist) {
+        if (prog != cmd.prog) {
+            prog = cmd.prog;
+            glUseProgram(prog);
+        }
+        if (vao != cmd.vao) {
+            vao = cmd.vao;
+            glBindVertexArray(vao);
+        }
 
         glm::mat4 id(1.f);
         GLint loc = glGetUniformLocation(prog, "uModelMatrix");
         glUniformMatrix4fv(loc, 1, GL_FALSE,
-                glm::value_ptr(g->getTransformationMatrix()));
+                glm::value_ptr(cmd.instance->getTransformationMatrix()));
 
         loc = glGetUniformLocation(prog, "uMaterialID");
-        glUniform1ui(loc, g->getMaterial()->getIndex());
+        glUniform1ui(loc, cmd.instance->getMaterial()->getIndex());
 
-        //loc = glGetUniformLocation(prog, "uTexHandle");
-        //glUniformHandleui64ARB(loc, tex->getTextureHandle());
-
-        glDrawElementsBaseVertex(mesh->mode(), mesh->count(),
-                mesh->type(), mesh->indices(), mesh->basevertex());
-        //LOG_INFO("prog: ", prog, ", vao: ", vao);
-        //LOG_INFO("glDrawElementsBaseVertex(", mesh->mode(), ", ",  mesh->count(),
-        //        ", ", mesh->type(), ", ", mesh->indices(),
-        //        ", ", mesh->basevertex(), ");");
+        glDrawElementsBaseVertex(cmd.mode, cmd.count,
+                cmd.type, cmd.indices, cmd.basevertex);
     }
-    //LOG_INFO("----------------------");
 }
 
 /****************************************************************************/
