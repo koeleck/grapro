@@ -46,6 +46,7 @@ struct ShaderManager::ShaderInfo
     std::string                 defines;
     GLenum                      type;
     gl::Shader                  shader;
+    bool                        broken;
 };
 
 
@@ -58,6 +59,7 @@ struct ShaderManager::ProgramInfo
     std::vector<std::string>    files;
     bool                        is_separable;
     gl::Program                 program;
+    bool                        broken;
 };
 
 /****************************************************************************/
@@ -142,6 +144,7 @@ Shader ShaderManager::registerShader(const std::string& name, const std::string&
         info.filename = filename;
         info.type = shader_type;
         info.defines = std::move(defines);
+        info.broken = false;
     }
     auto res = m_shader_names.emplace(name, idx);
     return Shader(res.first->second);
@@ -200,6 +203,7 @@ Program ShaderManager::registerProgram(const std::string& name,
         auto& info = m_programs.back();
         info.shaders = std::move(shader_names);
         info.is_separable = is_separable;
+        info.broken = false;
 
         if (vars.preload_programs)
             link_program(info, true);
@@ -315,25 +319,32 @@ bool ShaderManager::recompile()
     bool result = true;
 
     for (auto& shader : m_shaders) {
-        if (shader.shader.get() == 0)
+        if (shader.shader.get() == 0 && shader.broken == false)
             continue;
+        bool doit = shader.broken;
+        // TODO also recompile, if defines changed
         for (const auto& file : shader.files) {
             if (m_timestamp < last_write_time(file)) {
-                result &= compile_shader(shader);
+                doit = true;
                 break;
             }
         }
+        if (doit)
+            result &= compile_shader(shader);
     }
 
     for (auto& prog : m_programs) {
-        if (prog.program.get() == 0)
+        if (prog.program.get() == 0 && prog.broken == false)
             continue;
+        bool doit = prog.broken;
         for (const auto& file : prog.files) {
             if (m_timestamp < last_write_time(file)) {
-                result &= link_program(prog, false);
+                doit = true;
                 break;
             }
         }
+        if (doit)
+            result &= link_program(prog, false);
     }
 
     for (auto& pipeline : m_pipelines) {
@@ -391,16 +402,16 @@ bool ShaderManager::compile_shader(ShaderInfo& info) const
             msg << " (" << i++ << ") " << f << '\n';
         }
         msg << "Info Log:\n" << shader.getInfoLog();
-        msg << "\nSource:\n------------------------------\n";
-        msg << source.source() << "\n------------------------------";
 
         LOG_ERROR(logtag::OpenGL, msg.str());
 
+        info.broken = true;
         return false;
     }
 
     info.shader = std::move(shader);
     info.files = std::move(source.filenames());
+    info.broken = false;
 
     return true;
 }
@@ -424,15 +435,21 @@ bool ShaderManager::link_program(ProgramInfo& p, const bool use_cache) const
         if (it == m_shader_names.end()) {
             LOG_ERROR("Unable to link program: Unkown shader '",
                     shader, ',');
+            p.broken = true;
             return false;
         }
         auto& s = m_shaders[it->second];
+        if (s.broken) {
+            p.broken = true;
+            return false;
+        }
         if (s.shader.get() == 0) {
             compile_shader(s);
         }
         if (!s.shader) {
             LOG_ERROR("Unable to link program: Shader '", shader,
                     "' failed to compile");
+            p.broken = true;
             return false;
         }
         glAttachShader(prog, s.shader);
@@ -440,6 +457,7 @@ bool ShaderManager::link_program(ProgramInfo& p, const bool use_cache) const
     glLinkProgram(prog);
     if (!prog) {
         LOG_ERROR("Failed to link program: ", prog.getInfoLog());
+        p.broken = true;
         return false;
     }
 
@@ -456,6 +474,7 @@ bool ShaderManager::link_program(ProgramInfo& p, const bool use_cache) const
     p.files.erase(std::unique(p.files.begin(), p. files.end()), p.files.end());
 
     p.program = std::move(prog);
+    p.broken = false;
     save_program(p, id);
 
     return true;

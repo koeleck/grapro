@@ -114,8 +114,6 @@ void Renderer::render()
     core::res::materials->bind();
     core::res::textures->bind();
 
-    //const auto* tex = core::res::textures->getTexture("textures/spnza_bricks_a_diff.tga");
-
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
