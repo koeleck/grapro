@@ -20,6 +20,7 @@ public:
 private:
     Renderer        m_renderer;
     core::Camera*   m_cam;
+    bool            m_showgui;
 };
 
 #endif // GRAPRO_H

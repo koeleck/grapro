@@ -122,11 +122,12 @@ namespace framework
 
 MainWindow::MainWindow(GLFWwindow* window)
   : Window(window),
-    m_gui_hidden{false},
     m_lastupdate{clock::now()}
 {
     resetInput();
     initGUI();
+
+    glfwGetWindowSize(*this, &m_width, &m_height);
 }
 
 /****************************************************************************/
@@ -165,20 +166,18 @@ void MainWindow::update()
             (time - m_lastupdate).count()) / 1000000.;
     m_lastupdate = time;
 
-    if (!m_gui_hidden) {
-        ImGuiIO& io = ImGui::GetIO();
-        io.DisplaySize = ImVec2(static_cast<float>(m_width), static_cast<float>(m_height));
-        io.DeltaTime = static_cast<float>(delta_t);
-        // Setup inputs
-        io.MousePos = ImVec2(m_cursor_pos.x, m_cursor_pos.y);
-        io.MouseDown[0] = !!(m_buttons[0] & KeyState::DOWN) ||
-                glfwGetMouseButton(*this, GLFW_MOUSE_BUTTON_LEFT) != 0;
-        io.MouseDown[1] = !!(m_buttons[1] & KeyState::DOWN) ||
-                glfwGetMouseButton(*this, GLFW_MOUSE_BUTTON_RIGHT) != 0;
-        // Start the frame
-        ImGui::NewFrame();
-        update_gui(delta_t);
-    }
+    ImGuiIO& io = ImGui::GetIO();
+    io.DisplaySize = ImVec2(static_cast<float>(m_width), static_cast<float>(m_height));
+    io.DeltaTime = static_cast<float>(delta_t);
+    // Setup inputs
+    io.MousePos = ImVec2(m_cursor_pos.x, m_cursor_pos.y);
+    io.MouseDown[0] = !!(m_buttons[0] & KeyState::DOWN) ||
+            glfwGetMouseButton(*this, GLFW_MOUSE_BUTTON_LEFT) != 0;
+    io.MouseDown[1] = !!(m_buttons[1] & KeyState::DOWN) ||
+            glfwGetMouseButton(*this, GLFW_MOUSE_BUTTON_RIGHT) != 0;
+    // Start the frame
+    ImGui::NewFrame();
+    update_gui(delta_t);
 
     if (ImGui::GetIO().WantCaptureMouse == false)
         handle_mouse(delta_t);
@@ -199,8 +198,7 @@ void MainWindow::update()
 void MainWindow::render()
 {
     render_scene();
-    if (!m_gui_hidden)
-        ImGui::Render();
+    ImGui::Render();
 }
 
 /****************************************************************************/
@@ -306,34 +304,6 @@ int MainWindow::getWidth() const
 int MainWindow::getHeight() const
 {
     return m_height;
-}
-
-/****************************************************************************/
-
-void MainWindow::showGUI()
-{
-    m_gui_hidden = false;
-}
-
-/****************************************************************************/
-
-void MainWindow::hideGUI()
-{
-    m_gui_hidden = true;
-}
-
-/****************************************************************************/
-
-void MainWindow::toggleGUI()
-{
-    m_gui_hidden = !m_gui_hidden;
-}
-
-/****************************************************************************/
-
-bool MainWindow::GUIStatus() const
-{
-    return !m_gui_hidden;
 }
 
 /****************************************************************************/

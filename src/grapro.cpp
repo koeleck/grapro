@@ -6,12 +6,15 @@
 #include "framework/imgui.h"
 #include "core/instance_manager.h"
 #include "core/camera_manager.h"
+#include "core/shader_manager.h"
+#include "log/log.h"
 
 /****************************************************************************/
 
 GraPro::GraPro(GLFWwindow* window)
   : framework::MainWindow(window),
-    m_cam(core::res::cameras->getDefaultCam())
+    m_cam(core::res::cameras->getDefaultCam()),
+    m_showgui{true}
 {
     const auto* instances = core::res::instances;
     m_renderer.setGeometry(instances->getInstances());
@@ -19,7 +22,6 @@ GraPro::GraPro(GLFWwindow* window)
     glm::dvec3 up(0.0, 1.0, 0.0);
     m_cam->setFixedYawAxis(true, up);
 
-    hideGUI();
 }
 
 /****************************************************************************/
@@ -35,8 +37,17 @@ void GraPro::render_scene()
 
 void GraPro::update_gui(const double delta_t)
 {
-    static bool open = true;
-    ImGui::ShowTestWindow(&open);
+    if (!m_showgui)
+        return;
+    if (ImGui::Begin("DEBUG", &m_showgui)) {
+        ImGui::PushItemWidth(.65f * static_cast<float>(getWidth()));
+
+        if (ImGui::Button("recompile shaders")) {
+            core::res::shaders->recompile();
+            LOG_INFO("shaders recompiled");
+        }
+    }
+    ImGui::End();
 }
 
 /****************************************************************************/

@@ -37,11 +37,6 @@ public:
     int getWidth() const;
     int getHeight() const;
 
-    void showGUI();
-    void hideGUI();
-    void toggleGUI();
-    bool GUIStatus() const;
-
 protected:
     virtual void handle_keyboard(double delta_t);
     virtual void handle_mouse(double delta_t);
@@ -79,7 +74,6 @@ private:
 
     int                         m_width;
     int                         m_height;
-    bool                        m_gui_hidden;
     gl::VertexArray             m_gui_vao;
     gl::Buffer                  m_gui_vertex_buffer;
     gl::Texture                 m_gui_font_texture;
