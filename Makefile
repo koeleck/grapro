@@ -12,6 +12,7 @@ build/Makefile: CMakeLists.txt
 
 clean:
 	make -C build clean
+	rm -rf cache imgui.ini
 
 distclean:
-	rm -rf build
+	rm -rf build cache imgui.ini

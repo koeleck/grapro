@@ -22,6 +22,7 @@ GraPro::GraPro(GLFWwindow* window)
     glm::dvec3 up(0.0, 1.0, 0.0);
     m_cam->setFixedYawAxis(true, up);
 
+    m_render_timer = m_timers.addGPUTimer("Render");
 }
 
 /****************************************************************************/
@@ -30,7 +31,9 @@ void GraPro::render_scene()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    m_render_timer->start();
     m_renderer.render();
+    m_render_timer->stop();
 }
 
 /****************************************************************************/
@@ -45,6 +48,21 @@ void GraPro::update_gui(const double delta_t)
         if (ImGui::Button("recompile shaders")) {
             core::res::shaders->recompile();
             LOG_INFO("shaders recompiled");
+        }
+
+        // Timers: Just create your timer via m_timers and they will
+        // appear here
+        if (ImGui::CollapsingHeader("Time", nullptr, false, true)) {
+            ImGui::Columns(2, "data", true);
+
+            for (const auto& t : m_timers.getTimers()) {
+                ImGui::Text(t.first.c_str());
+                ImGui::NextColumn();
+                auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        t.second->time()).count();
+                ImGui::Text("%d ms", static_cast<int>(msec));
+                ImGui::Separator();
+            }
         }
     }
     ImGui::End();
