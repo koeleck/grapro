@@ -54,11 +54,8 @@ int main(int argc, const char** argv)
         GraPro* win = new GraPro(main_window);
 
         while (!glfwWindowShouldClose(*win)) {
+
             win->update();
-
-            // upload data
-            glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
-
             win->render();
 
             glfwSwapBuffers(*win);

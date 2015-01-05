@@ -1,6 +1,7 @@
 #include <sstream>
 #include <algorithm>
 #include <unordered_map>
+#include <string>
 
 #include "gl_sys.h"
 #include "log/log.h"
@@ -16,11 +17,26 @@ bool initialized = false;
 
 std::unordered_map<GLenum, std::string> tokens;
 
+int rank_severity(GLenum sev)
+{
+    if (sev == GL_DEBUG_SEVERITY_NOTIFICATION)
+        return 0;
+    if (sev == GL_DEBUG_SEVERITY_LOW)
+        return 1;
+    if (sev == GL_DEBUG_SEVERITY_MEDIUM)
+        return 1;
+    return 3;
+}
+
 void debug_callback(const GLenum source, const GLenum type, const GLuint id,
         const GLenum severity, const GLsizei /*length*/,
         const GLchar* const message, const void* /*userParam*/)
 {
     using namespace logging;
+
+    GLenum min_severity = gl::stringToEnum(vars.gl_debug_min_severity);
+    if (rank_severity(severity) < rank_severity(min_severity))
+        return;
 
     if (vars.gl_debug_break) {
         debug_break();
@@ -124,6 +140,10 @@ void populateEnumMap()
     ADD_ENUM(GL_LINEAR_MIPMAP_NEAREST);
     ADD_ENUM(GL_NEAREST_MIPMAP_LINEAR);
     ADD_ENUM(GL_LINEAR_MIPMAP_LINEAR);
+    ADD_ENUM(GL_DEBUG_SEVERITY_NOTIFICATION);
+    ADD_ENUM(GL_DEBUG_SEVERITY_LOW);
+    ADD_ENUM(GL_DEBUG_SEVERITY_MEDIUM);
+    ADD_ENUM(GL_DEBUG_SEVERITY_HIGH);
 }
 
 } // anonymous namespace
@@ -149,22 +169,26 @@ bool initGL()
     }
 
     //
-    // check
+    // check for extensions
     //
     // ...
-    if (!glewIsSupported("GL_ARB_bindless_texture")) {
-        LOG_ERROR(logtag::OpenGL, "GL_ARB_bindless_texture not available");
-        abort();
+    GLint num_extensions;
+    glGetIntegerv(GL_NUM_EXTENSIONS, &num_extensions);
+    std::string available_extensions;
+    for (GLint i = 0; i < num_extensions; ++i) {
+        available_extensions += ' ';
+        available_extensions += reinterpret_cast<const char*>(glGetStringi(GL_EXTENSIONS, i));
     }
-    if (!glewIsSupported("GL_EXT_direct_state_access")) {
-        LOG_ERROR(logtag::OpenGL, "GL_EXT_direct_state_access not available");
-        abort();
+#define REQUIRES_EXTENSION(EXT)                                 \
+    if (available_extensions.find(#EXT) == std::string::npos) { \
+            LOG_ERROR(logtag::OpenGL, #EXT " not available");   \
+            abort();                                            \
     }
-    // This is broken with current glew (version 1.11.0)
-    //if (!glewIsSupported("GL_EXT_texture_filter_anisotropic")) {
-    //    LOG_ERROR(logtag::OpenGL, "GL_EXT_texture_filter_anisotropic not available");
-    //    abort();
-    //}
+
+    REQUIRES_EXTENSION(GL_ARB_bindless_texture)
+    REQUIRES_EXTENSION(GL_EXT_direct_state_access)
+    REQUIRES_EXTENSION(GL_ARB_shader_draw_parameters);
+    REQUIRES_EXTENSION(GL_EXT_texture_filter_anisotropic);
 
     if (vars.gl_debug_context) {
         if (!glewIsSupported("GL_ARB_debug_output")) {

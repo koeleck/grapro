@@ -47,5 +47,17 @@ void terminateManagers()
 
 /***************************************************************************/
 
+bool updateManagers()
+{
+    bool result = false;
+
+    result |= res::cameras->update();
+    result |= res::instances->update();
+
+    return result;
+}
+
+/***************************************************************************/
+
 } // namespace core
 

@@ -8,8 +8,6 @@
 
 #include "managers.h"
 #include "instance.h"
-#include "shader_interface.h"
-#include "buffer_storage_pool.h"
 
 namespace core
 {
@@ -35,18 +33,11 @@ public:
     void setModified();
     bool update();
 
-    void bind() const;
-
 private:
-    using InstanceList = std::vector<std::unique_ptr<Instance>>;
-    using InstancePool = BufferStoragePool<sizeof(shader::InstanceStruct)>;
-    using InstanceMap = std::unordered_map<std::string, std::size_t>;
+    using InstanceMap = std::unordered_map<std::string, std::unique_ptr<Instance>>;
 
 
-    InstancePool        m_instance_buffer;
-    InstanceMap         m_instance_names;
-    InstanceList        m_instances;
-
+    InstanceMap         m_instances;
     bool                m_isModified;
 };
 

@@ -1,5 +1,4 @@
 #include "texture_manager.h"
-#include "shader_interface.h"
 #include "log/log.h"
 #include "import/image.h"
 #include "framework/vars.h"
@@ -75,10 +74,10 @@ Texture* TextureManager::addTexture(const std::string& name, gl::Texture&& textu
     GLuint index = static_cast<GLuint>(offset / static_cast<GLintptr>(sizeof(shader::TextureStruct)));
 
     auto* tex_info = reinterpret_cast<shader::TextureStruct*>(m_texture_buffer.offsetToPointer(offset));
-    tex_info->handle = handle;
-    tex_info->num_channels = static_cast<unsigned int>(num_channels);
+    *tex_info = handle;
 
-    auto res = m_textures.emplace(name, std::unique_ptr<Texture>(new Texture(std::move(texture), handle, index)));
+    auto res = m_textures.emplace(name, std::unique_ptr<Texture>(new Texture(std::move(texture), handle,
+                    static_cast<GLuint>(num_channels), index)));
     return res.first->second.get();
 }
 

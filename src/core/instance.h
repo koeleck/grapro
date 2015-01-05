@@ -9,11 +9,6 @@
 namespace core
 {
 
-// Forward declarations:
-namespace shader
-{
-struct InstanceStruct;
-} // namespace shader
 class Mesh;
 class Material;
 
@@ -63,8 +58,7 @@ public:
 
 protected:
     friend class InstanceManager;
-    Instance(const Mesh* mesh, const Material* material,
-            GLuint index, GLvoid* data);
+    Instance(const Mesh* mesh, const Material* material);
 
     virtual void update_impl();
 
@@ -80,8 +74,6 @@ private:
     bool            m_modified;
     const Mesh*     m_mesh;
     const Material* m_material;
-    GLuint          m_index;
-    shader::InstanceStruct*     m_data;
 };
 
 } // namespace core

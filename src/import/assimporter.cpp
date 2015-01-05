@@ -43,7 +43,7 @@ struct AssimpMaterial
       : diffuse_tex{-1}, specular_tex{-1},
         exponent_tex{-1}, normal_tex{-1},
         emissive_tex{-1}, alpha_tex{-1},
-        ptr{mat}
+        ambient_tex{-1}, ptr{mat}
     {
     }
     int diffuse_tex;
@@ -52,13 +52,15 @@ struct AssimpMaterial
     int normal_tex;
     int emissive_tex;
     int alpha_tex;
+    int ambient_tex;
     const aiMaterial* ptr;
 
     bool needsTexcoords() const noexcept
     {
         return diffuse_tex   != -1 || specular_tex != -1 ||
                 exponent_tex != -1 || normal_tex   != -1 ||
-                emissive_tex != -1 || alpha_tex    != -1;
+                emissive_tex != -1 || alpha_tex    != -1 ||
+                ambient_tex  != -1;
     }
 
     bool needsTangents() const noexcept
@@ -308,8 +310,9 @@ std::size_t getSceneInfo(const std::string& filename, const aiScene* scene,
         const auto num_specular = mat->GetTextureCount(aiTextureType_SPECULAR);
         const auto num_exponent = mat->GetTextureCount(aiTextureType_SHININESS);
         const auto num_emissive = mat->GetTextureCount(aiTextureType_EMISSIVE);
-        const auto num_normal = mat->GetTextureCount(aiTextureType_NORMALS);
+        const auto num_normal = mat->GetTextureCount(aiTextureType_HEIGHT);
         const auto num_alpha = mat->GetTextureCount(aiTextureType_OPACITY);
+        const auto num_ambient = mat->GetTextureCount(aiTextureType_AMBIENT);
 
         aiString ai_texname;
         if (num_diffuse != 0) {
@@ -370,9 +373,9 @@ std::size_t getSceneInfo(const std::string& filename, const aiScene* scene,
         }
         if (num_normal != 0) {
             if (num_normal > 1)
-                LOG_WARNING(logtag::Import, "Can't deal with multiple emissive textures");
+                LOG_WARNING(logtag::Import, "Can't deal with multiple normal textures");
 
-            mat->Get(AI_MATKEY_TEXTURE_NORMALS(0), ai_texname);
+            mat->Get(AI_MATKEY_TEXTURE_HEIGHT(0), ai_texname);
             auto texname = std::string(ai_texname.C_Str());
             const auto it = std::find(textures.begin(), textures.end(), texname);
             if (it == textures.end()) {
@@ -394,6 +397,20 @@ std::size_t getSceneInfo(const std::string& filename, const aiScene* scene,
                 textures.emplace_back(std::move(texname));
             } else {
                 mat_props.alpha_tex = static_cast<int>(std::distance(textures.begin(), it));
+            }
+        }
+        if (num_ambient != 0) {
+            if (num_ambient > 1)
+                LOG_WARNING(logtag::Import, "Can't deal with multiple ambient textures");
+
+            mat->Get(AI_MATKEY_TEXTURE_AMBIENT(0), ai_texname);
+            auto texname = std::string(ai_texname.C_Str());
+            const auto it = std::find(textures.begin(), textures.end(), texname);
+            if (it == textures.end()) {
+                mat_props.ambient_tex = static_cast<int>(textures.size());
+                textures.emplace_back(std::move(texname));
+            } else {
+                mat_props.ambient_tex = static_cast<int>(std::distance(textures.begin(), it));
             }
         }
 
@@ -461,7 +478,7 @@ std::size_t getSceneInfo(const std::string& filename, const aiScene* scene,
         std::string nodename = getName(node);
         for (unsigned int i = 0; i < node->mNumMeshes; ++i) {
             nodes.emplace_back(nodename + '_' + std::to_string(i),
-                    AssimpNode(node, i));
+                    AssimpNode(node, node->mMeshes[i]));
             size += sizeof(Node) + nodes.back().first.size() + 1;
         }
         for (unsigned int i = 0; i < node->mNumChildren; ++i) {
@@ -506,6 +523,7 @@ char* dumpMaterial(char* ptr, const std::pair<std::string, AssimpMaterial>& mat)
     my_mat->normal_texture = mat.second.normal_tex;
     my_mat->emissive_texture = mat.second.emissive_tex;
     my_mat->alpha_texture = mat.second.alpha_tex;
+    my_mat->ambient_texture = mat.second.ambient_tex;
 
     const aiMaterial* aimat = mat.second.ptr;
     aiColor3D color;

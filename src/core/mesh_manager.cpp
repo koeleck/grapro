@@ -1,3 +1,5 @@
+#include <cassert>
+
 #include "mesh_manager.h"
 #include "import/mesh.h"
 #include "log/log.h"
@@ -8,12 +10,10 @@ namespace core
 
 /****************************************************************************/
 
-constexpr int MAX_NUM_MESHES = 1024;
 MeshManager::MeshManager()
-  : m_vertex_buffer(GL_SHADER_STORAGE_BUFFER, static_cast<std::size_t>(vars.vertex_buffer_size)),
-    m_mesh_buffer(GL_SHADER_STORAGE_BUFFER, MAX_NUM_MESHES)
+  : m_data(GL_ARRAY_BUFFER, vars.vertex_buffer_size)
 {
-    bind();
+    initVAOs();
 }
 
 /****************************************************************************/
@@ -32,18 +32,23 @@ Mesh* MeshManager::addMesh(const import::Mesh* mesh)
         return it->second.get();
     }
 
-    std::size_t per_vertex_size = 3 * sizeof(float);
-    if (mesh->hasNormals())
+    util::bitfield<MeshComponents> components;
+    GLsizeiptr per_vertex_size = 3 * sizeof(float);
+    if (mesh->hasNormals()) {
         per_vertex_size += 3 * sizeof(float);
-    if (mesh->hasTexCoords())
+        components |= MeshComponents::Normals;
+    }
+    if (mesh->hasTexCoords()) {
         per_vertex_size += 2 * sizeof(float);
-    if (mesh->hasTangents())
+        components |= MeshComponents::TexCoords;
+    }
+    if (mesh->hasTangents()) {
         per_vertex_size += 3 * sizeof(float);
-    if (mesh->hasVertexColors())
-        per_vertex_size +=  3 * sizeof(float);
+        components |= MeshComponents::Tangents;
+    }
 
     GLenum index_type;
-    std::size_t per_index_size;
+    GLsizeiptr per_index_size;
     if (mesh->num_vertices < 256) {
         per_index_size = sizeof(GLubyte);
         index_type = GL_UNSIGNED_BYTE;
@@ -55,13 +60,22 @@ Mesh* MeshManager::addMesh(const import::Mesh* mesh)
         index_type = GL_UNSIGNED_INT;
     }
 
-    const std::size_t size = per_vertex_size * mesh->num_vertices +
-            per_index_size * mesh->num_indices;
+    const GLsizeiptr vertices_size = per_vertex_size * mesh->num_vertices;
+    const GLsizeiptr indices_size = per_index_size * mesh->num_indices;
+    const GLsizeiptr size = vertices_size + indices_size;
 
-    const auto offset = m_vertex_buffer.alloc(size, 4);
+    // allocate memory and make sure the first address is aligned to
+    // a multiple of the per_vertex_size
+    const auto offset = m_data.alloc(size, static_cast<GLsizei>(vertices_size));
+    assert(offset % vertices_size == 0);
 
     // Upload data to GPU
-    float* data = static_cast<float*>(m_vertex_buffer.offsetToPointer(offset));
+    void* ptr = glMapNamedBufferRangeEXT(m_data.buffer(),
+                offset, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
+    //glBindBuffer(GL_COPY_WRITE_BUFFER, m_data.buffer());
+    //void* ptr = glMapBufferRange(GL_COPY_WRITE_BUFFER, offset, size,
+    //        GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
+    float* data = static_cast<float*>(ptr);
     for (unsigned int i = 0; i < mesh->num_vertices; ++i) {
         *data++ = mesh->vertices[i].x;
         *data++ = mesh->vertices[i].y;
@@ -89,37 +103,31 @@ Mesh* MeshManager::addMesh(const import::Mesh* mesh)
         }
     }
     GLubyte* indices = reinterpret_cast<GLubyte*>(data);
-    GLvoid* const index_ptr = static_cast<GLvoid*>(indices);
     for (unsigned int i = 0; i < mesh->num_indices; ++i) {
         if (per_index_size == sizeof(GLubyte)) {
             *indices = static_cast<GLubyte>(mesh->indices[i]);
         } else if (per_index_size == sizeof(GLushort)) {
-            GLushort* ptr = reinterpret_cast<GLushort*>(indices);
-            *ptr = static_cast<GLushort>(mesh->indices[i]);
+            GLushort* idx = reinterpret_cast<GLushort*>(indices);
+            *idx = static_cast<GLushort>(mesh->indices[i]);
         } else {
-            GLuint* ptr = reinterpret_cast<GLuint*>(indices);
-            *ptr = static_cast<GLuint>(mesh->indices[i]);
+            GLuint* idx = reinterpret_cast<GLuint*>(indices);
+            *idx = static_cast<GLuint>(mesh->indices[i]);
         }
         indices += per_index_size;
     }
+    assert(indices - static_cast<GLubyte*>(ptr) == size);
+    glUnmapNamedBufferEXT(m_data.buffer());
+    //glUnmapBuffer(GL_COPY_WRITE_BUFFER);
+    //glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 
-    // Create Mesh object on GPU
-    const auto mesh_offset = m_mesh_buffer.alloc();
-    auto* mesh_info = reinterpret_cast<shader::MeshStruct*>(m_mesh_buffer.offsetToPointer(mesh_offset));
-    mesh_info->first = static_cast<unsigned int>(offset);
-    mesh_info->stride = static_cast<unsigned int>(per_vertex_size);
-    mesh_info->components[0] = mesh->hasNormals();
-    mesh_info->components[1] = mesh->hasTexCoords();
-    mesh_info->components[2] = mesh->hasTangents();
-    mesh_info->components[3] = mesh->hasVertexColors();
-
-
-    auto mesh_index = static_cast<GLuint>(mesh_offset / static_cast<GLintptr>(sizeof(shader::MeshStruct)));
     auto res = m_meshes.emplace(std::move(name),
             std::unique_ptr<Mesh>(
-                new Mesh(GL_TRIANGLES, index_ptr,
-                static_cast<GLsizei>(mesh->num_indices), index_type,
-                mesh_index, offset)));
+                new Mesh(GL_TRIANGLES,
+                static_cast<GLsizei>(mesh->num_indices),
+                index_type,
+                reinterpret_cast<GLvoid*>(offset + vertices_size),
+                static_cast<GLint>(offset / per_vertex_size),
+                components)));
     return res.first->second.get();
 }
 
@@ -149,11 +157,68 @@ const Mesh* MeshManager::getMesh(const char* name) const
 
 /****************************************************************************/
 
-void MeshManager::bind() const
+void MeshManager::initVAOs()
 {
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindings::MESH,
-            m_mesh_buffer.buffer());
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_mesh_buffer.buffer());
+    for (unsigned char i = 0; i < 8; ++i) {
+        util::bitfield<MeshComponents> c(i);
+        GLsizei stride = static_cast<GLsizei>(3 * sizeof(float));
+        if (c & MeshComponents::Normals)
+            stride += static_cast<GLsizei>(3 * sizeof(float));
+        if (c & MeshComponents::TexCoords)
+            stride += static_cast<GLsizei>(2 * sizeof(float));
+        if (c & MeshComponents::Tangents)
+            stride += static_cast<GLsizei>(3 * sizeof(float));
+
+        gl::VertexArray vao;
+        glBindVertexArray(vao);
+        glBindBuffer(GL_ARRAY_BUFFER, m_data.buffer());
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, nullptr);
+
+        // observe the order in 'shader_interface.h'
+        auto offset = 3 * sizeof(float);
+        if (c & MeshComponents::Normals) {
+            glEnableVertexAttribArray(1);
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, stride,
+                    reinterpret_cast<GLvoid*>(offset));
+            offset += 3 * sizeof(float);
+        }
+        if (c & MeshComponents::TexCoords) {
+            glEnableVertexAttribArray(2);
+            glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride,
+                    reinterpret_cast<GLvoid*>(offset));
+            offset += 2 * sizeof(float);
+        }
+        if (c & MeshComponents::Tangents) {
+            glEnableVertexAttribArray(3);
+            glVertexAttribPointer(3, 3, GL_FLOAT, GL_TRUE, stride,
+                    reinterpret_cast<GLvoid*>(offset));
+            offset += 3 * sizeof(float);
+        }
+
+        assert(static_cast<GLsizei>(offset) == stride);
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_data.buffer());
+        glBindVertexArray(0);
+
+        m_vaos.emplace(c(), std::move(vao));
+    }
+}
+
+/****************************************************************************/
+
+GLuint MeshManager::getVAO(const Mesh* mesh) const
+{
+    if (mesh == nullptr)
+        return 0;
+    auto it = m_vaos.find(mesh->components()());
+    if (it == m_vaos.end()) {
+        LOG_ERROR("No suitable VAO found");
+        return 0;
+    }
+    return it->second.get();
 }
 
 /****************************************************************************/

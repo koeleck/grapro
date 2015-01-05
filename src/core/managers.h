@@ -24,6 +24,7 @@ extern MeshManager* meshes;
 
 void initializeManagers();
 void terminateManagers();
+bool updateManagers();
 
 } // namespace core
 

@@ -9,5 +9,6 @@
 #define MESH_BINDING        2
 #define MATERIAL_BINDING    3
 #define INSTANCE_BINDING    4
+#define VERTEX_BINDING      5
 
 #endif // SHADERS_COMMON_BINDINGS_GLSL

@@ -27,6 +27,8 @@ public:
 
     constexpr bitfield() : m_value{0} {}
 
+    constexpr bitfield(type value) : m_value{value} {}
+
     constexpr bitfield(const T flag) : m_value{static_cast<type>(flag)} {}
 
     constexpr bitfield(std::initializer_list<T> flags) : m_value{setBits(flags.begin(), flags.end())} {}
@@ -125,6 +127,19 @@ bool operator==(const bitfield<T>& bf0, const bitfield<T>& bf1) noexcept
 {
     return bf0() == bf1();
 }
+
+template <typename T>
+bool operator!=(const bitfield<T>& bf0, const bitfield<T>& bf1) noexcept
+{
+    return bf0() != bf1();
+}
+
+template <typename T>
+bool operator<(const bitfield<T>& bf0, const bitfield<T>& bf1) noexcept
+{
+    return bf0() < bf1();
+}
+
 
 } // namespace util
 

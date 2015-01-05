@@ -166,7 +166,7 @@ void Camera::setDirection(const glm::dvec3& dir)
 
 glm::dvec3 Camera::getDirection() const
 {
-    return m_orientation * glm::dvec3(0.0, 0.0, -1.0);
+    return m_orientation * glm::dvec3(0.0, 0.0, 1.0);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -262,18 +262,6 @@ void Camera::update() const
     m_viewmat = glm::mat4_cast(glm::conjugate(m_orientation)) * translation;
     m_projviewmat = m_projmat * m_viewmat;
 
-    m_modified = false;
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-void Camera::updateBuffer() const
-{
-    if (!m_modified)
-        return;
-
-    update();
-
     shader::CameraStruct data;
     data.ViewMatrix = glm::mat4(m_viewmat);
     data.ProjMatrix = glm::mat4(m_projmat);
@@ -281,6 +269,8 @@ void Camera::updateBuffer() const
     data.CameraPosition = glm::vec4(m_position, 1.f);
 
     std::memcpy(m_data, &data, sizeof(shader::CameraStruct));
+
+    m_modified = false;
 }
 
 //////////////////////////////////////////////////////////////////////////

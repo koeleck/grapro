@@ -11,19 +11,26 @@
 
 struct Material
 {
-    uint    diffuseTex;
-    uint    specularTex;
-    uint    glossyTex;
-    uint    normalTex;
-    uint    emissiveTex;
-    uint    alphaTex;
-    float   diffuseColor;
-    float   specularColor;
-    float   ambientColor;
-    float   emissiveColor;
-    float   transparentColor;
+    vec3    diffuseColor;
+    vec3    specularColor;
+    vec3    ambientColor;
+    vec3    emissiveColor;
+    vec3    transparentColor;
+    uvec2   diffuseTex;
+    uvec2   specularTex;
+    uvec2   glossyTex;
+    uvec2   normalTex;
+    uvec2   emissiveTex;
+    uvec2   alphaTex;
+    uvec2   ambientTex;
     float   glossiness;
     float   opacity;
+    //uint    diffuseTex;
+    //uint    specularTex;
+    //uint    glossyTex;
+    //uint    normalTex;
+    //uint    emissiveTex;
+    //uint    alphaTex;
 };
 
 layout(std430, binding = MATERIAL_BINDING) restrict readonly buffer MaterialBlock

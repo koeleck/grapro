@@ -391,6 +391,8 @@ bool ShaderManager::compile_shader(ShaderInfo& info) const
             msg << " (" << i++ << ") " << f << '\n';
         }
         msg << "Info Log:\n" << shader.getInfoLog();
+        msg << "\nSource:\n------------------------------\n";
+        msg << source.source() << "\n------------------------------";
 
         LOG_ERROR(logtag::OpenGL, msg.str());
 

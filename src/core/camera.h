@@ -65,8 +65,6 @@ public:
 
     void update() const;
 
-    void updateBuffer() const;
-
     CameraType type() const;
 
 protected:

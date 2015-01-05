@@ -9,7 +9,7 @@ namespace import
 
 struct Material
 {
-    static constexpr int VERSION = 1;
+    static constexpr int VERSION = 2;
 
     void makePointersRelative();
     void makePointersAbsolute();
@@ -21,6 +21,7 @@ struct Material
     std::int32_t    normal_texture;
     std::int32_t    emissive_texture;
     std::int32_t    alpha_texture;
+    std::int32_t    ambient_texture;
     glm::vec3       diffuse_color;
     glm::vec3       specular_color;
     glm::vec3       ambient_color;
@@ -47,6 +48,11 @@ struct Material
     bool hasNormalTexture() const noexcept
     {
         return normal_texture != -1;
+    }
+
+    bool hasAmbientTexture() const noexcept
+    {
+        return ambient_texture != -1;
     }
 
     bool hasEmissiveTexture() const noexcept

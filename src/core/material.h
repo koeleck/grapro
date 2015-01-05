@@ -23,6 +23,7 @@ public:
     bool hasGlossyTexture() const;
     bool hasAlphaTexture() const;
     bool hasNormalTexture() const;
+    bool hasAmbientTexture() const;
 
     const Texture* getDiffuseTexture() const;
     const Texture* getSpecularTexture() const;
@@ -30,6 +31,7 @@ public:
     const Texture* getGlossyTexture() const;
     const Texture* getAlphaTexture() const;
     const Texture* getNormalTexture() const;
+    const Texture* getAmbientTexture() const;
 
     void setDiffuseTexture(const Texture* texture);
     void setSpecularTexture(const Texture* texture);
@@ -37,6 +39,7 @@ public:
     void setGlossyTexture(const Texture* texture);
     void setAlphaTexture(const Texture* texture);
     void setNormalTexture(const Texture* texture);
+    void setAmbientTexture(const Texture* texture);
 
     const glm::vec3& getDiffuseColor() const;
     const glm::vec3& getSpecularColor() const;
@@ -66,6 +69,7 @@ private:
     const Texture*  m_normal_texture;
     const Texture*  m_emissive_texture;
     const Texture*  m_alpha_texture;
+    const Texture*  m_ambient_texture;
     glm::vec3       m_diffuse_color;
     glm::vec3       m_specular_color;
     glm::vec3       m_ambient_color;

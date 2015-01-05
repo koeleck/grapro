@@ -4,11 +4,11 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
-#include "buffer_storage.h"
-#include "buffer_storage_pool.h"
-#include "shader_interface.h"
+
+#include "gl/gl_objects.h"
 #include "mesh.h"
 #include "managers.h"
+#include "buffer_storage.h"
 
 namespace import
 {
@@ -28,15 +28,17 @@ public:
     Mesh* getMesh(const char* name);
     const Mesh* getMesh(const char* name) const;
 
-    void bind() const;
+    GLuint getVAO(const Mesh* mesh) const;
 
 private:
     using MeshMap = std::unordered_map<std::string, std::unique_ptr<Mesh>>;
-    using MeshPool = BufferStoragePool<sizeof(shader::MeshStruct)>;
+    using VAOMap = std::unordered_map<unsigned char, gl::VertexArray>;
+
+    void initVAOs();
 
     MeshMap             m_meshes;
-    BufferStorage       m_vertex_buffer;
-    MeshPool            m_mesh_buffer;
+    BufferStorage       m_data;
+    VAOMap              m_vaos;
 };
 
 } // namespace core

@@ -2,7 +2,6 @@
 #include <cassert>
 #include <cstring>
 #include "texture.h"
-#include "shader_interface.h"
 #include "texture_manager.h"
 
 namespace core
@@ -10,9 +9,21 @@ namespace core
 
 /****************************************************************************/
 
-Texture::Texture(gl::Texture&& texture, const GLuint64 handle, const GLuint index)
+Texture::Texture()
+  : m_texture{gl::NO_GEN},
+    m_handle{0},
+    m_num_channels{0},
+    m_index{0}
+{
+}
+
+/****************************************************************************/
+
+Texture::Texture(gl::Texture&& texture, const GLuint64 handle,
+        const GLuint index, const GLuint num_channels)
   : m_texture{std::move(texture)},
     m_handle{handle},
+    m_num_channels{num_channels},
     m_index{index}
 {
 }
@@ -35,6 +46,13 @@ Texture::operator GLuint() const
 GLuint64 Texture::getTextureHandle() const
 {
     return m_handle;
+}
+
+/****************************************************************************/
+
+GLuint Texture::getNumChannels() const
+{
+    return m_num_channels;
 }
 
 /****************************************************************************/

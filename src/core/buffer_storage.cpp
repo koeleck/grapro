@@ -6,24 +6,22 @@
 
 namespace
 {
-// from LLVM's libc++ (because gcc's libstdc++ doesn't provide std::align ... stupid gcc)
-bool align(size_t alignment, size_t size, void*& ptr, size_t& space)
+
+bool align(GLsizei alignment, GLsizeiptr size, GLintptr& ptr, GLsizeiptr space)
 {
     bool success = false;
-    if (size <= space)
-    {
-        char* p1 = static_cast<char*>(ptr);
-        char* p2 = reinterpret_cast<char*>((reinterpret_cast<size_t>(p1) + alignment - 1) & -alignment);
-        size_t d = static_cast<size_t>(p2 - p1);
-        if (d <= space - size)
-        {
-            ptr = p2;
-            space -= d;
+    if (size <= space) {
+        GLintptr ptr2 = ((ptr + alignment - 1) / alignment) * alignment;
+        GLsizeiptr diff = static_cast<GLsizeiptr>(ptr2 - ptr);
+        if (diff <= space - size) {
+            ptr = ptr2;
+            space -= diff;
             success = true;
         }
     }
     return success;
 }
+
 }
 
 namespace core
@@ -33,25 +31,21 @@ namespace core
 
 struct BufferStorage::Segment
 {
-    Segment(std::size_t b, std::size_t p, std::size_t e)
+    Segment(GLintptr b, GLintptr p, GLintptr e)
       : begin{b}, ptr{p}, end{e} {}
-    std::size_t begin;
-    std::size_t ptr;
-    std::size_t end;
+    GLintptr begin;
+    GLintptr ptr;
+    GLintptr end;
 };
 
 /****************************************************************************/
 
-BufferStorage::BufferStorage(const GLenum target, const std::size_t size)
-  : m_size{size},
-    m_persistent_ptr{nullptr}
+BufferStorage::BufferStorage(const GLenum target, const GLsizeiptr size)
+  : m_size{size}
 {
     glBindBuffer(target, m_buffer);
 
-    glBufferStorage(target, size, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
-
-    m_persistent_ptr = glMapBufferRange(target, 0, size,
-            GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+    glBufferStorage(target, size, nullptr, GL_MAP_WRITE_BIT | GL_DYNAMIC_STORAGE_BIT);
 
     m_freelist.emplace_back(0, 0, size);
 }
@@ -62,29 +56,24 @@ BufferStorage::~BufferStorage() = default;
 
 /****************************************************************************/
 
-GLintptr BufferStorage::alloc(const std::size_t size, const std::size_t alignment)
+GLintptr BufferStorage::alloc(const GLsizeiptr size, const GLsizei alignment)
 {
     GLintptr offset = 0;
     std::vector<Segment>::iterator it;
     const auto it_end = m_freelist.end();
     for (it = m_freelist.begin(); it != it_end; ++it) {
-        std::size_t space = it->end - it->begin;
-        if (space < size)
-            continue;
+        GLsizeiptr space = static_cast<GLsizeiptr>(it->end - it->begin);
 
-        void* ptr = reinterpret_cast<void*>(it->begin);
-
+        GLintptr ptr = it->begin;
         // first fit
         if (align(alignment, size, ptr, space)) {
-            const std::size_t start = reinterpret_cast<std::size_t>(ptr);
+            offset = ptr;
+            Segment used(it->begin, ptr, ptr + size);
 
-            Segment used(it->begin, start, start + size);
-
-            if (space == size) {
+            it->begin = used.end;
+            it->ptr = used.end;
+            if (it->begin == it->end) {
                 m_freelist.erase(it);
-            } else {
-                it->begin = used.end;
-                it->ptr = used.end;
             }
 
             auto pos = std::lower_bound(m_used.begin(), m_used.end(),
@@ -107,12 +96,10 @@ GLintptr BufferStorage::alloc(const std::size_t size, const std::size_t alignmen
 
 void BufferStorage::free(GLintptr offset)
 {
-    std::size_t ptr = static_cast<std::size_t>(offset);
-
     auto it = std::find_if(m_used.begin(), m_used.end(),
-            [ptr] (const Segment& seg) -> bool
+            [offset] (const Segment& seg) -> bool
             {
-                return seg.ptr == ptr;
+                return seg.ptr == offset;
             });
     if (it == m_used.end())
         abort();
@@ -151,13 +138,6 @@ void BufferStorage::free(GLintptr offset)
 
 /****************************************************************************/
 
-void* BufferStorage::baseAddress() const
-{
-    return m_persistent_ptr;
-}
-
-/****************************************************************************/
-
 void BufferStorage::clear()
 {
     m_used.clear();
@@ -170,21 +150,6 @@ void BufferStorage::clear()
 const gl::Buffer& BufferStorage::buffer() const
 {
     return m_buffer;
-}
-
-/****************************************************************************/
-
-void* BufferStorage::offsetToPointer(const GLintptr offset) const
-{
-    const auto tmp = static_cast<char*>(m_persistent_ptr);
-    return static_cast<void*>(tmp + offset);
-}
-
-/****************************************************************************/
-
-GLintptr BufferStorage::pointerToOffset(const void* const ptr) const
-{
-    return static_cast<const char*>(ptr) - static_cast<const char*>(m_persistent_ptr);
 }
 
 /****************************************************************************/

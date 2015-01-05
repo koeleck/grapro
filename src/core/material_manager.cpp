@@ -61,6 +61,9 @@ Material* MaterialManager::addMaterial(const std::string& name,
     if (material->hasEmissiveTexture()) {
         result->setEmissiveTexture(res::textures->getTexture(textures[material->emissive_texture]->name));
     }
+    if (material->hasAmbientTexture()) {
+        result->setAmbientTexture(res::textures->getTexture(textures[material->ambient_texture]->name));
+    }
     result->setDiffuseColor(material->diffuse_color);
     result->setSpecularColor(material->specular_color);
     result->setAmbientColor(material->ambient_color);

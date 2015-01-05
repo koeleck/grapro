@@ -11,18 +11,13 @@ namespace core
 class BufferStorage
 {
 public:
-    BufferStorage(GLenum target, std::size_t size);
+    BufferStorage(GLenum target, GLsizeiptr size);
     ~BufferStorage();
 
-    GLintptr alloc(std::size_t size, std::size_t alignment);
+    GLintptr alloc(GLsizeiptr size, GLsizei alignment);
     void free(GLintptr offset);
 
     void clear();
-
-    void* baseAddress() const;
-
-    void* offsetToPointer(GLintptr offset) const;
-    GLintptr pointerToOffset(const void* ptr) const;
 
     const gl::Buffer& buffer() const;
 
@@ -30,10 +25,9 @@ private:
     struct Segment;
 
     gl::Buffer              m_buffer;
-    std::size_t             m_size;
+    GLsizeiptr              m_size;
     std::vector<Segment>    m_freelist;
     std::vector<Segment>    m_used;
-    void*                   m_persistent_ptr;
 };
 
 } // namespace core

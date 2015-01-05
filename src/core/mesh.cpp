@@ -5,22 +5,15 @@ namespace core
 
 /****************************************************************************/
 
-Mesh::Mesh(const GLenum mode_, GLvoid* const indices, const GLsizei count,
-        const GLenum type_, const GLuint index, const GLintptr offset)
+Mesh::Mesh(GLenum mode_, GLsizei count_, GLenum type_, GLvoid* indices_,
+            GLint basevertex_, util::bitfield<MeshComponents> components_)
   : m_mode{mode_},
-    m_indices{indices},
-    m_count{count},
+    m_indices{indices_},
+    m_count{count_},
     m_type{type_},
-    m_index{index},
-    m_offset{offset}
+    m_basevertex{basevertex_},
+    m_components{components_}
 {
-}
-
-/****************************************************************************/
-
-GLuint Mesh::getIndex() const
-{
-    return m_index;
 }
 
 /****************************************************************************/
@@ -39,9 +32,30 @@ GLenum Mesh::mode() const
 
 /****************************************************************************/
 
-GLvoid* Mesh::indirect() const
+GLvoid* Mesh::indices() const
 {
     return m_indices;
+}
+
+/****************************************************************************/
+
+GLsizei Mesh::count() const
+{
+    return m_count;
+}
+
+/****************************************************************************/
+
+util::bitfield<MeshComponents> Mesh::components() const
+{
+    return m_components;
+}
+
+/****************************************************************************/
+
+GLint Mesh::basevertex() const
+{
+    return m_basevertex;
 }
 
 /****************************************************************************/

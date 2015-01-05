@@ -1,5 +1,5 @@
-#ifndef SHADERS_COMMON_TEXTURES_GLSL
-#define SHADERS_COMMON_TEXTURES_GLSL
+#ifndef SHADER_COMMON_VERTICES_GLSL
+#define SHADER_COMMON_VERTICES_GLSL
 
 #include "bindings.glsl"
 
@@ -9,17 +9,10 @@
 //!!                                                 !!
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-struct Texture
+layout(std430, binding = VERTEX_BINDING) restrict readonly buffer VertexBlock
 {
-    uvec2   handle;
+    float vertexData[];
 };
 
-layout(std430, binding = TEXTURE_BINDING) restrict readonly buffer TextureBlock
-{
-    //Texture     textures[];
-    uvec2       textures[];
-};
+#endif // SHADER_COMMON_VERTICES_GLSL
 
-
-
-#endif // SHADERS_COMMON_TEXTURES_GLSL

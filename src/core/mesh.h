@@ -2,30 +2,40 @@
 #define CORE_MESH_H
 
 #include "gl/gl_sys.h"
+#include "util/bitfield.h"
 
 namespace core
 {
 
+enum class MeshComponents : unsigned char
+{
+    Normals   = 1<<0,
+    TexCoords = 1<<1,
+    Tangents  = 1<<2
+};
+
 class Mesh
 {
 public:
-    GLuint getIndex() const;
+    util::bitfield<MeshComponents> components() const;
     GLenum type() const;
     GLenum mode() const;
-    GLvoid* indirect() const;
+    GLvoid* indices() const;
+    GLsizei count() const;
+    GLint   basevertex() const;
 
 private:
     friend class MeshManager;
 
-    Mesh(GLenum, GLvoid*, GLsizei, GLenum, GLuint, GLintptr);
+    Mesh(GLenum mode, GLsizei count, GLenum type, GLvoid* indices,
+            GLint basevertex, util::bitfield<MeshComponents> components);
 
     GLenum      m_mode;
     GLvoid*     m_indices;
     GLsizei     m_count;
     GLenum      m_type;
-
-    GLuint      m_index;
-    GLintptr    m_offset;
+    GLint       m_basevertex;
+    util::bitfield<MeshComponents> m_components;
 };
 
 } // namespace core

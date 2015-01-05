@@ -31,6 +31,8 @@ void ImImpl_RenderDrawLists(ImDrawList** const cmd_lists, int cmd_lists_count)
 {
     if (cmd_lists_count == 0)
         return;
+    // TODO save state
+
     // Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled
     glEnable(GL_BLEND);
     glBlendEquation(GL_FUNC_ADD);
@@ -97,6 +99,7 @@ void ImImpl_RenderDrawLists(ImDrawList** const cmd_lists, int cmd_lists_count)
     glBindVertexArray(0);
     glUseProgram(0);
     glDisable(GL_SCISSOR_TEST);
+    glDisable(GL_BLEND);
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -184,6 +187,11 @@ void MainWindow::update()
     update_stuff(delta_t);
 
     resetInput();
+    core::updateManagers();
+
+    // upload data
+    glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
+
 }
 
 /****************************************************************************/

@@ -4,7 +4,6 @@
 #include <unordered_map>
 #include <string>
 #include <memory>
-#include <vector>
 
 #include "managers.h"
 #include "buffer_storage_pool.h"

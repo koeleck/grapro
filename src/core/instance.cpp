@@ -1,5 +1,4 @@
 #include "instance.h"
-#include "shader_interface.h"
 #include "mesh.h"
 #include "material.h"
 #include "instance_manager.h"
@@ -9,8 +8,7 @@ namespace core
 
 /****************************************************************************/
 
-Instance::Instance(const Mesh* mesh, const Material* material,
-            GLuint index, GLvoid* data)
+Instance::Instance(const Mesh* mesh, const Material* material)
   : m_transformation{},
     m_position{.0f},
     m_scale{1.f},
@@ -19,9 +17,7 @@ Instance::Instance(const Mesh* mesh, const Material* material,
     m_hasFixedYawAxis{},
     m_modified{true},
     m_mesh{mesh},
-    m_material{material},
-    m_index{index},
-    m_data{static_cast<shader::InstanceStruct*>(data)}
+    m_material{material}
 {
     setModified();
 }
@@ -199,9 +195,6 @@ void Instance::update()
 
         update_impl();
 
-        m_data->modelMatrix = m_transformation;
-        m_data->meshID = m_mesh->getIndex();
-        m_data->materialID = m_material->getIndex();
         m_modified = false;
     }
 }
@@ -210,13 +203,6 @@ void Instance::update()
 
 void Instance::update_impl()
 {
-}
-
-/****************************************************************************/
-
-GLuint Instance::getIndex() const
-{
-    return m_index;
 }
 
 /****************************************************************************/
