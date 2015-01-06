@@ -114,6 +114,8 @@ void Renderer::render()
     core::res::materials->bind();
     core::res::textures->bind();
 
+    const auto* cam = core::res::cameras->getDefaultCam();
+
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
@@ -121,6 +123,8 @@ void Renderer::render()
     GLuint vao = 0;
 
     for (const auto& cmd : m_drawlist) {
+        if (!cam->inFrustum(cmd.instance->getBoundingBox()))
+            continue;
         if (prog != cmd.prog) {
             prog = cmd.prog;
             glUseProgram(prog);
