@@ -14,7 +14,8 @@
 GraPro::GraPro(GLFWwindow* window)
   : framework::MainWindow(window),
     m_cam(core::res::cameras->getDefaultCam()),
-    m_showgui{true}
+    m_showgui{true},
+    m_render_bboxes{false}
 {
     const auto* instances = core::res::instances;
     m_renderer.setGeometry(instances->getInstances());
@@ -32,7 +33,7 @@ void GraPro::render_scene()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     m_render_timer->start();
-    m_renderer.render();
+    m_renderer.render(m_render_bboxes);
     m_render_timer->stop();
 }
 
@@ -49,6 +50,10 @@ void GraPro::update_gui(const double delta_t)
             core::res::shaders->recompile();
             LOG_INFO("shaders recompiled");
         }
+
+        ImGui::Spacing();
+
+        ImGui::Checkbox("bounding boxes", &m_render_bboxes);
 
         // Timers: Just create your timer via m_timers and they will
         // appear here

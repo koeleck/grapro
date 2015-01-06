@@ -14,16 +14,22 @@ public:
     ~Renderer();
 
     void setGeometry(std::vector<const core::Instance*> geometry);
-    void render();
+    void render(bool renderBBoxes = false);
+    void renderBoundingBoxes();
 
 private:
     struct DrawCmd;
-
     using ProgramMap = std::unordered_map<unsigned char, core::Program>;
+
+    void initBBoxStuff();
 
     std::vector<const core::Instance*>  m_geometry;
     ProgramMap                          m_programs;
     std::vector<DrawCmd>                m_drawlist;
+
+    gl::VertexArray                     m_bbox_vao;
+    gl::Buffer                          m_bbox_buffer;
+    core::Program                       m_bbox_prog;
 };
 
 #endif // RENDERER_H

@@ -24,6 +24,8 @@ private:
     bool                m_showgui;
     core::TimerArray    m_timers;
     core::GPUTimer*     m_render_timer;
+
+    bool                m_render_bboxes;
 };
 
 #endif // GRAPRO_H

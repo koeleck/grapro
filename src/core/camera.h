@@ -108,12 +108,16 @@ public:
 
     void setFOVY(double fovy);
     double getFOVY() const;
+    double getFOV() const;
 
     void setAspectRatio(double ratio);
     double getAspectRatio() const;
 
     void setNear(double near);
     double getNear() const;
+    void setFar(double far);
+    double getFar() const;
+    bool isInfinitePerspective() const;
 
     virtual bool inFrustum(const AABB& bbox) const override;
 
@@ -121,6 +125,10 @@ protected:
     PerspectiveCamera(const glm::dvec3& pos, const glm::dvec3& center,
             double fovy, double aspect_ratio, double near,
             void* ptr);
+
+    PerspectiveCamera(const glm::dvec3& pos, const glm::dvec3& center,
+            double fovy, double aspect_ratio, double near,
+            double far, void* ptr);
 
 private:
     friend class CameraManager;
@@ -131,6 +139,7 @@ private:
     double          m_fovy;
     double          m_aspect_ratio;
     double          m_near;
+    double          m_far;
     float           m_uFactor;
     float           m_rFactor;
 };

@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cstring>
+#include <limits>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "camera.h"
@@ -285,14 +286,25 @@ void Camera::update() const
 PerspectiveCamera::PerspectiveCamera(const glm::dvec3& pos,
         const glm::dvec3& center, const double fovy,
         const double aspect_ratio, const double near, void* ptr)
+  : PerspectiveCamera(pos, center, fovy, aspect_ratio,
+            near, std::numeric_limits<double>::infinity(), ptr)
+{
+}
+
+/************************************************************************/
+
+PerspectiveCamera::PerspectiveCamera(const glm::dvec3& pos,
+        const glm::dvec3& center, const double fovy,
+        const double aspect_ratio, const double near,
+        const double far, void* ptr)
   : Camera(pos, center, CameraType::PERSPECTIVE, ptr),
     m_fovy{fovy},
     m_aspect_ratio{aspect_ratio},
     m_near{near},
+    m_far{far},
     m_uFactor{glm::tan(static_cast<float>(m_fovy) / 2.f)},
-    m_rFactor{m_uFactor / static_cast<float>(m_aspect_ratio)}
+    m_rFactor{m_uFactor * static_cast<float>(m_aspect_ratio)}
 {
-    m_projmat = glm::infinitePerspective(m_fovy, m_aspect_ratio, m_near);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -301,7 +313,7 @@ void PerspectiveCamera::setFOVY(const double fovy)
 {
     m_fovy = fovy;
     m_uFactor = glm::tan(static_cast<float>(m_fovy) / 2.f);
-    m_rFactor = m_uFactor / static_cast<float>(m_aspect_ratio);
+    m_rFactor = m_uFactor * static_cast<float>(m_aspect_ratio);
     invalidate();
 }
 
@@ -314,12 +326,18 @@ double PerspectiveCamera::getFOVY() const
 
 //////////////////////////////////////////////////////////////////////////
 
+double PerspectiveCamera::getFOV() const
+{
+    return 2.0 * glm::atan(m_aspect_ratio * glm::tan(m_fovy / 2.0));
+}
+
+//////////////////////////////////////////////////////////////////////////
 
 void PerspectiveCamera::setAspectRatio(const double ratio)
 {
     m_aspect_ratio = ratio;
     m_uFactor = glm::tan(static_cast<float>(m_fovy) / 2.f);
-    m_rFactor = m_uFactor / static_cast<float>(m_aspect_ratio);
+    m_rFactor = m_uFactor * static_cast<float>(m_aspect_ratio);
     invalidate();
 }
 
@@ -347,9 +365,35 @@ double PerspectiveCamera::getNear() const
 
 //////////////////////////////////////////////////////////////////////////
 
+void PerspectiveCamera::setFar(const double far)
+{
+    m_far = far;
+    invalidate();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+double PerspectiveCamera::getFar() const
+{
+    return m_far;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+bool PerspectiveCamera::isInfinitePerspective() const
+{
+    return m_far == std::numeric_limits<double>::infinity();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 void PerspectiveCamera::updateProjMat() const
 {
-    m_projmat = glm::infinitePerspective(m_fovy, m_aspect_ratio, m_near);
+    if (m_far == std::numeric_limits<double>::infinity()) {
+        m_projmat = glm::infinitePerspective(m_fovy, m_aspect_ratio, m_near);
+    } else {
+        m_projmat = glm::perspective(m_fovy, m_aspect_ratio, m_near, m_far);
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -366,13 +410,16 @@ bool PerspectiveCamera::inFrustum(const AABB& bbox) const
     const glm::vec3 right = glm::vec3(getRight());
     const glm::vec3 up = glm::vec3(getUp());
 
+    const float near = static_cast<float>(m_near);
+    const float far = static_cast<float>(m_far);
+
     for (int i = 0; i < 8; ++i) {
         bool isInRightTest = false;
         bool isInUpTest = false;
         bool isInFrontTest = false;
-        const glm::vec3 p(corner[ i & 0x01].x,
-                          corner[ i & 0x02].y,
-                          corner[ i & 0x04].z);
+        const glm::vec3 p(corner[(i>>0) & 0x01].x,
+                          corner[(i>>1) & 0x01].y,
+                          corner[(i>>2) & 0x01].z);
 
         const float f = glm::dot(p, forward);
         const float u = glm::dot(p, up);
@@ -392,10 +439,10 @@ bool PerspectiveCamera::inFrustum(const AABB& bbox) const
         else
             isInUpTest=true;
 
-        if (f < m_near)
+        if (f < near)
             ++nOutOfNear;
-        //else if (f > m_far)
-        //    ++nOutOfFar;
+        else if (f > far)
+            ++nOutOfFar;
         else
             isInFrontTest = true;
 

@@ -1,4 +1,6 @@
+#include <cassert>
 #include <algorithm>
+
 #include <glm/gtc/type_ptr.hpp>
 
 #include "renderer.h"
@@ -75,6 +77,9 @@ Renderer::Renderer()
                 {vert, frag});
         m_programs.emplace(c(), prog);
     }
+
+
+    initBBoxStuff();
 }
 
 /****************************************************************************/
@@ -107,14 +112,14 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
 
 /****************************************************************************/
 
-void Renderer::render()
+void Renderer::render(const bool renderBBoxes)
 {
     if (m_geometry.empty())
         return;
 
     core::res::materials->bind();
 
-    //const auto* cam = core::res::cameras->getDefaultCam();
+    const auto* cam = core::res::cameras->getDefaultCam();
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -125,8 +130,8 @@ void Renderer::render()
     GLuint textures[core::bindings::NUM_TEXT_UNITS] = {0,};
 
     for (const auto& cmd : m_drawlist) {
-        //if (!cam->inFrustum(cmd.instance->getBoundingBox()))
-        //    continue;
+        if (!cam->inFrustum(cmd.instance->getBoundingBox()))
+            continue;
         if (prog != cmd.prog) {
             prog = cmd.prog;
             glUseProgram(prog);
@@ -143,9 +148,9 @@ void Renderer::render()
             GLuint tex = *mat->getDiffuseTexture();
             if (textures[unit] != tex) {
                 textures[unit] = tex;
-                glActiveTexture(GL_TEXTURE0 + unit);
-                glBindTexture(GL_TEXTURE_2D, tex);
-                //glBindMultiTextureEXT(unit, GL_TEXTURE_2D, tex);
+                //glActiveTexture(GL_TEXTURE0 + unit);
+                //glBindTexture(GL_TEXTURE_2D, tex);
+                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
         if (mat->hasSpecularTexture()) {
@@ -153,9 +158,9 @@ void Renderer::render()
             GLuint tex = *mat->getSpecularTexture();
             if (textures[unit] != tex) {
                 textures[unit] = tex;
-                glActiveTexture(GL_TEXTURE0 + unit);
-                glBindTexture(GL_TEXTURE_2D, tex);
-                //glBindMultiTextureEXT(unit, GL_TEXTURE_2D, tex);
+                //glActiveTexture(GL_TEXTURE0 + unit);
+                //glBindTexture(GL_TEXTURE_2D, tex);
+                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
         if (mat->hasGlossyTexture()) {
@@ -163,9 +168,9 @@ void Renderer::render()
             GLuint tex = *mat->getGlossyTexture();
             if (textures[unit] != tex) {
                 textures[unit] = tex;
-                glActiveTexture(GL_TEXTURE0 + unit);
-                glBindTexture(GL_TEXTURE_2D, tex);
-                //glBindMultiTextureEXT(unit, GL_TEXTURE_2D, tex);
+                //glActiveTexture(GL_TEXTURE0 + unit);
+                //glBindTexture(GL_TEXTURE_2D, tex);
+                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
         if (mat->hasNormalTexture()) {
@@ -173,9 +178,9 @@ void Renderer::render()
             GLuint tex = *mat->getNormalTexture();
             if (textures[unit] != tex) {
                 textures[unit] = tex;
-                glActiveTexture(GL_TEXTURE0 + unit);
-                glBindTexture(GL_TEXTURE_2D, tex);
-                //glBindMultiTextureEXT(unit, GL_TEXTURE_2D, tex);
+                //glActiveTexture(GL_TEXTURE0 + unit);
+                //glBindTexture(GL_TEXTURE_2D, tex);
+                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
         if (mat->hasEmissiveTexture()) {
@@ -183,9 +188,9 @@ void Renderer::render()
             GLuint tex = *mat->getEmissiveTexture();
             if (textures[unit] != tex) {
                 textures[unit] = tex;
-                glActiveTexture(GL_TEXTURE0 + unit);
-                glBindTexture(GL_TEXTURE_2D, tex);
-                //glBindMultiTextureEXT(unit, GL_TEXTURE_2D, tex);
+                //glActiveTexture(GL_TEXTURE0 + unit);
+                //glBindTexture(GL_TEXTURE_2D, tex);
+                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
         if (mat->hasAlphaTexture()) {
@@ -193,9 +198,9 @@ void Renderer::render()
             GLuint tex = *mat->getAlphaTexture();
             if (textures[unit] != tex) {
                 textures[unit] = tex;
-                glActiveTexture(GL_TEXTURE0 + unit);
-                glBindTexture(GL_TEXTURE_2D, tex);
-                //glBindMultiTextureEXT(unit, GL_TEXTURE_2D, tex);
+                //glActiveTexture(GL_TEXTURE0 + unit);
+                //glBindTexture(GL_TEXTURE_2D, tex);
+                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
         if (mat->hasAmbientTexture()) {
@@ -203,9 +208,9 @@ void Renderer::render()
             GLuint tex = *mat->getAmbientTexture();
             if (textures[unit] != tex) {
                 textures[unit] = tex;
-                glActiveTexture(GL_TEXTURE0 + unit);
-                glBindTexture(GL_TEXTURE_2D, tex);
-                //glBindMultiTextureEXT(unit, GL_TEXTURE_2D, tex);
+                //glActiveTexture(GL_TEXTURE0 + unit);
+                //glBindTexture(GL_TEXTURE_2D, tex);
+                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
 
@@ -220,6 +225,63 @@ void Renderer::render()
         glDrawElementsBaseVertex(cmd.mode, cmd.count,
                 cmd.type, cmd.indices, cmd.basevertex);
     }
+
+    if (renderBBoxes)
+        renderBoundingBoxes();
+}
+
+/****************************************************************************/
+
+void Renderer::renderBoundingBoxes()
+{
+    if (m_geometry.empty())
+        return;
+
+    GLuint prog = m_bbox_prog;
+    glUseProgram(prog);
+    glBindVertexArray(m_bbox_vao);
+
+    glDisable(GL_DEPTH_TEST);
+
+    GLint loc = glGetUniformLocation(prog, "uBBox");
+
+    for (const auto* g : m_geometry) {
+        const auto& bbox = g->getBoundingBox();
+        float minmax[6] = {bbox.pmin.x, bbox.pmin.y, bbox.pmin.z,
+            bbox.pmax.x, bbox.pmax.y, bbox.pmax.z};
+
+        glUniform3fv(loc, 2, minmax);
+        glDrawElements(GL_LINES, 24, GL_UNSIGNED_BYTE, nullptr);
+    }
+}
+
+/****************************************************************************/
+
+void Renderer::initBBoxStuff()
+{
+    // indices
+    GLubyte indices[] = {0, 1,
+                         0, 2,
+                         0, 4,
+                         1, 3,
+                         1, 5,
+                         2, 3,
+                         2, 6,
+                         3, 7,
+                         4, 5,
+                         4, 6,
+                         5, 7,
+                         6, 7};
+
+    glBindVertexArray(m_bbox_vao);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_bbox_buffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    glBindVertexArray(0);
+
+    core::res::shaders->registerShader("bbox_vert", "basic/bbox.vert", GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("bbox_frag", "basic/bbox.frag", GL_FRAGMENT_SHADER);
+    m_bbox_prog = core::res::shaders->registerProgram("bbox_prog", {"bbox_vert", "bbox_frag"});
 }
 
 /****************************************************************************/
