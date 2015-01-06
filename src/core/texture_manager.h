@@ -6,10 +6,8 @@
 #include <memory>
 
 #include "managers.h"
-#include "buffer_storage_pool.h"
 #include "gl/gl_objects.h"
 #include "texture.h"
-#include "shader_interface.h"
 
 namespace import
 {
@@ -31,16 +29,12 @@ public:
     Texture* getTexture(const std::string& name);
     const Texture* getTexture(const std::string& name) const;
 
-    void bind() const;
-
 private:
     friend class Texture;
 
     using TextureMap = std::unordered_map<std::string, std::unique_ptr<Texture>>;
-    using TexturePool = BufferStoragePool<sizeof(shader::TextureStruct)>;
 
     TextureMap                              m_textures;
-    TexturePool                             m_texture_buffer;
 };
 
 } // namespace core

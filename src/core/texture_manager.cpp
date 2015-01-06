@@ -11,13 +11,7 @@ namespace core
 static constexpr int MAX_NUM_TEXTURES = 1024;
 
 TextureManager::TextureManager()
-  : m_texture_buffer(GL_SHADER_STORAGE_BUFFER, MAX_NUM_TEXTURES)
 {
-    // reserve the first texture as sort of nullptr
-    auto offset = m_texture_buffer.alloc();
-    assert(offset == 0);
-
-    bind();
 }
 
 /****************************************************************************/
@@ -34,24 +28,46 @@ Texture* TextureManager::addTexture(const std::string& name, const import::Image
         internal_format = GL_R8;
     else if (numChannels == 3)
         internal_format = GL_RGB8;
+
     gl::Texture tex;
-    glTextureStorage2DEXT(tex, GL_TEXTURE_2D, image.maxNumMipMaps(),
+    glBindTexture(GL_TEXTURE_2D, tex);
+
+    glTexStorage2D(GL_TEXTURE_2D, image.maxNumMipMaps(),
             internal_format, image.width(), image.height());
 
-    glTextureParameteriEXT(tex, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-            gl::stringToEnum(vars.tex_min_filter));
-    glTextureParameteriEXT(tex, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-            gl::stringToEnum(vars.tex_mag_filter));
-    glTextureParameterfEXT(tex, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT,
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+            static_cast<GLint>(gl::stringToEnum(vars.tex_min_filter)));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+            static_cast<GLint>(gl::stringToEnum(vars.tex_mag_filter)));
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT,
             vars.tex_max_anisotropy);
-    glTextureParameteriEXT(tex, GL_TEXTURE_2D,  GL_TEXTURE_WRAP_S,
+    glTexParameteri(GL_TEXTURE_2D,  GL_TEXTURE_WRAP_S,
              GL_REPEAT);
-    glTextureParameteriEXT(tex, GL_TEXTURE_2D,  GL_TEXTURE_WRAP_T,
+    glTexParameteri(GL_TEXTURE_2D,  GL_TEXTURE_WRAP_T,
              GL_REPEAT);
 
-    glTextureSubImage2DEXT(tex, GL_TEXTURE_2D, 0, 0, 0, image.width(), image.height(),
+    glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0,
+            static_cast<GLsizei>(image.width()), static_cast<GLsizei>(image.height()),
             image.gl_format(), image.gl_type(), image.bits());
-    glGenerateTextureMipmapEXT(tex, GL_TEXTURE_2D);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    //glTextureStorage2DEXT(tex, GL_TEXTURE_2D, image.maxNumMipMaps(),
+    //        internal_format, image.width(), image.height());
+
+    //glTextureParameteriEXT(tex, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+    //        gl::stringToEnum(vars.tex_min_filter));
+    //glTextureParameteriEXT(tex, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+    //        gl::stringToEnum(vars.tex_mag_filter));
+    //glTextureParameterfEXT(tex, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT,
+    //        vars.tex_max_anisotropy);
+    //glTextureParameteriEXT(tex, GL_TEXTURE_2D,  GL_TEXTURE_WRAP_S,
+    //         GL_REPEAT);
+    //glTextureParameteriEXT(tex, GL_TEXTURE_2D,  GL_TEXTURE_WRAP_T,
+    //         GL_REPEAT);
+
+    //glTextureSubImage2DEXT(tex, GL_TEXTURE_2D, 0, 0, 0, image.width(), image.height(),
+    //        image.gl_format(), image.gl_type(), image.bits());
+    //glGenerateTextureMipmapEXT(tex, GL_TEXTURE_2D);
 
 
     return addTexture(name, std::move(tex), numChannels);
@@ -67,17 +83,8 @@ Texture* TextureManager::addTexture(const std::string& name, gl::Texture&& textu
         LOG_WARNING("Overwriting already existing texture: ", name);
     }
 
-    GLuint64 handle = glGetTextureHandleARB(texture);
-    glMakeTextureHandleResidentARB(handle);
-
-    GLintptr offset = m_texture_buffer.alloc();
-    GLuint index = static_cast<GLuint>(offset / static_cast<GLintptr>(sizeof(shader::TextureStruct)));
-
-    auto* tex_info = reinterpret_cast<shader::TextureStruct*>(m_texture_buffer.offsetToPointer(offset));
-    *tex_info = handle;
-
-    auto res = m_textures.emplace(name, std::unique_ptr<Texture>(new Texture(std::move(texture), handle,
-                    static_cast<GLuint>(num_channels), index)));
+    auto res = m_textures.emplace(name, std::unique_ptr<Texture>(new Texture(std::move(texture),
+                    static_cast<GLuint>(num_channels))));
     return res.first->second.get();
 }
 
@@ -103,14 +110,6 @@ const Texture* TextureManager::getTexture(const std::string& name) const
         return nullptr;
     }
     return it->second.get();
-}
-
-/****************************************************************************/
-
-void TextureManager::bind() const
-{
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindings::TEXTURE,
-            m_texture_buffer.buffer());
 }
 
 /****************************************************************************/

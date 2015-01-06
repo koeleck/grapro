@@ -21,7 +21,7 @@ in vec3 vs_bitangent;
 #endif
 
 uniform uint uMaterialID;
-//uniform sampler2D uTexHandle;
+
 
 void main()
 {
@@ -33,57 +33,50 @@ void main()
     float glossiness;
 
 #ifdef HAS_TEXCOORDS
-    uvec2 tex = materials[uMaterialID].alphaTex;
-    if (!all(equal(tex, uvec2(0)))) {
-        if (0.5 > texture(sampler2D(tex), vs_uv).r) {
+    if (materials[uMaterialID].hasAlphaTex != 0) {
+        if (0.5 > texture(uAlphaTex, vs_uv).r) {
             discard;
         }
     }
 
-    tex = materials[uMaterialID].diffuseTex;
-    if (!all(equal(tex, uvec2(0)))) {
-        diffuse_color = texture(sampler2D(tex), vs_uv).rgb;
+    if (materials[uMaterialID].hasDiffuseTex != 0) {
+        diffuse_color = texture(uDiffuseTex, vs_uv).rgb;
     } else {
         diffuse_color = materials[uMaterialID].diffuseColor;
     }
 
-    tex = materials[uMaterialID].specularTex;
-    if (!all(equal(tex, uvec2(0)))) {
-        specular_color = texture(sampler2D(tex), vs_uv).rgb;
+    if (materials[uMaterialID].hasSpecularTex != 0) {
+        specular_color = texture(uSpecularTex, vs_uv).rgb;
     } else {
         specular_color = materials[uMaterialID].specularColor;
     }
 
-    tex = materials[uMaterialID].emissiveTex;
-    if (!all(equal(tex, uvec2(0)))) {
-        emissive_color = texture(sampler2D(tex), vs_uv).rgb;
+    if (materials[uMaterialID].hasEmissiveTex != 0) {
+        emissive_color = texture(uEmissiveTex, vs_uv).rgb;
     } else {
         emissive_color = materials[uMaterialID].emissiveColor;
     }
 
-    tex = materials[uMaterialID].ambientTex;
-    if (!all(equal(tex, uvec2(0)))) {
-        ambient_color = texture(sampler2D(tex), vs_uv).rgb;
+    if (materials[uMaterialID].hasAmbientTex != 0) {
+        ambient_color = texture(uAmbientTex, vs_uv).rgb;
     } else {
         ambient_color = materials[uMaterialID].ambientColor;
     }
 
-    tex = materials[uMaterialID].glossyTex;
-    if (!all(equal(tex, uvec2(0)))) {
-        glossiness = texture(sampler2D(tex), vs_uv).r;
+    if (materials[uMaterialID].hasGlossyTex != 0) {
+        glossiness = texture(uGlossyTex, vs_uv).r;
     } else {
         glossiness = materials[uMaterialID].glossiness;
     }
 
 
 #ifdef HAS_TANGENTS
-    tex = materials[uMaterialID].normalTex;
-    if (!all(equal(tex, uvec2(0)))) {
+    if (materials[uMaterialID].hasNormalTex != 0) {
         mat3 localToWorld;
         localToWorld[0] = vs_tangent;
         localToWorld[1] = vs_bitangent;
         localToWorld[2] = vs_normal;
-        vec3 texNormal = texture(sampler2D(tex), vs_uv).rgb;
+        vec3 texNormal = texture(uNormalTex, vs_uv).rgb;
         texNormal.xy = texNormal.xy * 2.0 - 1.0;
         texNormal = normalize(texNormal);
         normal =  localToWorld * texNormal;

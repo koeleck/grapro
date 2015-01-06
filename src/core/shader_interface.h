@@ -33,6 +33,16 @@ constexpr int NORMALS   = 1;
 constexpr int TEXOORDS  = 2;
 constexpr int TANGENTS  = 3;
 
+// Texture Units
+constexpr int DIFFUSE_TEX_UNIT  = 0;
+constexpr int SPECULAR_TEX_UNIT = 1;
+constexpr int GLOSSY_TEX_UNIT   = 2;
+constexpr int NORMAL_TEX_UNIT   = 3;
+constexpr int EMISSIVE_TEX_UNIT = 4;
+constexpr int ALPHA_TEX_UNIT    = 5;
+constexpr int AMBIENT_TEX_UNIT  = 6;
+constexpr int NUM_TEXT_UNITS    = 7; // <- keep up to date
+
 } // namespace bindings
 
 namespace shader
@@ -47,37 +57,30 @@ struct CameraStruct
 };
 static_assert(sizeof(CameraStruct) == 208 && sizeof(CameraStruct) % 16 == 0, "");
 
-//struct TextureStruct
-//{
-//    GLuint64                        handle;
-//};
-//static_assert(sizeof(TextureStruct) == 8 && sizeof(TextureStruct) % 8 == 0, "");
-using TextureStruct = GLuint64;
 
 struct MaterialStruct
 {
-    GLfloat                         diffuseColor[4];
-    GLfloat                         specularColor[4];
-    GLfloat                         ambientColor[4];
-    GLfloat                         emissiveColor[4];
-    GLfloat                         transparentColor[4];
-    GLuint64                        diffuseTex;
-    GLuint64                        specularTex;
-    GLuint64                        glossyTex;
-    GLuint64                        normalTex;
-    GLuint64                        emissiveTex;
-    GLuint64                        alphaTex;
-    GLuint64                        ambientTex;
-    //GLuint                          diffuseTex;
-    //GLuint                          specularTex;
-    //GLuint                          glossyTex;
-    //GLuint                          normalTex;
-    //GLuint                          emissiveTex;
-    //GLuint                          alphaTex;
+    GLfloat                         diffuseColor[3];
+    GLint                           hasDiffuseTex;
+
+    GLfloat                         specularColor[3];
+    GLint                           hasSpecularTex;
+
+    GLfloat                         ambientColor[3];
+    GLint                           hasAmbientTex;
+
+    GLfloat                         emissiveColor[3];
+    GLint                           hasEmissiveTex;
+
+    GLfloat                         transparentColor[3];
+    GLint                           hasAlphaTex;
+
+    GLint                           hasGlossyTex;
+    GLint                           hasNormalTex;
     GLfloat                         glossiness;
     GLfloat                         opacity;
 };
-static_assert(sizeof(MaterialStruct) == 144 && sizeof(MaterialStruct) % 4 == 0, "");
+static_assert(sizeof(MaterialStruct) == 96 && sizeof(MaterialStruct) % 4 == 0, "");
 
 
 } // namespace shader

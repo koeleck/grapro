@@ -8,7 +8,8 @@
 #include "core/instance_manager.h"
 #include "core/camera_manager.h"
 #include "core/material_manager.h"
-#include "core/texture_manager.h"
+#include "core/shader_interface.h"
+#include "core/texture.h"
 #include "log/log.h"
 
 /****************************************************************************/
@@ -112,9 +113,8 @@ void Renderer::render()
         return;
 
     core::res::materials->bind();
-    core::res::textures->bind();
 
-    const auto* cam = core::res::cameras->getDefaultCam();
+    //const auto* cam = core::res::cameras->getDefaultCam();
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -122,9 +122,11 @@ void Renderer::render()
     GLuint prog = 0;
     GLuint vao = 0;
 
+    GLuint textures[core::bindings::NUM_TEXT_UNITS] = {0,};
+
     for (const auto& cmd : m_drawlist) {
-        if (!cam->inFrustum(cmd.instance->getBoundingBox()))
-            continue;
+        //if (!cam->inFrustum(cmd.instance->getBoundingBox()))
+        //    continue;
         if (prog != cmd.prog) {
             prog = cmd.prog;
             glUseProgram(prog);
@@ -134,13 +136,86 @@ void Renderer::render()
             glBindVertexArray(vao);
         }
 
+        // bind textures
+        const auto* mat = cmd.instance->getMaterial();
+        if (mat->hasDiffuseTexture()) {
+            int unit = core::bindings::DIFFUSE_TEX_UNIT;
+            GLuint tex = *mat->getDiffuseTexture();
+            if (textures[unit] != tex) {
+                textures[unit] = tex;
+                glActiveTexture(GL_TEXTURE0 + unit);
+                glBindTexture(GL_TEXTURE_2D, tex);
+                //glBindMultiTextureEXT(unit, GL_TEXTURE_2D, tex);
+            }
+        }
+        if (mat->hasSpecularTexture()) {
+            int unit = core::bindings::SPECULAR_TEX_UNIT;
+            GLuint tex = *mat->getSpecularTexture();
+            if (textures[unit] != tex) {
+                textures[unit] = tex;
+                glActiveTexture(GL_TEXTURE0 + unit);
+                glBindTexture(GL_TEXTURE_2D, tex);
+                //glBindMultiTextureEXT(unit, GL_TEXTURE_2D, tex);
+            }
+        }
+        if (mat->hasGlossyTexture()) {
+            int unit = core::bindings::GLOSSY_TEX_UNIT;
+            GLuint tex = *mat->getGlossyTexture();
+            if (textures[unit] != tex) {
+                textures[unit] = tex;
+                glActiveTexture(GL_TEXTURE0 + unit);
+                glBindTexture(GL_TEXTURE_2D, tex);
+                //glBindMultiTextureEXT(unit, GL_TEXTURE_2D, tex);
+            }
+        }
+        if (mat->hasNormalTexture()) {
+            int unit = core::bindings::NORMAL_TEX_UNIT;
+            GLuint tex = *mat->getNormalTexture();
+            if (textures[unit] != tex) {
+                textures[unit] = tex;
+                glActiveTexture(GL_TEXTURE0 + unit);
+                glBindTexture(GL_TEXTURE_2D, tex);
+                //glBindMultiTextureEXT(unit, GL_TEXTURE_2D, tex);
+            }
+        }
+        if (mat->hasEmissiveTexture()) {
+            int unit = core::bindings::EMISSIVE_TEX_UNIT;
+            GLuint tex = *mat->getEmissiveTexture();
+            if (textures[unit] != tex) {
+                textures[unit] = tex;
+                glActiveTexture(GL_TEXTURE0 + unit);
+                glBindTexture(GL_TEXTURE_2D, tex);
+                //glBindMultiTextureEXT(unit, GL_TEXTURE_2D, tex);
+            }
+        }
+        if (mat->hasAlphaTexture()) {
+            int unit = core::bindings::ALPHA_TEX_UNIT;
+            GLuint tex = *mat->getAlphaTexture();
+            if (textures[unit] != tex) {
+                textures[unit] = tex;
+                glActiveTexture(GL_TEXTURE0 + unit);
+                glBindTexture(GL_TEXTURE_2D, tex);
+                //glBindMultiTextureEXT(unit, GL_TEXTURE_2D, tex);
+            }
+        }
+        if (mat->hasAmbientTexture()) {
+            int unit = core::bindings::AMBIENT_TEX_UNIT;
+            GLuint tex = *mat->getAmbientTexture();
+            if (textures[unit] != tex) {
+                textures[unit] = tex;
+                glActiveTexture(GL_TEXTURE0 + unit);
+                glBindTexture(GL_TEXTURE_2D, tex);
+                //glBindMultiTextureEXT(unit, GL_TEXTURE_2D, tex);
+            }
+        }
+
         glm::mat4 id(1.f);
         GLint loc = glGetUniformLocation(prog, "uModelMatrix");
         glUniformMatrix4fv(loc, 1, GL_FALSE,
                 glm::value_ptr(cmd.instance->getTransformationMatrix()));
 
         loc = glGetUniformLocation(prog, "uMaterialID");
-        glUniform1ui(loc, cmd.instance->getMaterial()->getIndex());
+        glUniform1ui(loc, mat->getIndex());
 
         glDrawElementsBaseVertex(cmd.mode, cmd.count,
                 cmd.type, cmd.indices, cmd.basevertex);
