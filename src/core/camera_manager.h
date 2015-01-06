@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
+#include <limits>
 
 #include "buffer_storage_pool.h"
 #include "camera.h"
@@ -21,7 +22,8 @@ public:
     PerspectiveCamera* createPerspectiveCam(const std::string& name,
             const glm::dvec3& pos,
             const glm::dvec3& center,
-            double fovy, double aspect_ratio, double near);
+            double fovy, double aspect_ratio, double near,
+            double far = std::numeric_limits<double>::infinity());
 
     OrthogonalCamera* createOrthogonalCam(const std::string& name,
             const glm::dvec3& pos,

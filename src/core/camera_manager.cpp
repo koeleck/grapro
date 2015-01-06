@@ -23,7 +23,8 @@ CameraManager::CameraManager()
 PerspectiveCamera* CameraManager::createPerspectiveCam(const std::string& name,
         const glm::dvec3& pos,
         const glm::dvec3& center,
-        double fovy, double aspect_ratio, double near)
+        const double fovy, const double aspect_ratio,
+        const double near, const double far)
 {
     if (m_cameras.size() == MAX_CAMERAS) {
         LOG_ERROR("Maximum number of cameras reached!");
@@ -37,7 +38,7 @@ PerspectiveCamera* CameraManager::createPerspectiveCam(const std::string& name,
     const auto offset = m_camera_buffer.alloc();
     void* const ptr = m_camera_buffer.offsetToPointer(offset);
 
-    m_cameras.emplace_back(new PerspectiveCamera(pos, center, fovy, aspect_ratio, near, ptr));
+    m_cameras.emplace_back(new PerspectiveCamera(pos, center, fovy, aspect_ratio, near, far, ptr));
     m_camera_names.emplace(name, m_cameras.size());
 
     if (m_cameras.size() == 1) {
@@ -52,8 +53,9 @@ PerspectiveCamera* CameraManager::createPerspectiveCam(const std::string& name,
 OrthogonalCamera* CameraManager::createOrthogonalCam(const std::string& name,
             const glm::dvec3& pos,
             const glm::dvec3& center,
-            double left, double right, double bottom, double top,
-            double zNear, double zFar)
+            const double left, const double right,
+            const double bottom, const double top,
+            const double zNear, const double zFar)
 {
     if (m_cameras.size() == MAX_CAMERAS) {
         LOG_ERROR("Maximum number of cameras reached!");
