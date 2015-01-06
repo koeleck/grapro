@@ -31,7 +31,7 @@ bool loadScenefiles(const std::string& scenefiles)
             const auto* cam = scene->cameras[i];
             res::cameras->createPerspectiveCam(cam->name, cam->position,
                     cam->position + cam->direction,
-                    2.0 * glm::atan(glm::tan(glm::radians(cam->hfov) / 2.0) * cam->aspect_ratio),
+                    2.0 * glm::atan(glm::tan(glm::radians(cam->hfov) / 2.0) / cam->aspect_ratio),
                     cam->aspect_ratio, 0.1);
         }
         for (unsigned int i = 0; i < scene->num_textures; ++i) {
