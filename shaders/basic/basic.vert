@@ -1,5 +1,7 @@
 #version 440 core
 
+#extension GL_ARB_shader_draw_parameters : require
+
 #include "common/camera.glsl"
 #include "common/instances.glsl"
 
@@ -17,13 +19,15 @@ layout(location = 3) in vec3 in_tangent;
 out vec3 vs_tangent;
 out vec3 vs_bitangent;
 #endif
-out vec3 vs_viewdir;
 
-//uniform mat4 uModelMatrix;
-layout(location = 0) uniform uint instanceID;
+out vec3 vs_viewdir;
+flat out uint materialID;
 
 void main()
 {
+    const uint instanceID = gl_BaseInstanceARB + gl_InstanceID;
+    materialID = instances[instanceID].materialID;
+
     const mat4 modelMatrix = instances[instanceID].modelMatrix;
     //vec4 worldPos = uModelMatrix * vec4(in_position, 1.0);
     const vec4 worldPos = modelMatrix* vec4(in_position, 1.0);

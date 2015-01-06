@@ -150,9 +150,8 @@ void Renderer::render(const bool renderBBoxes)
             glBindVertexArray(vao);
         }
 
-        glUniform1ui(0, cmd.instance->getIndex());
-        glDrawElementsBaseVertex(cmd.mode, cmd.count,
-                cmd.type, cmd.indices, cmd.basevertex);
+        glDrawElementsInstancedBaseVertexBaseInstance(cmd.mode, cmd.count, cmd.type,
+                cmd.indices, 1, cmd.basevertex, cmd.instance->getIndex());
     }
 
     for (const auto& cmd : m_drawlist) {
@@ -228,9 +227,8 @@ void Renderer::render(const bool renderBBoxes)
             }
         }
 
-        glUniform1ui(0, cmd.instance->getIndex());
-        glDrawElementsBaseVertex(cmd.mode, cmd.count,
-                cmd.type, cmd.indices, cmd.basevertex);
+        glDrawElementsInstancedBaseVertexBaseInstance(cmd.mode, cmd.count, cmd.type,
+                cmd.indices, 1, cmd.basevertex, cmd.instance->getIndex());
     }
 
     if (renderBBoxes)

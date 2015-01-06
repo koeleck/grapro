@@ -1,5 +1,7 @@
 #version 440 core
 
+#extension GL_ARB_shader_draw_parameters : require
+
 #include "common/materials.glsl"
 #include "common/textures.glsl"
 #include "common/instances.glsl"
@@ -19,12 +21,10 @@ in vec3 vs_tangent;
 in vec3 vs_bitangent;
 #endif
 
-layout(location = 0) uniform uint instanceID;
+flat in uint materialID;
 
 void main()
 {
-    const uint materialID = instances[instanceID].materialID;
-
     vec3 normal;
     vec3 diffuse_color;
     vec3 specular_color;
