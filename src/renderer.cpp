@@ -77,6 +77,9 @@ Renderer::Renderer()
                 {vert, frag});
         m_programs.emplace(c(), prog);
     }
+    core::res::shaders->registerShader("noop_frag", "basic/noop.frag", GL_FRAGMENT_SHADER);
+    m_earlyz_prog = core::res::shaders->registerProgram("early_z_prog",
+            {"basic_vert_pos", "noop_frag"});
 
 
     initBBoxStuff();
@@ -118,20 +121,45 @@ void Renderer::render(const bool renderBBoxes)
         return;
 
     core::res::materials->bind();
+    core::res::instances->bind();
 
     const auto* cam = core::res::cameras->getDefaultCam();
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
+    glDepthFunc(GL_LEQUAL);
 
-    GLuint prog = 0;
+    GLuint prog = m_earlyz_prog;
     GLuint vao = 0;
-
     GLuint textures[core::bindings::NUM_TEXT_UNITS] = {0,};
 
+    // early z
+    glUseProgram(prog);
     for (const auto& cmd : m_drawlist) {
+        // Frustum Culling
         if (!cam->inFrustum(cmd.instance->getBoundingBox()))
             continue;
+
+        // only fully opaque meshes:
+        const auto* mat = cmd.instance->getMaterial();
+        if (mat->hasAlphaTexture() || mat->getOpacity() != 1.f)
+            continue;
+
+        if (vao != cmd.vao) {
+            vao = cmd.vao;
+            glBindVertexArray(vao);
+        }
+
+        glUniform1ui(0, cmd.instance->getIndex());
+        glDrawElementsBaseVertex(cmd.mode, cmd.count,
+                cmd.type, cmd.indices, cmd.basevertex);
+    }
+
+    for (const auto& cmd : m_drawlist) {
+        // Frustum Culling
+        if (!cam->inFrustum(cmd.instance->getBoundingBox()))
+            continue;
+
         if (prog != cmd.prog) {
             prog = cmd.prog;
             glUseProgram(prog);
@@ -148,8 +176,6 @@ void Renderer::render(const bool renderBBoxes)
             GLuint tex = *mat->getDiffuseTexture();
             if (textures[unit] != tex) {
                 textures[unit] = tex;
-                //glActiveTexture(GL_TEXTURE0 + unit);
-                //glBindTexture(GL_TEXTURE_2D, tex);
                 glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
@@ -158,8 +184,6 @@ void Renderer::render(const bool renderBBoxes)
             GLuint tex = *mat->getSpecularTexture();
             if (textures[unit] != tex) {
                 textures[unit] = tex;
-                //glActiveTexture(GL_TEXTURE0 + unit);
-                //glBindTexture(GL_TEXTURE_2D, tex);
                 glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
@@ -168,8 +192,6 @@ void Renderer::render(const bool renderBBoxes)
             GLuint tex = *mat->getGlossyTexture();
             if (textures[unit] != tex) {
                 textures[unit] = tex;
-                //glActiveTexture(GL_TEXTURE0 + unit);
-                //glBindTexture(GL_TEXTURE_2D, tex);
                 glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
@@ -178,8 +200,6 @@ void Renderer::render(const bool renderBBoxes)
             GLuint tex = *mat->getNormalTexture();
             if (textures[unit] != tex) {
                 textures[unit] = tex;
-                //glActiveTexture(GL_TEXTURE0 + unit);
-                //glBindTexture(GL_TEXTURE_2D, tex);
                 glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
@@ -188,8 +208,6 @@ void Renderer::render(const bool renderBBoxes)
             GLuint tex = *mat->getEmissiveTexture();
             if (textures[unit] != tex) {
                 textures[unit] = tex;
-                //glActiveTexture(GL_TEXTURE0 + unit);
-                //glBindTexture(GL_TEXTURE_2D, tex);
                 glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
@@ -198,8 +216,6 @@ void Renderer::render(const bool renderBBoxes)
             GLuint tex = *mat->getAlphaTexture();
             if (textures[unit] != tex) {
                 textures[unit] = tex;
-                //glActiveTexture(GL_TEXTURE0 + unit);
-                //glBindTexture(GL_TEXTURE_2D, tex);
                 glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
@@ -208,20 +224,11 @@ void Renderer::render(const bool renderBBoxes)
             GLuint tex = *mat->getAmbientTexture();
             if (textures[unit] != tex) {
                 textures[unit] = tex;
-                //glActiveTexture(GL_TEXTURE0 + unit);
-                //glBindTexture(GL_TEXTURE_2D, tex);
                 glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
 
-        glm::mat4 id(1.f);
-        GLint loc = glGetUniformLocation(prog, "uModelMatrix");
-        glUniformMatrix4fv(loc, 1, GL_FALSE,
-                glm::value_ptr(cmd.instance->getTransformationMatrix()));
-
-        loc = glGetUniformLocation(prog, "uMaterialID");
-        glUniform1ui(loc, mat->getIndex());
-
+        glUniform1ui(0, cmd.instance->getIndex());
         glDrawElementsBaseVertex(cmd.mode, cmd.count,
                 cmd.type, cmd.indices, cmd.basevertex);
     }
@@ -236,6 +243,8 @@ void Renderer::renderBoundingBoxes()
 {
     if (m_geometry.empty())
         return;
+
+    core::res::instances->bind();
 
     GLuint prog = m_bbox_prog;
     glUseProgram(prog);

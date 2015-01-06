@@ -27,6 +27,8 @@ private:
     ProgramMap                          m_programs;
     std::vector<DrawCmd>                m_drawlist;
 
+    core::Program                       m_earlyz_prog;
+
     gl::VertexArray                     m_bbox_vao;
     gl::Buffer                          m_bbox_buffer;
     core::Program                       m_bbox_prog;

@@ -6,6 +6,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include "gl/gl_sys.h"
 #include "aabb.h"
+#include "shader_interface.h"
 
 namespace core
 {
@@ -60,7 +61,8 @@ public:
 
 protected:
     friend class InstanceManager;
-    Instance(const Mesh* mesh, const Material* material);
+    Instance(const Mesh* mesh, const Material* material, GLuint index,
+            shader::InstanceStruct* data);
 
     virtual void update_impl();
 
@@ -81,6 +83,8 @@ private:
     const Mesh*     m_mesh;
     const Material* m_material;
 
+    GLuint                      m_index;
+    shader::InstanceStruct*     m_data;
 };
 
 } // namespace core

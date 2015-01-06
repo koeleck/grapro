@@ -6,8 +6,10 @@ namespace core
 
 /****************************************************************************/
 
+constexpr int MAX_NUM_INSTANCES = 12000;
 InstanceManager::InstanceManager()
-  : m_isModified{true}
+  : m_instance_buffer(GL_SHADER_STORAGE_BUFFER, MAX_NUM_INSTANCES),
+    m_isModified{true}
 {
 }
 
@@ -29,8 +31,14 @@ Instance* InstanceManager::addInstance(const std::string& name,
         return inst;
     }
 
+    const GLintptr offset = m_instance_buffer.alloc();
+    const GLuint index = static_cast<GLuint>(offset /
+            static_cast<GLintptr>(sizeof(shader::InstanceStruct)));
+    auto* const ptr = m_instance_buffer.offsetToPointer(offset);
+
     auto res = m_instances.emplace(name,
-            std::unique_ptr<Instance>(new Instance(mesh, material)));
+            std::unique_ptr<Instance>(new Instance(mesh, material,
+                    index, static_cast<shader::InstanceStruct*>(ptr))));
     return res.first->second.get();
 }
 
@@ -104,6 +112,14 @@ bool InstanceManager::update()
         instance.second->update();
     }
     return true;
+}
+
+/****************************************************************************/
+
+void InstanceManager::bind() const
+{
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindings::INSTANCE,
+            m_instance_buffer.buffer());
 }
 
 /****************************************************************************/

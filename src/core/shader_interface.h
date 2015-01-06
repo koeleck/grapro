@@ -83,6 +83,14 @@ struct MaterialStruct
 };
 static_assert(sizeof(MaterialStruct) == 96 && sizeof(MaterialStruct) % 4 == 0, "");
 
+struct InstanceStruct
+{
+    glm::mat4                       ModelMatrix;
+    GLfloat                         BBox_min[4];
+    GLfloat                         BBox_max[3];
+    GLuint                          MaterialID;
+};
+static_assert(sizeof(InstanceStruct) == 96 && sizeof(InstanceStruct) % 4 == 0, "");
 
 } // namespace shader
 

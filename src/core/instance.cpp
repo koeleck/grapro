@@ -9,7 +9,8 @@ namespace core
 
 /****************************************************************************/
 
-Instance::Instance(const Mesh* mesh, const Material* material)
+Instance::Instance(const Mesh* mesh, const Material* material,
+        const GLuint index, shader::InstanceStruct* data)
   : m_update_members{true},
     m_transformation{},
     m_bbox{},
@@ -20,7 +21,9 @@ Instance::Instance(const Mesh* mesh, const Material* material)
     m_hasFixedYawAxis{},
     m_modified{true},
     m_mesh{mesh},
-    m_material{material}
+    m_material{material},
+    m_index{index},
+    m_data{data}
 {
     setModified();
 }
@@ -203,6 +206,15 @@ void Instance::update()
 
         update_impl();
 
+        m_data->ModelMatrix = m_transformation;
+        m_data->MaterialID = m_material->getIndex();
+        m_data->BBox_min[0] = m_bbox.pmin.x;
+        m_data->BBox_min[1] = m_bbox.pmin.y;
+        m_data->BBox_min[2] = m_bbox.pmin.z;
+        m_data->BBox_max[0] = m_bbox.pmax.x;
+        m_data->BBox_max[1] = m_bbox.pmax.y;
+        m_data->BBox_max[2] = m_bbox.pmax.z;
+
         m_modified = false;
     }
 }
@@ -211,6 +223,13 @@ void Instance::update()
 
 void Instance::update_impl()
 {
+}
+
+/****************************************************************************/
+
+GLuint Instance::getIndex() const
+{
+    return m_index;
 }
 
 /****************************************************************************/

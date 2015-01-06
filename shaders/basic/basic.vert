@@ -1,6 +1,7 @@
 #version 440 core
 
 #include "common/camera.glsl"
+#include "common/instances.glsl"
 
 layout(location = 0) in vec3 in_position;
 #ifdef HAS_NORMALS
@@ -18,20 +19,26 @@ out vec3 vs_bitangent;
 #endif
 out vec3 vs_viewdir;
 
-uniform mat4 uModelMatrix;
+//uniform mat4 uModelMatrix;
+layout(location = 0) uniform uint instanceID;
 
 void main()
 {
-    vec4 worldPos = uModelMatrix * vec4(in_position, 1.0);
+    const mat4 modelMatrix = instances[instanceID].modelMatrix;
+    //vec4 worldPos = uModelMatrix * vec4(in_position, 1.0);
+    const vec4 worldPos = modelMatrix* vec4(in_position, 1.0);
+
     vs_viewdir = normalize(cam.Position.xyz - worldPos.xyz);
 #ifdef HAS_NORMALS
-    vs_normal = (uModelMatrix * vec4(in_normal, 0.0)).xyz;
+    //vs_normal = (uModelMatrix * vec4(in_normal, 0.0)).xyz;
+    vs_normal = (modelMatrix * vec4(in_normal, 0.0)).xyz;
 #endif
 #ifdef HAS_TEXCOORDS
     vs_uv = in_uv;
 #endif
 #ifdef HAS_TANGENTS
-    vs_tangent = (uModelMatrix * vec4(in_tangent, 0.0)).xyz;
+    //vs_tangent = (uModelMatrix * vec4(in_tangent, 0.0)).xyz;
+    vs_tangent = (modelMatrix * vec4(in_tangent, 0.0)).xyz;
     vs_bitangent = normalize(cross(vs_normal, vs_tangent));
 #endif
     gl_Position = cam.ProjViewMatrix * worldPos;
