@@ -7,6 +7,8 @@
 namespace core
 {
 
+class AABB;
+
 enum class CameraType : unsigned char
 {
     PERSPECTIVE = 0x01,
@@ -67,6 +69,8 @@ public:
 
     CameraType type() const;
 
+    virtual bool inFrustum(const AABB& bbox) const = 0;
+
 protected:
     Camera(const glm::dvec3& pos, const glm::dvec3& center,
             CameraType type, void* ptr);
@@ -111,6 +115,8 @@ public:
     void setNear(double near);
     double getNear() const;
 
+    virtual bool inFrustum(const AABB& bbox) const override;
+
 protected:
     PerspectiveCamera(const glm::dvec3& pos, const glm::dvec3& center,
             double fovy, double aspect_ratio, double near,
@@ -125,6 +131,8 @@ private:
     double          m_fovy;
     double          m_aspect_ratio;
     double          m_near;
+    float           m_uFactor;
+    float           m_rFactor;
 };
 
 /*************************************************************************
@@ -156,6 +164,8 @@ public:
 
     void setZFar(double left);
     double getZFar() const;
+
+    virtual bool inFrustum(const AABB& bbox) const override;
 
 protected:
     OrthogonalCamera(const glm::dvec3& pos, const glm::dvec3& center,

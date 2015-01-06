@@ -5,6 +5,7 @@
 #include "camera.h"
 #include "shader_interface.h"
 #include "camera_manager.h"
+#include "aabb.h"
 
 #include "log/log.h"
 
@@ -287,7 +288,9 @@ PerspectiveCamera::PerspectiveCamera(const glm::dvec3& pos,
   : Camera(pos, center, CameraType::PERSPECTIVE, ptr),
     m_fovy{fovy},
     m_aspect_ratio{aspect_ratio},
-    m_near{near}
+    m_near{near},
+    m_uFactor{glm::tan(static_cast<float>(m_fovy) / 2.f)},
+    m_rFactor{m_uFactor / static_cast<float>(m_aspect_ratio)}
 {
     m_projmat = glm::infinitePerspective(m_fovy, m_aspect_ratio, m_near);
 }
@@ -297,6 +300,8 @@ PerspectiveCamera::PerspectiveCamera(const glm::dvec3& pos,
 void PerspectiveCamera::setFOVY(const double fovy)
 {
     m_fovy = fovy;
+    m_uFactor = glm::tan(static_cast<float>(m_fovy) / 2.f);
+    m_rFactor = m_uFactor / static_cast<float>(m_aspect_ratio);
     invalidate();
 }
 
@@ -313,6 +318,8 @@ double PerspectiveCamera::getFOVY() const
 void PerspectiveCamera::setAspectRatio(const double ratio)
 {
     m_aspect_ratio = ratio;
+    m_uFactor = glm::tan(static_cast<float>(m_fovy) / 2.f);
+    m_rFactor = m_uFactor / static_cast<float>(m_aspect_ratio);
     invalidate();
 }
 
@@ -343,6 +350,65 @@ double PerspectiveCamera::getNear() const
 void PerspectiveCamera::updateProjMat() const
 {
     m_projmat = glm::infinitePerspective(m_fovy, m_aspect_ratio, m_near);
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+bool PerspectiveCamera::inFrustum(const AABB& bbox) const
+{
+    int nOutOfLeft=0, nOutOfRight=0, nOutOfFar=0, nOutOfNear=0, nOutOfTop=0, nOutOfBottom=0;
+
+    glm::vec3 corner[2];
+    corner[0] = bbox.pmin - glm::vec3(getPosition());
+    corner[1] = bbox.pmax - glm::vec3(getPosition());
+
+    const glm::vec3 forward = glm::vec3(getDirection());
+    const glm::vec3 right = glm::vec3(getRight());
+    const glm::vec3 up = glm::vec3(getUp());
+
+    for (int i = 0; i < 8; ++i) {
+        bool isInRightTest = false;
+        bool isInUpTest = false;
+        bool isInFrontTest = false;
+        const glm::vec3 p(corner[ i & 0x01].x,
+                          corner[ i & 0x02].y,
+                          corner[ i & 0x04].z);
+
+        const float f = glm::dot(p, forward);
+        const float u = glm::dot(p, up);
+        const float r = glm::dot(p, right);
+
+        if (r< -m_rFactor * f)
+            ++nOutOfLeft;
+        else if (r > m_rFactor * f)
+            ++nOutOfRight;
+        else
+            isInRightTest=true;
+
+        if (u < -m_uFactor * f)
+            ++nOutOfBottom;
+        else if (u > m_uFactor * f)
+            ++nOutOfTop;
+        else
+            isInUpTest=true;
+
+        if (f < m_near)
+            ++nOutOfNear;
+        //else if (f > m_far)
+        //    ++nOutOfFar;
+        else
+            isInFrontTest = true;
+
+        if (isInRightTest && isInFrontTest && isInUpTest)
+            return true;
+    }
+
+    if (nOutOfLeft == 8 || nOutOfRight == 8 || nOutOfFar == 8 ||
+        nOutOfNear == 8 || nOutOfTop == 8 || nOutOfBottom == 8)
+    {
+        return false;
+    }
+    return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -465,6 +531,14 @@ void OrthogonalCamera::updateProjMat() const
 {
     m_projmat = glm::ortho(m_left, m_right, m_bottom, m_top,
             m_zNear, m_zFar);
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+bool OrthogonalCamera::inFrustum(const AABB& bbox) const
+{
+    // TODO
+    return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
