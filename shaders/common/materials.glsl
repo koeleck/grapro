@@ -38,4 +38,4 @@ layout(std430, binding = MATERIAL_BINDING) restrict readonly buffer MaterialBloc
     Material    materials[];
 };
 
-#endif  SHADER_COMMON_MATERIALS_H
+#endif // SHADER_COMMON_MATERIALS_H
