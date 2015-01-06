@@ -81,8 +81,19 @@ Renderer::Renderer()
     m_earlyz_prog = core::res::shaders->registerProgram("early_z_prog",
             {"basic_vert_pos", "noop_frag"});
 
-
     initBBoxStuff();
+
+    // programmable vertex pulling
+    core::res::shaders->registerShader("vertexpulling_vert", "basic/vertexpulling.vert",
+            GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("vertexpulling_frag", "basic/vertexpulling.frag",
+            GL_FRAGMENT_SHADER);
+    m_vertexpulling_prog = core::res::shaders->registerProgram("vertexpulling_prog",
+            {"vertexpulling_vert", "vertexpulling_frag"});
+
+    glBindVertexArray(m_vertexpulling_vao);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, core::res::meshes->getElementArrayBuffer());
+    glBindVertexArray(0);
 }
 
 /****************************************************************************/
@@ -122,6 +133,7 @@ void Renderer::render(const bool renderBBoxes)
 
     core::res::materials->bind();
     core::res::instances->bind();
+    core::res::meshes->bind();
 
     const auto* cam = core::res::cameras->getDefaultCam();
 
@@ -129,10 +141,11 @@ void Renderer::render(const bool renderBBoxes)
     glEnable(GL_CULL_FACE);
     glDepthFunc(GL_LEQUAL);
 
-    GLuint prog = m_earlyz_prog;
-    GLuint vao = 0;
+    //GLuint prog = m_earlyz_prog;
+    //GLuint vao = 0;
     GLuint textures[core::bindings::NUM_TEXT_UNITS] = {0,};
 
+    /*
     // early z
     glUseProgram(prog);
     for (const auto& cmd : m_drawlist) {
@@ -153,20 +166,23 @@ void Renderer::render(const bool renderBBoxes)
         glDrawElementsInstancedBaseVertexBaseInstance(cmd.mode, cmd.count, cmd.type,
                 cmd.indices, 1, cmd.basevertex, cmd.instance->getIndex());
     }
+    */
 
+    glUseProgram(m_vertexpulling_prog);
+    glBindVertexArray(m_vertexpulling_vao);
     for (const auto& cmd : m_drawlist) {
         // Frustum Culling
         if (!cam->inFrustum(cmd.instance->getBoundingBox()))
             continue;
 
-        if (prog != cmd.prog) {
-            prog = cmd.prog;
-            glUseProgram(prog);
-        }
-        if (vao != cmd.vao) {
-            vao = cmd.vao;
-            glBindVertexArray(vao);
-        }
+        //if (prog != cmd.prog) {
+        //    prog = cmd.prog;
+        //    glUseProgram(prog);
+        //}
+        //if (vao != cmd.vao) {
+        //    vao = cmd.vao;
+        //    glBindVertexArray(vao);
+        //}
 
         // bind textures
         const auto* mat = cmd.instance->getMaterial();
@@ -227,8 +243,10 @@ void Renderer::render(const bool renderBBoxes)
             }
         }
 
+        //glDrawElementsInstancedBaseVertexBaseInstance(cmd.mode, cmd.count, cmd.type,
+        //        cmd.indices, 1, cmd.basevertex, cmd.instance->getIndex());
         glDrawElementsInstancedBaseVertexBaseInstance(cmd.mode, cmd.count, cmd.type,
-                cmd.indices, 1, cmd.basevertex, cmd.instance->getIndex());
+                cmd.indices, 1, 0, cmd.instance->getIndex());
     }
 
     if (renderBBoxes)

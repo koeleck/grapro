@@ -10,8 +10,10 @@ namespace core
 
 /****************************************************************************/
 
+constexpr int MAX_NUM_MESHES = 1200;
 MeshManager::MeshManager()
-  : m_data(GL_ARRAY_BUFFER, vars.vertex_buffer_size)
+  : m_data(GL_SHADER_STORAGE_BUFFER, vars.vertex_buffer_size),
+    m_mesh_pool(GL_SHADER_STORAGE_BUFFER, MAX_NUM_MESHES)
 {
     initVAOs();
 }
@@ -72,9 +74,6 @@ Mesh* MeshManager::addMesh(const import::Mesh* mesh)
     // Upload data to GPU
     void* ptr = glMapNamedBufferRangeEXT(m_data.buffer(),
                 offset, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
-    //glBindBuffer(GL_COPY_WRITE_BUFFER, m_data.buffer());
-    //void* ptr = glMapBufferRange(GL_COPY_WRITE_BUFFER, offset, size,
-    //        GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
     float* data = static_cast<float*>(ptr);
     for (unsigned int i = 0; i < mesh->num_vertices; ++i) {
         *data++ = mesh->vertices[i].x;
@@ -117,8 +116,16 @@ Mesh* MeshManager::addMesh(const import::Mesh* mesh)
     }
     assert(indices - static_cast<GLubyte*>(ptr) == size);
     glUnmapNamedBufferEXT(m_data.buffer());
-    //glUnmapBuffer(GL_COPY_WRITE_BUFFER);
-    //glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
+
+    // Add MeshStruct on GPU
+    const GLintptr mesh_offset = m_mesh_pool.alloc();
+    const GLuint mesh_index = static_cast<GLuint>(mesh_offset /
+            static_cast<GLintptr>(sizeof(shader::MeshStruct)));
+    auto* mesh_data = static_cast<shader::MeshStruct*>(m_mesh_pool.offsetToPointer(mesh_offset));
+    // remember: we're using a float[] array, so divide everything by sizeof(float)
+    mesh_data->stride = static_cast<GLuint>(per_vertex_size / static_cast<GLsizei>(sizeof(float)));
+    mesh_data->components = static_cast<GLuint>(components());
+    mesh_data->first = static_cast<GLuint>(offset / static_cast<GLintptr>(sizeof(float)));
 
     auto res = m_meshes.emplace(std::move(name),
             std::unique_ptr<Mesh>(
@@ -128,7 +135,8 @@ Mesh* MeshManager::addMesh(const import::Mesh* mesh)
                 reinterpret_cast<GLvoid*>(offset + vertices_size),
                 static_cast<GLint>(offset / per_vertex_size),
                 components,
-                mesh->bbox)));
+                mesh->bbox,
+                mesh_index)));
     return res.first->second.get();
 }
 
@@ -220,6 +228,23 @@ GLuint MeshManager::getVAO(const Mesh* mesh) const
         return 0;
     }
     return it->second.get();
+}
+
+/****************************************************************************/
+
+void MeshManager::bind() const
+{
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindings::VERTEX,
+            m_data.buffer());
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindings::MESH,
+            m_mesh_pool.buffer());
+}
+
+/****************************************************************************/
+
+GLuint MeshManager::getElementArrayBuffer() const
+{
+    return m_data.buffer().get();
 }
 
 /****************************************************************************/

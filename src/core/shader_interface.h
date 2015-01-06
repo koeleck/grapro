@@ -86,11 +86,20 @@ static_assert(sizeof(MaterialStruct) == 96 && sizeof(MaterialStruct) % 4 == 0, "
 struct InstanceStruct
 {
     glm::mat4                       ModelMatrix;
-    GLfloat                         BBox_min[4];
+    GLfloat                         BBox_min[3];
+    GLuint                          MeshID;
     GLfloat                         BBox_max[3];
     GLuint                          MaterialID;
 };
 static_assert(sizeof(InstanceStruct) == 96 && sizeof(InstanceStruct) % 4 == 0, "");
+
+struct MeshStruct
+{
+    GLuint                          stride;
+    GLuint                          components; // see mesh.h
+    GLuint                          first;
+};
+static_assert(sizeof(MeshStruct) == 12 && sizeof(MeshStruct) % 4 == 0, "");
 
 } // namespace shader
 

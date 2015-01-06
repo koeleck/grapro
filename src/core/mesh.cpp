@@ -7,14 +7,15 @@ namespace core
 
 Mesh::Mesh(GLenum mode_, GLsizei count_, GLenum type_, GLvoid* indices_,
             GLint basevertex_, util::bitfield<MeshComponents> components_,
-            const AABB& bbox_)
+            const AABB& bbox_, const GLuint index_)
   : m_mode{mode_},
     m_indices{indices_},
     m_count{count_},
     m_type{type_},
     m_basevertex{basevertex_},
     m_components{components_},
-    m_bbox{bbox_}
+    m_bbox{bbox_},
+    m_index{index_}
 {
 }
 
@@ -65,6 +66,13 @@ GLint Mesh::basevertex() const
 const AABB& Mesh::bbox() const
 {
     return m_bbox;
+}
+
+/****************************************************************************/
+
+GLuint Mesh::index() const
+{
+    return m_index;
 }
 
 /****************************************************************************/

@@ -207,6 +207,7 @@ void Instance::update()
         update_impl();
 
         m_data->ModelMatrix = m_transformation;
+        m_data->MeshID = m_mesh->index();
         m_data->MaterialID = m_material->getIndex();
         m_data->BBox_min[0] = m_bbox.pmin.x;
         m_data->BBox_min[1] = m_bbox.pmin.y;

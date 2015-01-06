@@ -8,35 +8,28 @@
 layout(location = 0) out vec4 out_Color;
 
 in vec3 vs_viewdir;
-
-#ifdef HAS_NORMALS
 in vec3 vs_normal;
-#endif
-#ifdef HAS_TEXCOORDS
 in vec2 vs_uv;
-#endif
-#ifdef HAS_TANGENTS
 in vec3 vs_tangent;
 in vec3 vs_bitangent;
-#endif
-
 flat in uint materialID;
+
+in vec3 vs_color;
 
 void main()
 {
+    if (materials[materialID].hasAlphaTex != 0) {
+        if (0.5 > texture(uAlphaTex, vs_uv).r) {
+            discard;
+        }
+    }
+
     vec3 normal;
     vec3 diffuse_color;
     vec3 specular_color;
     vec3 emissive_color;
     vec3 ambient_color;
     float glossiness;
-
-#ifdef HAS_TEXCOORDS
-    if (materials[materialID].hasAlphaTex != 0) {
-        if (0.5 > texture(uAlphaTex, vs_uv).r) {
-            discard;
-        }
-    }
 
     if (materials[materialID].hasDiffuseTex != 0) {
         diffuse_color = texture(uDiffuseTex, vs_uv).rgb;
@@ -69,11 +62,11 @@ void main()
     }
 
 
-#ifdef HAS_TANGENTS
     if (materials[materialID].hasNormalTex != 0) {
         vec3 texNormal = texture(uNormalTex, vs_uv).rgb;
         texNormal.xy = texNormal.xy * 2.0 - 1.0;
         texNormal = normalize(texNormal);
+
         //mat3 localToWorld = mat3(vs_tangent, vs_bitangent, vs_normal);
         //normal =  localToWorld * texNormal;
         mat3 localToWorld_T = mat3(
@@ -81,21 +74,10 @@ void main()
                 vs_tangent.y, vs_bitangent.y, vs_normal.y,
                 vs_tangent.z, vs_bitangent.z, vs_normal.z);
         normal = texNormal * localToWorld_T;
+
     } else {
         normal = vs_normal;
     }
-#else
-    normal = vs_normal;
-#endif // NORMALS
-
-#else
-    normal = vs_normal;
-    diffuse_color = materials[materialID].diffuseColor;
-    specular_color = materials[materialID].specularColor;
-    ambient_color = materials[materialID].ambientColor;
-    emissive_color = materials[materialID].emissiveColor;
-    glossiness = materials[materialID].glossiness;
-#endif
 
     const vec3 light_dir = vec3(0.0, 1.0, 0.0);
 
@@ -108,3 +90,4 @@ void main()
 
     out_Color = vec4(diffuse_color * n_dot_l + specular_color * spec + 0.15 * ambient_color, 1.0);
 }
+

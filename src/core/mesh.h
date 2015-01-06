@@ -25,13 +25,14 @@ public:
     GLsizei count() const;
     GLint   basevertex() const;
     const AABB& bbox() const;
+    GLuint index() const;
 
 private:
     friend class MeshManager;
 
     Mesh(GLenum mode, GLsizei count, GLenum type, GLvoid* indices,
             GLint basevertex, util::bitfield<MeshComponents> components,
-            const AABB& bbox);
+            const AABB& bbox, GLuint index);
 
     GLenum      m_mode;
     GLvoid*     m_indices;
@@ -40,6 +41,7 @@ private:
     GLint       m_basevertex;
     util::bitfield<MeshComponents> m_components;
     AABB        m_bbox;
+    GLuint      m_index;
 };
 
 } // namespace core

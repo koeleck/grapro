@@ -11,17 +11,15 @@
 
 struct Mesh
 {
-    uint    first;
     uint    stride;
-
-    // (0) normal (1) texcoord (2) tangent (3) vertex color
-    bvec4   components;
+    uint    components;
+    uint    first;
 };
 
-#define MESH_COMPONENT_NORMAL       0
-#define MESH_COMPONENT_TEXCOORD     1
-#define MESH_COMPONENT_TANGENT      2
-#define MESH_COMPONENT_VERTEX_COLOR 3
+// keep in sync with core/mesh.h: MeshComponents
+#define MESH_COMPONENT_NORMAL       0x01
+#define MESH_COMPONENT_TEXCOORD     0x02
+#define MESH_COMPONENT_TANGENT      0x04
 
 layout(std430, binding = MESH_BINDING) restrict readonly buffer MeshBlock
 {

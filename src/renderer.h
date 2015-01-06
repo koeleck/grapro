@@ -32,6 +32,9 @@ private:
     gl::VertexArray                     m_bbox_vao;
     gl::Buffer                          m_bbox_buffer;
     core::Program                       m_bbox_prog;
+
+    core::Program                       m_vertexpulling_prog;
+    gl::VertexArray                     m_vertexpulling_vao;
 };
 
 #endif // RENDERER_H

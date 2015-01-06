@@ -28,19 +28,16 @@ void main()
     materialID = instances[instanceID].materialID;
 
     const mat4 modelMatrix = instances[instanceID].modelMatrix;
-    //vec4 worldPos = uModelMatrix * vec4(in_position, 1.0);
     const vec4 worldPos = modelMatrix* vec4(in_position, 1.0);
 
     vs_viewdir = normalize(cam.Position.xyz - worldPos.xyz);
 #ifdef HAS_NORMALS
-    //vs_normal = (uModelMatrix * vec4(in_normal, 0.0)).xyz;
     vs_normal = (modelMatrix * vec4(in_normal, 0.0)).xyz;
 #endif
 #ifdef HAS_TEXCOORDS
     vs_uv = in_uv;
 #endif
 #ifdef HAS_TANGENTS
-    //vs_tangent = (uModelMatrix * vec4(in_tangent, 0.0)).xyz;
     vs_tangent = (modelMatrix * vec4(in_tangent, 0.0)).xyz;
     vs_bitangent = normalize(cross(vs_normal, vs_tangent));
 #endif
