@@ -75,6 +75,7 @@ struct MaterialStruct
     GLfloat                         transparentColor[3];
     GLint                           hasAlphaTex;
 
+
     GLint                           hasGlossyTex;
     GLint                           hasNormalTex;
     GLfloat                         glossiness;

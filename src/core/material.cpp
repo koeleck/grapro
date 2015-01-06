@@ -160,7 +160,7 @@ const Texture* Material::getAmbientTexture() const
 void Material::setDiffuseTexture(const Texture* texture)
 {
     m_diffuse_texture = texture;
-    m_data->hasDiffuseTex = (texture == nullptr) ? 0 : 1;
+    m_data->hasDiffuseTex = (texture == nullptr) ? 0 : -1;
 }
 
 /****************************************************************************/
@@ -168,7 +168,7 @@ void Material::setDiffuseTexture(const Texture* texture)
 void Material::setSpecularTexture(const Texture* texture)
 {
     m_specular_texture = texture;
-    m_data->hasSpecularTex = (texture == nullptr) ? 0 : 1;
+    m_data->hasSpecularTex = (texture == nullptr) ? 0 : -1;
 }
 
 /****************************************************************************/
@@ -176,7 +176,7 @@ void Material::setSpecularTexture(const Texture* texture)
 void Material::setEmissiveTexture(const Texture* texture)
 {
     m_emissive_texture = texture;
-    m_data->hasEmissiveTex = (texture == nullptr) ? 0 : 1;
+    m_data->hasEmissiveTex = (texture == nullptr) ? 0 : -1;
 }
 
 /****************************************************************************/
@@ -184,7 +184,7 @@ void Material::setEmissiveTexture(const Texture* texture)
 void Material::setGlossyTexture(const Texture* texture)
 {
     m_glossy_texture = texture;
-    m_data->hasGlossyTex = (texture == nullptr) ? 0 : 1;
+    m_data->hasGlossyTex = (texture == nullptr) ? 0 : -1;
 }
 
 /****************************************************************************/
@@ -192,7 +192,7 @@ void Material::setGlossyTexture(const Texture* texture)
 void Material::setAlphaTexture(const Texture* texture)
 {
     m_alpha_texture = texture;
-    m_data->hasAlphaTex = (texture == nullptr) ? 0 : 1;
+    m_data->hasAlphaTex = (texture == nullptr) ? 0 : -1;
 }
 
 /****************************************************************************/
@@ -200,7 +200,7 @@ void Material::setAlphaTexture(const Texture* texture)
 void Material::setNormalTexture(const Texture* texture)
 {
     m_normal_texture = texture;
-    m_data->hasNormalTex = (texture == nullptr) ? 0 : 1;
+    m_data->hasNormalTex = (texture == nullptr) ? 0 : -1;
 }
 
 /****************************************************************************/
@@ -208,7 +208,7 @@ void Material::setNormalTexture(const Texture* texture)
 void Material::setAmbientTexture(const Texture* texture)
 {
     m_ambient_texture = texture;
-    m_data->hasAmbientTex = (texture == nullptr) ? 0 : 1;
+    m_data->hasAmbientTex = (texture == nullptr) ? 0 : -1;
 }
 
 /****************************************************************************/

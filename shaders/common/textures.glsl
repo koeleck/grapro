@@ -18,13 +18,13 @@
 #define AMBIENT_TEX_UNIT    6
 
 
-layout(location = DIFFUSE_TEX_UNIT) uniform sampler2D uDiffuseTex;
-layout(location = SPECULAR_TEX_UNIT) uniform sampler2D uSpecularTex;
-layout(location = GLOSSY_TEX_UNIT) uniform sampler2D uGlossyTex;
-layout(location = NORMAL_TEX_UNIT) uniform sampler2D uNormalTex;
-layout(location = EMISSIVE_TEX_UNIT) uniform sampler2D uEmissiveTex;
-layout(location = ALPHA_TEX_UNIT) uniform sampler2D uAlphaTex;
-layout(location = AMBIENT_TEX_UNIT) uniform sampler2D uAmbientTex;
+layout(binding = DIFFUSE_TEX_UNIT) uniform sampler2D uDiffuseTex;
+layout(binding = SPECULAR_TEX_UNIT) uniform sampler2D uSpecularTex;
+layout(binding = GLOSSY_TEX_UNIT) uniform sampler2D uGlossyTex;
+layout(binding = NORMAL_TEX_UNIT) uniform sampler2D uNormalTex;
+layout(binding = EMISSIVE_TEX_UNIT) uniform sampler2D uEmissiveTex;
+layout(binding = ALPHA_TEX_UNIT) uniform sampler2D uAlphaTex;
+layout(binding = AMBIENT_TEX_UNIT) uniform sampler2D uAmbientTex;
 
 
 #endif // SHADERS_COMMON_TEXTURES_GLSL

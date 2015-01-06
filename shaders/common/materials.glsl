@@ -26,6 +26,7 @@ struct Material
     vec3    transparentColor;
     int     hasAlphaTex;
 
+
     int     hasGlossyTex;
     int     hasNormalTex;
     float   glossiness;
