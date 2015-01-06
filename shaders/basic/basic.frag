@@ -1,7 +1,5 @@
 #version 440 core
 
-#extension GL_ARB_bindless_texture : require
-
 #include "common/materials.glsl"
 #include "common/textures.glsl"
 
