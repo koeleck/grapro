@@ -127,7 +127,8 @@ Mesh* MeshManager::addMesh(const import::Mesh* mesh)
                 index_type,
                 reinterpret_cast<GLvoid*>(offset + vertices_size),
                 static_cast<GLint>(offset / per_vertex_size),
-                components)));
+                components,
+                mesh->bbox)));
     return res.first->second.get();
 }
 

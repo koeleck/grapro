@@ -5,6 +5,7 @@
 #include <glm/vec3.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include "gl/gl_sys.h"
+#include "aabb.h"
 
 namespace core
 {
@@ -18,6 +19,7 @@ public:
     virtual ~Instance() = default;
 
     const glm::mat4& getTransformationMatrix() const;
+    const AABB& getBoundingBox() const;
 
     void move(const glm::vec3& dir);
 
@@ -62,9 +64,13 @@ protected:
 
     virtual void update_impl();
 
-    glm::mat4       m_transformation;
 
 private:
+    void updateMembers() const;
+
+    mutable bool            m_update_members;
+    mutable glm::mat4       m_transformation;
+    mutable AABB            m_bbox;
 
     glm::vec3       m_position;
     glm::vec3       m_scale;
@@ -74,6 +80,7 @@ private:
     bool            m_modified;
     const Mesh*     m_mesh;
     const Material* m_material;
+
 };
 
 } // namespace core
