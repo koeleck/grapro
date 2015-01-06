@@ -187,7 +187,7 @@ bool initGL()
 
     //REQUIRES_EXTENSION(GL_ARB_bindless_texture)
     REQUIRES_EXTENSION(GL_EXT_direct_state_access)
-    //REQUIRES_EXTENSION(GL_ARB_shader_draw_parameters);
+    REQUIRES_EXTENSION(GL_ARB_shader_draw_parameters);
     REQUIRES_EXTENSION(GL_EXT_texture_filter_anisotropic);
 
     if (vars.gl_debug_context) {

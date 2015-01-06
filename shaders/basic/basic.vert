@@ -1,7 +1,6 @@
 #version 440 core
 
-#extension GL_ARB_shader_draw_parameters : require
-
+#include "common/extensions.glsl"
 #include "common/camera.glsl"
 #include "common/instances.glsl"
 

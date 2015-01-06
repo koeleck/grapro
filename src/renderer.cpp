@@ -250,15 +250,9 @@ void Renderer::renderBoundingBoxes()
 
     glDisable(GL_DEPTH_TEST);
 
-    GLint loc = glGetUniformLocation(prog, "uBBox");
-
     for (const auto* g : m_geometry) {
-        const auto& bbox = g->getBoundingBox();
-        float minmax[6] = {bbox.pmin.x, bbox.pmin.y, bbox.pmin.z,
-            bbox.pmax.x, bbox.pmax.y, bbox.pmax.z};
-
-        glUniform3fv(loc, 2, minmax);
-        glDrawElements(GL_LINES, 24, GL_UNSIGNED_BYTE, nullptr);
+        glDrawElementsInstancedBaseVertexBaseInstance(GL_LINES, 24, GL_UNSIGNED_BYTE,
+                nullptr, 1, g->getMesh()->basevertex(), g->getIndex());
     }
 }
 
