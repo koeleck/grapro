@@ -1,0 +1,937 @@
+%!PS-Adobe-2.0 EPSF-2.0
+%%BoundingBox: 90 379 463 558
+%%Title: /home/sussner/Projects/schloss/test.eps
+%%CreationDate: 10:16 AM October 26, 2001
+%%Pages: 1
+%%EndComments
+%%BeginProlog
+%%BeginResource ShowcaseResource
+1 setlinejoin
+/M  { moveto } bind def /S { show  } bind def
+/R { rmoveto } bind def /L { lineto } bind def
+/B { newpath 0 0 M 0 1 L 1 1 L 1 0 L closepath } bind def
+/CS { closepath stroke } bind def
+/S {
+    /fixwidth exch def
+    dup length /nchars exch def
+    dup stringwidth pop
+    fixwidth exch sub nchars div
+    exch 0 exch ashow
+} def
+/bwproc {
+	rgbproc
+	dup length 3 idiv string 0 3 0
+	5 -1 roll {
+	add 2 1 roll 1 sub dup 0 eq
+	{ pop 3 idiv 3 -1 roll dup 4 -1 roll dup
+	  3 1 roll 5 -1 roll put 1 add 3 0 }
+	{ 2 1 roll } ifelse
+	} forall
+	pop pop pop
+} def
+systemdict /colorimage known not {
+	/colorimage {
+		pop
+		pop
+		/rgbproc exch def
+		{ bwproc } image
+	} def
+} if
+1 1 scale
+0 setlinewidth
+/drawtri {
+/y3 exch def
+/x3 exch def
+/y2 exch def
+/x2 exch def
+/y1 exch def
+/x1 exch def
+0 setgray
+newpath
+x1 y1 moveto
+x2 y2 lineto
+x3 y3 lineto
+closepath
+stroke
+} bind def
+/filltri {
+/y3 exch def
+/x3 exch def
+/y2 exch def
+/x2 exch def
+/y1 exch def
+/x1 exch def
+newpath
+x1 y1 moveto
+x2 y2 lineto
+x3 y3 lineto
+closepath
+fill
+} bind def
+/cliptri {
+/y3 exch def
+/x3 exch def
+/y2 exch def
+/x2 exch def
+/y1 exch def
+/x1 exch def
+0 setgray
+newpath
+x1 y1 moveto
+x2 y2 lineto
+x3 y3 lineto
+closepath
+clip
+} bind def
+/imgscanrgb {
+gsave
+translate
+/scandy exch def
+/scandx exch def
+/istr scandx 3 mul string def
+scandx scandy scale
+scandx scandy 8
+[scandx 0 0 scandy neg 0 scandy]
+{currentfile istr readhexstring pop}
+false 3
+colorimage
+grestore
+} bind def
+/imgscanbw {
+gsave
+translate
+/scandy exch def
+/scandx exch def
+/istr scandx string def
+scandx scandy scale
+scandx scandy 8
+[scandx 0 0 scandy neg 0 scandy]
+{currentfile istr readhexstring pop}
+image
+grestore
+} bind def
+/showcaseisoencoding [
+/.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef
+/space /exclam /quotedbl /numbersign
+/dollar /percent /ampersand /quoteright
+/parenleft /parenright /asterisk /plus
+/comma /minus /period /slash
+/zero /one /two /three /four /five /six /seven
+/eight /nine /colon /semicolon
+/less /equal /greater /question
+/at /A /B /C /D /E /F /G
+/H /I /J /K /L /M /N /O
+/P /Q /R /S /T /U /V /W
+/X /Y /Z /bracketleft
+/backslash /bracketright /asciicircum /underscore
+/quoteleft /a /b /c /d /e /f /g
+/h /i /j /k /l /m /n /o
+/p /q /r /s /t /u /v /w
+/x /y /z /braceleft
+/bar /braceright /asciitilde /guilsinglright
+/fraction /florin /quotesingle /quotedblleft
+/guilsinglleft /fi /fl /endash
+/dagger /daggerdbl /bullet /quotesinglbase
+/quotedblbase /quotedblright /ellipsis /trademark
+/dotlessi /grave /acute /circumflex
+/tilde /macron /breve /dotaccent
+/dieresis /perthousand /ring /cedilla
+/Ydieresis /hungarumlaut /ogonek /caron
+/emdash /exclamdown /cent /sterling
+/currency /yen /brokenbar /section
+/dieresis /copyright /ordfeminine /guillemotleft
+/logicalnot /hyphen /registered /macron
+/degree /plusminus /twosuperior /threesuperior
+/acute /mu /paragraph /periodcentered
+/cedilla /onesuperior /ordmasculine /guillemotright
+/onequarter /onehalf /threequarters /questiondown
+/Agrave /Aacute /Acircumflex /Atilde
+/Adieresis /Aring /AE /Ccedilla
+/Egrave /Eacute /Ecircumflex /Edieresis
+/Igrave /Iacute /Icircumflex /Idieresis
+/Eth /Ntilde /Ograve /Oacute
+/Ocircumflex /Otilde /Odieresis /multiply
+/Oslash /Ugrave /Uacute /Ucircumflex
+/Udieresis /Yacute /Thorn /germandbls
+/agrave /aacute /acircumflex /atilde
+/adieresis /aring /ae /ccedilla
+/egrave /eacute /ecircumflex /edieresis
+/igrave /iacute /icircumflex /idieresis
+/eth /ntilde /ograve /oacute
+/ocircumflex /otilde /odieresis /divide
+/oslash /ugrave /uacute /ucircumflex
+/udieresis /yacute /thorn /ydieresis ] def
+/showcasedingbatencoding [
+/.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef
+/.notdef /a1 /a2 /a202 /a3 /a4 /a5 /a119 /a118 /a117
+/a11 /a12 /a13 /a14 /a15 /a16 /a105 /a17 /a18 /a19
+/a20 /a21 /a22 /a23 /a24 /a25 /a26 /a27 /a28 /a6 /a7
+/a8 /a9 /a10 /a29
+/a30 /a31 /a32 /a33 /a34 /a35 /a36 /a37 /a38 /a39
+/a40 /a41 /a42 /a43 /a44 /a45 /a46 /a47 /a48 /a49
+/a50 /a51 /a52 /a53 /a54 /a55 /a56 /a57 /a58 /a59
+/a60 /a61 /a62 /a63 /a64 /a65 /a66 /a67 /a68 /a69
+/a70 /a71 /a72 /a73 /a74 /a203 /a75 /a204 /a76 /a77 /a78
+/a79 /a81 /a82 /a83 /a84 /a97 /a98 /a99 /a100 /.notdef
+/a205 /a85 /a206 /a86 /a87 /a88 /a89 /a90 /a91 /a92 /a93
+/a94 /a95 /a96
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/.notdef /a101 /a102 /a103 /a104 /a106 /a107 /a108
+/a112 /a111 /a110 /a109
+/a120 /a121 /a122 /a123 /a124 /a125 /a126 /a127 /a128 /a129
+/a130 /a131 /a132 /a133 /a134 /a135 /a136 /a137 /a138 /a139
+/a140 /a141 /a142 /a143 /a144 /a145 /a146 /a147 /a148 /a149
+/a150 /a151 /a152 /a153 /a154 /a155 /a156 /a157 /a158 /a159
+/a160 /a161 /a163 /a164 /a196 /a165 /a192 /a166 /a167 /a168
+/a169 /a170 /a171 /a172 /a173 /a162 /a174 /a175 /a176 /a177
+/a178 /a179 /a193 /a180 /a199 /a181 /a200 /a182 /.notdef
+/a201 /a183 /a184 /a197 /a185 /a194 /a198 /a186 /a195 /a187
+/a188 /a189 /a190 /a191 /.notdef
+] def
+/newfont 10 dict def
+newfont begin
+
+ /FontType 3 def
+ /FontMatrix [1 0 0 1 0 0] def
+ /FontBBox [0 0 1 1] def
+ /Encoding 256 array def
+ 0 1 255 {Encoding exch /.notdef put} for
+
+ /CharProcs 1 dict def
+ CharProcs begin
+ /.notdef {} def
+
+end
+
+ /BuildChar {
+  1 0
+  0 0 1 1
+  setcachedevice
+  exch begin
+  Encoding exch get
+  CharProcs exch get
+  end
+  exec
+ } def
+end
+/PatternFont newfont definefont pop
+
+%%EndResource
+%%EndProlog
+%%BeginSetup
+%%EndSetup
+%%Page: label 1
+gsave
+/saveit save def
+gsave
+gsave
+[-7.62939e-06 178 -371.671 -3.05176e-05 462.038 379.281] concat
+B clip
+0.007143 0.003571 scale
+0 -270 translate
+/SCincsave save def
+/SCdictcount countdictstack def
+/SCopcount count 1 sub def
+userdict begin
+/showpage {} def
+0 setgray 0 setlinecap
+1 setlinewidth 0 setlinejoin
+10 setmiterlimit [] 0 setdash newpath
+%!PS-Adobe-2.0 EPSF-2.0
+%%Title: FAU Schloss
+%%Creator: Rainer Pruy
+%%+ Copyright (C) 1992 Rainer Pruy, IMMD IV, FAU
+%%BoundingBox: 0 270 140 550
+%%Pages: (atend)
+%%EndComments
+
+%%BeginProcSet: FAU_Schloss 1.0 1
+/FAU_Schloss_1.0_1 
+200 dict dup begin
+    /White { 1 setgray } bind def
+    /Black { 0 setgray } bind def
+    /roundrect		% llx lly urx ury radius ## -
+			% rounded edge rectangle
+    {
+      3 index 5 index 2 index add exch moveto
+      2 index 4 index 1 index 4 index 4 index arcto pop pop pop pop
+      2 index 2 index 6 index 4 index 4 index arcto pop pop pop pop
+      4 index 2 index 6 index 6 index 4 index arcto pop pop pop pop
+      exch pop 2 index exch arcto pop pop pop pop
+    } bind def
+    /xfit
+    {
+	dup
+	0 transform exch ceiling exch itransform pop
+	2 copy gt
+	{ pop 0 transform exch floor exch itransform }
+	{ exch }
+	ifelse
+	pop
+    } bind def
+    /yfit
+    {
+	dup
+	0 exch transform ceiling itransform exch pop
+	2 copy gt
+	{ pop 0 exch transform floor itransform exch }
+	if
+	pop
+    } bind def
+    /Xroundrect
+    {
+	5 1 roll yfit
+	5 1 roll xfit
+	5 1 roll yfit
+	5 1 roll xfit
+	5 1 roll roundrect
+    } bind def
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    /EGfenster				% llx lly ## -
+					% Fenster im Mauerwerk
+    {
+	gsave
+	translate
+	0.1 0 moveto
+	6.5 0 6.75 11 0.1 arcto pop pop pop pop
+	6.75 11 -0.25 11 0.1 arcto pop pop pop pop
+	-0.25 11 0 0 0.1 arcto pop pop pop pop
+	0 0 6.5 0 0.1 arcto pop pop pop pop
+	gsave White fill grestore stroke
+	0.1 1 6.4 10.8 0.1 roundrect
+	Black fill
+	grestore
+    } bind def
+    /Mauerwerk
+    {   
+	gsave
+	0.4 0.4 102 16.7 0 roundrect
+	108.0 0.4 117.0 16.7 0 roundrect
+	clip
+	newpath
+	0 1 10
+	{
+	    gsave
+	    dup 1.54 mul 0.4 add
+	    exch 0.4 exch 2 mod 1 eq { 2.6 2 div sub } if exch translate
+	    0 1 40 { 2.95 mul 0 1 index 2.6 add 1.15 0.12 Xroundrect } for
+	    White fill
+	    grestore
+	} for
+	grestore
+	gsave
+	newpath
+	0 1 10 { 1.54 mul 0.4 add 103.0 exch 107.8 1 index 1.17 add 0.3 Xroundrect } for
+	0 1 10 { 1.54 mul 0.4 add 117.5 exch 121.5 1 index 1.17 add 0.3 Xroundrect } for
+	0 1 6  { 1.54 mul 0.4 add 122.1 exch 124.0 1 index 1.17 add 0.3 Xroundrect } for
+	122.1 12.72  123.1 13.89 0.3 Xroundrect
+	122.1 14.26  124.5 15.43 0.3 Xroundrect
+	122.1 15.80  126.0 16.97 0.3 Xroundrect
+
+	124.3 0.4 130.4 9.5 0.4 Xroundrect
+	White fill
+	125 0.2 130.2 4 0.45 roundrect
+	124.9 4.1 130.3 9.5 0.5 roundrect
+	Black fill
+	126.5 1.5 129.8 3 0.6 Xroundrect
+	125.9 5.1 129.8 8.4 0.4 Xroundrect
+	White fill
+	130.0 9.4 translate
+	% Radius 5.6
+	-0.55 5.6 0.55 8 0.3 Xroundrect gsave Black stroke grestore White fill
+	-15.0 rotate -8.2 -0.2 -5.6 0.75 0.3 Xroundrect
+	-12.6 rotate -8.5 -0.3 -5.6 0.77 0.3 Xroundrect
+	-12.8 rotate -8.7 -0.3 -5.6 0.75 0.3 Xroundrect
+	-12.2 rotate -8.9 -0.3 -5.6 0.77 0.2 Xroundrect
+	-12.2 rotate -8.0 -0.3 -5.6 0.75 0.3 Xroundrect
+	-12.2 rotate -8.0 -0.3 -5.6 0.75 0.3 Xroundrect
+	White fill
+	grestore
+        0 1 7 { 12.61 mul 6.7 add 4.5 EGfenster } for
+	109.5 4.5 EGfenster
+    } bind def
+    /Erdgeschoss
+    {
+	gsave
+	  5 0 translate
+	  newpath
+	  0 0 260 17 0 roundrect Black fill
+	  Mauerwerk
+	  gsave
+	    260 0 translate
+	    -1 1 scale Mauerwerk
+	  grestore
+	  0 17 moveto 0 0 lineto 260 0 lineto 260 17 lineto stroke
+	grestore
+    } bind def
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % vertikale Stuetzkoordinaten Skyline
+    /SkyVbase 76.5 def
+    /V0   0 def
+    /V1   2 def
+    /V2   6 def
+    /V3   7 def
+    /V4   8 def
+    /V5  10 def
+    /V6  16 def
+    /V7  18 def
+    /V8  19 def
+    /V8x 20 def
+    /V9  21 def
+    /V10 23 def
+    /V11 25 def
+    /V11x 26 def
+    /V12 27 def
+    /V12x 28 def
+    /V13 29 def
+    /V14 31 def
+    /V15 33 def
+    /V16 44 def
+    /V17 47 def
+    % horizontale Stuetzkoordinaten Skyline
+    /SkyHbase 4 def
+    /H0    0 def
+    /H1    6 def
+    /H2    9 def
+    /H3   12 def
+    /H4   18 def
+    /H5   22 def
+    /H6   27 def
+    /H7   30 def
+    /H8   32 def
+    /H9   35 def
+    /H10  47 def
+    /H11  53 def
+    /H12  56 def
+    /H13  59 def
+    /H14  62 def
+    /H15  65 def
+    /H16  68 def
+    /H17  71 def
+    /H18  74 def
+    /H19  79 def
+    /H20  83 def
+    /H21  88 def
+    /H22  90 def
+    /H23  93 def
+    /H24  98 def
+    /H25 99.5 def
+    /H26 103 def
+    /H27 107 def
+    /H28 111 def
+    /H29 113 def
+    /H30 116 def
+    /H31 119 def
+    /H32 123 def
+    /H33 127 def
+    /H34 134 def
+    /H35 139 def
+    /H36 146 def
+    /H37 151 def
+    /H38 156 def
+    /H39 160 def
+    /H40 161 def
+    /H41 168 def
+    /H42 177 def
+    /H43 183 def
+    /H44 185 def
+    /H45 190 def
+    /H46 194 def
+    /H47 199 def
+    /H48 201 def
+    /H49 212 def
+    /H50 219 def
+    /H51 227 def
+    /H52 231 def
+    /H53 233 def
+    /H54 235 def
+    /H55 237 def
+    /H56 241 def
+    /H57 245 def
+    /H58 247 def
+    /H59 255 def
+    /H60 257 def
+    /H61 263 def
+    /Sky1
+    {
+	H0 V1 moveto
+	H10 V1 lineto H10 V2 lineto
+	H11 V2 lineto
+	H12 V4 lineto H12 V2 lineto
+	H13 V4 lineto H13 V2 lineto
+	H14 V4 lineto H14 V2 lineto
+	H15 V4 lineto H15 V2 lineto
+	H16 V4 lineto H16 V2 lineto
+	H17 V4 lineto H17 V2 lineto
+	H19 V2 lineto H19 V0 lineto
+	stroke
+    } bind def
+    /Sky2
+    {
+	H42 V0 moveto H42 V4 lineto
+	H48 V4 lineto H48 V3 lineto
+	H55 V3 lineto H55 V4 lineto
+	H54 V4 lineto H54 V5 lineto
+	H60 V5 lineto H60 V4 lineto
+	H59 V4 lineto H59 V3 lineto
+	H60 V3 lineto H60 V1 lineto
+	H61 V1 lineto
+	stroke
+    } bind def
+    /Sky3
+    {
+	H28 V3  moveto H28 V7  lineto
+	H30 V7  lineto H30 V8x lineto
+	H31 V8x lineto H31 V7  lineto
+	H32 V7  lineto H32 V5  lineto
+	stroke
+    } bind def
+    /Sky4
+    {
+	H0 V7  moveto
+	H1 V7  lineto H1 V11 lineto
+	H2 V11 lineto H2 V7 lineto
+	H3 V7  lineto H3 V11 lineto
+	H4 V11 lineto H4 V12x lineto
+	H5 V12x lineto H5 V11 lineto
+	H6 V11 lineto H6 V7 lineto
+	H7 V7 lineto  H7 V11 lineto
+	H8 V11 lineto H8 V7 lineto
+	H9 V7 lineto  H9 V8 lineto
+	H15 V8 lineto H15 V7 lineto
+	H16 V7 lineto H16 V11 lineto
+	H17 V11 lineto H17 V6 lineto
+	H18 V6 lineto H18 V11 lineto
+	H19 V11 lineto H19 V12x lineto
+	H20 V12x lineto H20 V11 lineto
+	H21 V11 lineto H21 V6 lineto
+	H22 V6 lineto  H22 V11 lineto
+	H23 V11 lineto H23 V6 lineto
+	H25 V6 lineto H25 V7 lineto
+	H24 V7 lineto H24 V10 lineto
+	H27 V10 lineto H27 V11 lineto
+	H26 V11 lineto H26 V16 lineto
+	H27 V16 lineto H27 V17 lineto
+	H29 V17 lineto H29 V16 lineto
+	H30 V16 lineto H30 V11 lineto
+	H29 V11 lineto H29 V10 lineto
+	H33 V10 lineto H33 V11x lineto
+	H34 V11x lineto H34 V10 lineto
+	H35 V10 lineto H35 V7 lineto
+	H34 V7 lineto H34 V6 lineto
+	H36 V6 lineto
+	stroke
+    } bind def
+    /Sky5
+    {
+	H36 V4 moveto H36 V7 lineto
+	H37 V7 lineto H37 V8 lineto
+	H38 V8 lineto H38 V7 lineto
+	H39 V7 lineto H39 V5 lineto
+	stroke
+    } bind def
+    /Sky6
+    {
+	H39 V6 moveto
+	H40 V6 lineto H40 V9 lineto
+	H41 V9 lineto H41 V10 lineto
+	H42 V10 lineto H42 V9 lineto
+	H43 V9 lineto H43 V10 lineto
+	H44 V10 lineto H44 V11 lineto
+	H43 V11 lineto H43 V12 lineto
+	H44 V12 lineto H44 V13 lineto
+	H43 V13 lineto H43 V14 lineto
+	H45 V14 lineto H45 V15 lineto
+	H46 V15 lineto H46 V14 lineto
+	H48 V14 lineto H48 V13 lineto
+	H47 V13 lineto H47 V12 lineto
+	H48 V12 lineto H48 V11 lineto
+	H47 V11 lineto H47 V10 lineto
+	H48 V10 lineto H48 V9 lineto
+	H49 V9 lineto H49 V10 lineto
+	H50 V10 lineto H50 V9 lineto
+	H51 V9 lineto H51 V8 lineto
+	H53 V8 lineto H53 V9 lineto
+	H52 V9 lineto H52 V10 lineto
+	H53 V10 lineto H53 V11 lineto
+	H52 V11 lineto H52 V12 lineto
+	H53 V12 lineto H53 V13 lineto
+	H52 V13 lineto H52 V14 lineto
+	H55 V14 lineto H55 V15 lineto
+	H56 V15 lineto H56 V14 lineto
+	H58 V14 lineto H58 V13 lineto
+	H57 V13 lineto H57 V12 lineto
+	H58 V12 lineto H58 V11 lineto
+	H57 V11 lineto H57 V10 lineto
+	H58 V10 lineto H58 V9 lineto
+	H57 V9 lineto H57 V6 lineto
+	H61 V6 lineto
+	stroke
+    } bind def
+    /Skyline
+    {
+	gsave
+	% Erlangen Skyline
+	SkyHbase SkyVbase translate
+	Sky1 Sky2 Sky3 Sky4 Sky5 Sky6
+	grestore
+    } bind def	
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    /Dsaeule
+    {   % 0,0 == unteres Ende Mitte der Saeule
+	gsave
+	-10.38 5 8.5 -36 22.15 arc
+	-1.7 8.2 lineto
+	-1.7 0.0 lineto
+	closepath Black fill
+	% spiegeln an x=0
+	10.38 5 8.5 216 157.85 arcn
+	1.7 8.2 lineto
+	1.7 0.0 lineto
+	closepath Black fill
+	-1.8 1.9 1.8 2.8 0.1 roundrect
+	-1.7 0.5 1.7 1.5 0.1 roundrect
+	-2.2 0.0 2.2 0.4 0.08 roundrect
+	currentlinewidth dup 1.5 mul setlinewidth
+	stroke setlinewidth
+	-1.8 6.95 1.8 8.15 0.5 roundrect
+	currentlinewidth 3 mul setlinewidth
+	stroke
+	grestore
+    } bind def
+    /Ballustrade
+    {
+	gsave 112.75 59 translate Dsaeule grestore
+	gsave 124.5 59 translate Dsaeule grestore
+	114.5 67.15 moveto 12 0 rlineto
+	114.5 66.0 moveto 12 0 rlineto
+	114.5 61.7 moveto 12 0 rlineto
+	114.5 60.7 moveto 12 0 rlineto
+	114.5 59.4 moveto 12 0 rlineto
+
+	126 67.15 moveto 9 0 rlineto
+	126 66.0 moveto 9 0 rlineto
+	126 61.7 moveto 9 0 rlineto
+	126 60.7 moveto 9 0 rlineto
+	126 59.4 moveto 9 0 rlineto
+	currentlinewidth dup 1.5 mul setlinewidth
+	currentlinecap 0 setlinecap
+	stroke
+	114.5 59.1 moveto 12 0 rlineto
+	126 59.1 moveto 9 0 rlineto
+	1 index 2 mul setlinewidth stroke
+	setlinecap
+	setlinewidth
+
+	119 59 moveto 135 59 lineto 135 66.6 lineto
+	White fill
+	119 59 moveto 122 59 lineto
+	135 65.6 lineto 135 66.8 lineto
+	closepath Black fill
+	125 59 moveto
+	135 64 lineto
+	stroke
+    } bind def	
+    /Dach
+    {
+	gsave
+	newpath
+	1 59 moveto
+	269 59 lineto
+	247 68 lineto
+	236 SkyVbase lineto
+	34 SkyVbase lineto
+	22 68 lineto
+	1 59 lineto
+	gsave White fill grestore
+	stroke
+	Ballustrade
+	gsave 270 0 translate -1 1 scale Ballustrade grestore
+	grestore
+    } bind def
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    /KniestockHalb
+    {
+	gsave
+	newpath
+	1 59 moveto
+	4 56.1 lineto
+	135 56.1 lineto
+	135 59 lineto
+	1 59 lineto
+	Black fill
+	5 52.2 135.1 56.1 0.1 roundrect Black fill
+	5 56.1 0.8 180 270 arc stroke
+	5 52.15 1.1 0 360 arc fill
+	0 1 15 { 6.24 mul 10 add 53.5 1 index 4 add 1 index 3 add 0.5 Xroundrect } for
+	112.1 53.5 117   56.7 0.5 Xroundrect
+	119.1 53.5 122.9 56.5 0.5 Xroundrect
+	123.4 53.5 125.9 56.5 0.5 Xroundrect
+	123   57.1 126.3 58.3 0.3 Xroundrect
+	126.5 53.5 130.5 56.5 0.5 Xroundrect
+	133   53.5 137   56.5 0.5 Xroundrect
+	White fill
+	grestore
+    } bind def
+    /Kniestock
+    {
+	gsave
+	KniestockHalb
+	270 0 translate -1 1 scale
+	KniestockHalb
+	grestore
+    } bind def
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    /Ofenster
+    {
+      % ll corner == currentpoint
+	gsave
+	currentpoint translate
+	newpath
+	0.0 0.0 9.9 13.55 0.1 roundrect
+	1.5 0.0 8.5 3.0   0.2 roundrect 
+	2.2 1.6 7.8 2.4   0.2 roundrect
+	stroke
+	0.5 3.0 9.5 4.0   0.4 roundrect
+	0.5 0.0 9.5 1.0   0.4 roundrect
+	fill
+	1.2 4.0 moveto
+	8.8  4.0 9.0 13.5 0.2 arcto pop pop pop pop
+	9.0 13.5 1.0 13.5 0.2 arcto pop pop pop pop
+	1.0 13.5 1.2  4.0 0.2 arcto pop pop pop pop
+	1.2  4.0 8.8  4.0 0.2 arcto pop pop pop pop
+	stroke
+	1.5 4.0 8.5 13.5 0.3 roundrect fill
+	grestore
+    } bind def
+    /Mfenster
+    {
+      % ll corner == currentpoint
+	gsave
+	currentpoint translate
+	newpath
+	0 5.5 moveto 0 19.9 lineto
+	9.9 19.9 lineto 9.9 5.5 lineto
+	1.5 0.0 8.5 3.0   0.2 roundrect 
+	2.2 1.6 7.8 2.4   0.2 roundrect
+	stroke
+	0.5 3.0 9.5 4.0   0.4 roundrect
+	0.5 0.0 9.5 1.0   0.4 roundrect
+	fill
+	1.2 4.0 moveto
+	1.2 12 lineto
+	1.2 12.9 0.8 13.1 0.8 14 curveto
+	0.8 16 lineto 1.5 16 lineto
+	1.5 14 lineto 0.8 14 lineto
+	8.8 4.0 moveto
+	8.8 12 lineto
+	8.8 12.9 9.2 13.1 9.2 14 curveto
+	9.2 16 lineto 8.5 16 lineto
+	8.5 14 lineto 9.2 14 lineto
+	stroke
+	1.5 4.0 8.5 14.0 0.3 roundrect
+	0.1 16 9.8  17.5 0.7 roundrect
+	fill
+	grestore
+    } bind def
+    /MfensterRund
+    {
+	gsave
+	Mfenster
+	currentpoint translate
+	newpath
+	4.95 14.2 5.7 33.5 146.5 arc
+	4.95 14.2 4.5 145 35 arcn
+	closepath
+	fill
+	grestore
+    } bind def
+    /MfensterSpitz
+    {
+	gsave
+	Mfenster
+	currentpoint translate
+	newpath
+	1.5 17.4 moveto
+	4.95 18.8 8.5  17.4 0.3 arcto pop pop pop pop
+	8.5  17.4 9.9  17.6 0.3 arcto pop pop pop pop
+	9.9  17.6 4.95 19.9 0.1 arcto pop pop pop pop
+	4.95 19.9 0    17.6 0.3 arcto pop pop pop pop
+	0    17.6 1.5  17.4 0.1 arcto pop pop pop pop
+	1.5  17.4 4.95 18.8 0.3 arcto pop pop pop pop
+	fill
+	grestore
+    } bind def
+    /MfensterLang
+    {
+	gsave
+	MfensterRund
+	currentpoint translate newpath
+	2.2 0.0 7.8 3.8 0.4 roundrect fill
+	0.0 -0.5 9.9 0.5 0.5 roundrect fill
+	grestore
+    } bind def
+    /MfensterMitte
+    {
+	gsave
+	currentpoint translate
+	-0.1 -0.1 9.0 20 0 roundrect clip
+	newpath 0 0 moveto
+	Mfenster
+	grestore
+	gsave
+	currentpoint translate newpath
+	2.2 0.0 7.8 3.8 0.4 roundrect fill
+	0.0 -0.5 9.9 0.5 0.5 roundrect fill
+	1.5 17.2 moveto
+	9.0  18.8 16.5 17.2 0.3 arcto pop pop pop pop
+	16.5 17.2 18.0 17.6 0.3 arcto pop pop pop pop
+	18.0 17.6 9.0  19.9 0.1 arcto pop pop pop pop
+	9.0  19.9 0    17.6 0.3 arcto pop pop pop pop
+	0    17.6 1.5  17.2 0.1 arcto pop pop pop pop
+	1.5  17.2 9.0  18.8 0.3 arcto pop pop pop pop
+	fill
+	grestore
+    } bind def
+    /Ksaeule
+    {
+	% currentpoint == horizontal center
+	gsave
+	currentpoint translate
+	-1.6 32.1 moveto
+	 1.6 32.1  2.5 34.5 0.1 arcto pop pop pop pop
+	 2.5 34.5 -2.5 34.5 0.1 arcto pop pop pop pop
+	-2.5 34.5 -1.6 32.1 0.1 arcto pop pop pop pop
+	-1.6 32.1  1.6 32.1 0.1 arcto pop pop pop pop
+	fill
+	-1.5 5.4 1.5 6 0.3 roundrect
+	-1.7 4.0 1.7 5.4 0.1 roundrect
+	-1.9 3.1 1.9 4.0 0.45 roundrect
+	-1.75 1.8 1.75 3.1 0.1 roundrect
+	stroke
+	-2.5 0 moveto
+	 2.5  0.0  1.75 1.8 0.1 arcto pop pop pop pop
+	 1.75 1.8 -1.75 1.8 0.1 arcto pop pop pop pop
+	-1.75 1.8 -2.5  0.0 0.1 arcto pop pop pop pop
+	-2.5  0.0  2.5  0.0 0.1 arcto pop pop pop pop
+	fill
+	grestore
+    } bind def
+    /EtagenHalb
+    {
+	gsave
+	0 0 135.05 52.5 0 roundrect clip newpath
+	0 1 7 { 12.61 mul 9.9 add 38 moveto Ofenster } for
+	113.0 38 moveto Ofenster
+	126.1 38 moveto Ofenster
+	0 2 7 { 12.61 mul 9.9 add 17.4 moveto MfensterRund } for
+	1 2 7 { 12.61 mul 9.9 add 17.4 moveto MfensterSpitz } for
+	113.0 17.4 moveto MfensterLang
+	126.1 17.4 moveto MfensterMitte
+	5 49.5 moveto 5 23 lineto stroke
+	0 1 6 { 12.61 mul 21.1 add 17.3 moveto Ksaeule } for
+	124.5 17.3 moveto Ksaeule
+	% grosse Saeulen
+	5.0  49.5 moveto
+	9.9  49.5 10.9 51.7 0.1 arcto pop pop pop pop
+	10.9 51.7 4.0  51.7 0.1 arcto pop pop pop pop
+	4.0  51.7 5.0  49.5 0.1 arcto pop pop pop pop
+	5.0  49.5 9.9  49.5 0.1 arcto pop pop pop pop
+	fill
+	4.8 22.4 10.0 23 0.3 roundrect
+	5.0 21.0 9.9 22.4 0.1 roundrect
+	stroke
+	4.4 20.1 10.5 21.0 0.45 roundrect fill
+	4.9 18.8 10.1 20.1 0.1  roundrect stroke
+	4.3  17.35 moveto
+	10.9 17.35 10.1 18.8 0.1 arcto pop pop pop pop
+	10.1 18.8  4.9  18.8 0.1 arcto pop pop pop pop
+	4.9  18.8  4.3  17.35 0.1 arcto pop pop pop pop
+	4.3  17.35 10.9 17.35 0.1 arcto pop pop pop pop
+	fill
+	4.9 18.8 1.65 247.55 360 arc fill
+	gsave
+	103 0 translate
+	5.0  49.5 moveto
+	9.9  49.5 10.9 51.7 0.1 arcto pop pop pop pop
+	10.9 51.7 4.0  51.7 0.1 arcto pop pop pop pop
+	4.0  51.7 5.0  49.5 0.1 arcto pop pop pop pop
+	5.0  49.5 9.9  49.5 0.1 arcto pop pop pop pop
+	fill
+	4.8 22.4 10.0 23 0.3 roundrect
+	5.0 21.0 9.9 22.4 0.1 roundrect
+	stroke
+	4.4 20.1 10.5 21.0 0.45 roundrect fill
+	4.9 18.8 10.1 20.1 0.1  roundrect stroke
+	4.2  17.35 moveto
+	10.9 17.35 10.1 18.8 0.1 arcto pop pop pop pop
+	10.1 18.8  4.9  18.8 0.1 arcto pop pop pop pop
+	4.9  18.8  4.2  17.35 0.1 arcto pop pop pop pop
+	4.2  17.35 10.9 17.35 0.1 arcto pop pop pop pop
+	fill
+	grestore
+	grestore
+    } bind def
+    /Etagen
+    {
+	EtagenHalb
+	gsave 270 0 translate -1 1 scale EtagenHalb grestore
+    } bind def
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    /FAU_Schloss {
+	0.24 setlinewidth
+	1 setlinecap	% round cap
+	1 setlinejoin	% round join
+	%
+	Skyline
+	Dach
+	Kniestock
+	Etagen
+	Erdgeschoss
+    } bind def
+end def
+%%EndProcSet: FAU_Schloss 1.0 1
+%%EndProlog
+
+%%Page: 1 1
+clippath pathbbox
+exch pop exch pop translate
+-90 rotate
+newpath
+
+5 1 translate
+1.0 1.0 scale
+FAU_Schloss_1.0_1 begin
+  FAU_Schloss
+end
+showpage
+%%Trailer
+%%Pages: 2 1
+%%EOF
+
+
+count SCopcount sub {pop} repeat
+countdictstack SCdictcount sub {end} repeat
+SCincsave restore
+grestore
+grestore
+showpage
+saveit restore
+grestore
+%%EOF
