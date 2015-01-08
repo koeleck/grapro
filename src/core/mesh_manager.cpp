@@ -34,19 +34,22 @@ Mesh* MeshManager::addMesh(const import::Mesh* mesh)
         return it->second.get();
     }
 
+    // observe the order in 'shader_interface.h'
     util::bitfield<MeshComponents> components;
     GLsizeiptr per_vertex_size = 3 * sizeof(float);
-    if (mesh->hasNormals()) {
-        per_vertex_size += 3 * sizeof(float);
-        components |= MeshComponents::Normals;
-    }
     if (mesh->hasTexCoords()) {
         per_vertex_size += 2 * sizeof(float);
         components |= MeshComponents::TexCoords;
     }
+    // if mesh has tangents, then use we use tangent
+    // and bitangent plus a reflect float to reconstruct
+    // the normal
     if (mesh->hasTangents()) {
-        per_vertex_size += 6 * sizeof(float);
+        per_vertex_size += 7 * sizeof(float);
         components |= MeshComponents::Tangents;
+    } else if (mesh->hasNormals()) {
+        per_vertex_size += 3 * sizeof(float);
+        components |= MeshComponents::Normals;
     }
 
     GLenum index_type;
@@ -81,11 +84,6 @@ Mesh* MeshManager::addMesh(const import::Mesh* mesh)
         *data++ = mesh->vertices[i][2];
 
         // order is specified in shader::MeshStruct (shader_interface.h)
-        if (mesh->hasNormals()) {
-            *data++ = mesh->normals[i][0];
-            *data++ = mesh->normals[i][1];
-            *data++ = mesh->normals[i][2];
-        }
         if (mesh->hasTexCoords()) {
             *data++ = mesh->texcoords[i][0];
             *data++ = mesh->texcoords[i][1];
@@ -97,6 +95,14 @@ Mesh* MeshManager::addMesh(const import::Mesh* mesh)
             *data++ = mesh->bitangents[i][0];
             *data++ = mesh->bitangents[i][1];
             *data++ = mesh->bitangents[i][2];
+
+            *data++ = (glm::dot(mesh->normals[i],
+                    glm::cross(mesh->tangents[i], mesh->bitangents[i])) > .0f) ?
+                    1.f : -1.f;
+        } else if (mesh->hasNormals()) {
+            *data++ = mesh->normals[i][0];
+            *data++ = mesh->normals[i][1];
+            *data++ = mesh->normals[i][2];
         }
         if (mesh->hasVertexColors()) {
             *data++ = mesh->vertex_colors[i][0];
@@ -174,12 +180,12 @@ void MeshManager::initVAOs()
     for (unsigned char i = 0; i < 8; ++i) {
         util::bitfield<MeshComponents> c(i);
         GLsizei stride = static_cast<GLsizei>(3 * sizeof(float));
-        if (c & MeshComponents::Normals)
-            stride += static_cast<GLsizei>(3 * sizeof(float));
         if (c & MeshComponents::TexCoords)
             stride += static_cast<GLsizei>(2 * sizeof(float));
+        if (c & MeshComponents::Normals)
+            stride += static_cast<GLsizei>(3 * sizeof(float));
         if (c & MeshComponents::Tangents)
-            stride += static_cast<GLsizei>(6 * sizeof(float));
+            stride += static_cast<GLsizei>(7 * sizeof(float));
 
         gl::VertexArray vao;
         glBindVertexArray(vao);
@@ -190,17 +196,17 @@ void MeshManager::initVAOs()
 
         // observe the order in 'shader_interface.h'
         auto offset = 3 * sizeof(float);
-        if (c & MeshComponents::Normals) {
-            glEnableVertexAttribArray(1);
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, stride,
-                    reinterpret_cast<GLvoid*>(offset));
-            offset += 3 * sizeof(float);
-        }
         if (c & MeshComponents::TexCoords) {
-            glEnableVertexAttribArray(2);
-            glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride,
+            glEnableVertexAttribArray(1);
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride,
                     reinterpret_cast<GLvoid*>(offset));
             offset += 2 * sizeof(float);
+        }
+        if (c & MeshComponents::Normals) {
+            glEnableVertexAttribArray(2);
+            glVertexAttribPointer(2, 3, GL_FLOAT, GL_TRUE, stride,
+                    reinterpret_cast<GLvoid*>(offset));
+            offset += 3 * sizeof(float);
         }
         if (c & MeshComponents::Tangents) {
             glEnableVertexAttribArray(3);
@@ -208,9 +214,9 @@ void MeshManager::initVAOs()
                     reinterpret_cast<GLvoid*>(offset));
             offset += 3 * sizeof(float);
             glEnableVertexAttribArray(4);
-            glVertexAttribPointer(4, 3, GL_FLOAT, GL_TRUE, stride,
+            glVertexAttribPointer(4, 4, GL_FLOAT, GL_TRUE, stride,
                     reinterpret_cast<GLvoid*>(offset));
-            offset += 3 * sizeof(float);
+            offset += 4 * sizeof(float);
         }
 
         assert(static_cast<GLsizei>(offset) == stride);

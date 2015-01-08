@@ -15,7 +15,7 @@ out vec2 vs_uv;
 #endif
 #ifdef HAS_TANGENTS
 layout(location = 3) in vec3 in_tangent;
-layout(location = 4) in vec3 in_bitangent;
+layout(location = 4) in vec4 in_bitangent;
 out vec3 vs_tangent;
 out vec3 vs_bitangent;
 #endif
@@ -41,6 +41,7 @@ void main()
 #ifdef HAS_TANGENTS
     vs_tangent = normalize(modelMatrix * vec4(in_tangent.xyz, 0.0)).xyz);
     vs_bitangent = normalize(modelMatrix * vec4(in_bitangent.xyz, 0.0)).xyz);
+    vs_normal = in_bitangent.w * normalize(cross(vs_tangent, vs_bitangent));
 #endif
     gl_Position = cam.ProjViewMatrix * worldPos;
 }

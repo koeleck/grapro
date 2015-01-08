@@ -33,16 +33,16 @@ void main()
 
     vs_viewdir = normalize(cam.Position.xyz - worldPos.xyz);
 
+    if ((components & MESH_COMPONENT_TEXCOORD) != 0) {
+        value.x = vertexData[idx++];
+        value.y = vertexData[idx++];
+        vs_uv = value.xy;
+    }
     if ((components & MESH_COMPONENT_NORMAL) != 0) {
         value.x = vertexData[idx++];
         value.y = vertexData[idx++];
         value.z = vertexData[idx++];
         vs_normal = normalize((modelMatrix * vec4(value, 0.0)).xyz);
-    }
-    if ((components & MESH_COMPONENT_TEXCOORD) != 0) {
-        value.x = vertexData[idx++];
-        value.y = vertexData[idx++];
-        vs_uv = value.xy;
     }
     if ((components & MESH_COMPONENT_TANGENT) != 0) {
         value.x = vertexData[idx++];
@@ -53,6 +53,8 @@ void main()
         value.y = vertexData[idx++];
         value.z = vertexData[idx++];
         vs_bitangent = normalize((modelMatrix * vec4(value, 0.0)).xyz);
+        const float reflect_normal = vertexData[idx++];
+        vs_normal = reflect_normal * normalize(cross(vs_tangent, vs_bitangent));
     }
     gl_Position = cam.ProjViewMatrix * worldPos;
 }

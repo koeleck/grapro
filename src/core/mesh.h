@@ -10,8 +10,8 @@ namespace core
 
 enum class MeshComponents : unsigned char
 {
-    Normals   = 1<<0,
-    TexCoords = 1<<1,
+    TexCoords = 1<<0,
+    Normals   = 1<<1,
     Tangents  = 1<<2
 };
 

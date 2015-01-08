@@ -29,8 +29,8 @@ constexpr int VERTEX    = 5;
 
 // Vertex Attrib Arrays
 constexpr int POSITIONS = 0;
-constexpr int NORMALS   = 1;
-constexpr int TEXOORDS  = 2;
+constexpr int TEXOORDS  = 1;
+constexpr int NORMALS   = 2;
 constexpr int TANGENTS  = 3;
 
 // Texture Units
