@@ -16,7 +16,7 @@ set(CMAKE_BUILD_TYPE Debug)
 # warnings
 set(MY_WARNING_FLAGS " -Wall -pedantic -Wextra -Werror -Wno-unused-value -Wno-unused-parameter -Wno-unused-but-set-parameter -Wno-unused-function -Wuninitialized -Wshadow -Wconversion -Wswitch-default -Winit-self -Wunreachable-code ")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -msse2 -msse3 ${MY_WARNING_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -msse2 -msse3 -fpermissive ${MY_WARNING_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -fno-omit-frame-pointer")
 add_definitions( -I${PROJECT_SOURCE_DIR}/src )
 
@@ -73,7 +73,7 @@ else()
     message("${ASSIMP_LIB}")
 endif()
 
-add_executable(xgrapro ${SRCS} ${HDRS})
+add_executable(grapro ${SRCS} ${HDRS})
 
 #target_link_libraries(grapro ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARIES} ${Boost_LIBRARIES} ${GLFW_LIBRARIES} ${FREEIMAGE_LIB} ${ASSIMP_LIB} ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(xgrapro ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARIES} ${Boost_LIBRARIES} glfw ${GLFW_LIBRARIES} freeimage ${ASSIMP_LIB} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(grapro ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARIES} ${Boost_LIBRARIES} glfw ${GLFW_LIBRARIES} freeimage ${ASSIMP_LIB} ${CMAKE_THREAD_LIBS_INIT})

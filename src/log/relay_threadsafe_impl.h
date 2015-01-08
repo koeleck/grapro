@@ -7,8 +7,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
-
-#include <boost/circular_buffer.hpp>
+#include <deque>
 
 #include "entry.h"
 
@@ -44,7 +43,7 @@ private:
     void flush_impl() noexcept;
 
     std::vector<std::shared_ptr<Sink>>  m_sinks;
-    boost::circular_buffer<Entry>       m_queue;
+    std::deque<Entry>                   m_queue;
     std::mutex                          m_lock;
     std::mutex                          m_sink_lock;
     std::condition_variable             m_cv;

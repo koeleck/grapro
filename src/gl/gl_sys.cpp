@@ -30,7 +30,7 @@ int rank_severity(GLenum sev)
 
 void debug_callback(const GLenum source, const GLenum type, const GLuint id,
         const GLenum severity, const GLsizei /*length*/,
-        const GLchar* const message, const void* /*userParam*/)
+        const GLchar* const message, void* /*userParam*/)
 {
     using namespace logging;
 

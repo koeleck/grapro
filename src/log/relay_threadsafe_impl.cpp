@@ -6,11 +6,12 @@
 namespace logging
 {
 
+constexpr short k_maxQueueSize {100};
+
 ///////////////////////////////////////////////////////////////////////////
 
 RelayThreadsafeImpl::RelayThreadsafeImpl() noexcept
-  : m_queue(100), // TODO don't hardcode capacity
-    m_running{},
+  : m_running{},
     m_flush{false}
 {
     m_running.test_and_set();
@@ -36,7 +37,7 @@ bool RelayThreadsafeImpl::addEntry(Entry&& entry) noexcept
 {
     while (true) {
         std::unique_lock<std::mutex> lock(m_lock);
-        if (!m_queue.full()) {
+        if (m_queue.size() < k_maxQueueSize) {
             m_queue.push_back(std::move(entry));
             break;
         }
