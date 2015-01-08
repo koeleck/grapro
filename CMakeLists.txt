@@ -30,9 +30,14 @@ file(GLOB_RECURSE HDRS src/*.(h|hpp))
 find_package(PkgConfig REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
-pkg_search_module(GLFW REQUIRED glfw3)
-set(GLFW_LIBRARIES "${GLFW_LIBRARIES} -lX11 -lXrandr -lXi -lXxf86vm")
 find_package(Threads)
+
+# GLFW
+#pkg_search_module(GLFW REQUIRED glfw3)
+add_subdirectory(${PROJECT_SOURCE_DIR}/contrib/glfw-3.0.4)
+include_directories(${PROJECT_SOURCE_DIR}/contrib/glfw-3.0.4/include)
+set(GLFW_LIBRARIES "${GLFW_LIBRARIES} -lX11 -lXrandr -lXi -lXxf86vm")
+message("GLFW LIBS: " "${GLFW_LIBRARIES}")
 
 add_definitions( -DGLEW_NO_GLU ) # we don't use GLU
 add_definitions( -DGLFW_INCLUDE_NONE ) # we already include the glew headers
@@ -53,6 +58,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem ${PROJECT_SOURCE_DIR}/contrib/i
 find_library(FREEIMAGE_LIB freeimage)
 if("${FREEIMAGE_LIB}" STREQUAL "")
     message(FATAL_ERROR "FreeImage library not found")
+elseif("${FREEIMAGE_LIB}" STREQUAL "FREEIMAGE_LIB-NOTFOUND")
+	message("FreeImage library not found -> trying to add own")
+	include_directories(${PROJECT_SOURCE_DIR}/contrib/FreeImage/Dist)
 else()
     message(STATUS "FreeImage found")
 endif()
@@ -62,8 +70,10 @@ if("${ASSIMP_LIB}" STREQUAL "")
     message(FATAL_ERROR "AssImp library not found")
 else()
     message(STATUS "AssImp found")
+    message("${ASSIMP_LIB}")
 endif()
 
-add_executable(grapro ${SRCS} ${HDRS})
+add_executable(xgrapro ${SRCS} ${HDRS})
 
-target_link_libraries(grapro ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARIES} ${Boost_LIBRARIES} ${GLFW_LIBRARIES} ${FREEIMAGE_LIB} ${ASSIMP_LIB} ${CMAKE_THREAD_LIBS_INIT})
+#target_link_libraries(grapro ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARIES} ${Boost_LIBRARIES} ${GLFW_LIBRARIES} ${FREEIMAGE_LIB} ${ASSIMP_LIB} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(xgrapro ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARIES} ${Boost_LIBRARIES} glfw ${GLFW_LIBRARIES} freeimage ${ASSIMP_LIB} ${CMAKE_THREAD_LIBS_INIT})

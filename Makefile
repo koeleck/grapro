@@ -2,7 +2,7 @@
 
 
 all: build/Makefile
-	@make -C build -j
+	@make -C build
 	@mkdir -p bin
 	@cp build/grapro bin
 
