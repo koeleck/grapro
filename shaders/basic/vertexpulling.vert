@@ -37,7 +37,7 @@ void main()
         value.x = vertexData[idx++];
         value.y = vertexData[idx++];
         value.z = vertexData[idx++];
-        vs_normal = (modelMatrix * vec4(value, 0.0)).xyz;
+        vs_normal = normalize((modelMatrix * vec4(value, 0.0)).xyz);
     }
     if ((components & MESH_COMPONENT_TEXCOORD) != 0) {
         value.x = vertexData[idx++];
@@ -48,8 +48,9 @@ void main()
         value.x = vertexData[idx++];
         value.y = vertexData[idx++];
         value.z = vertexData[idx++];
-        vs_tangent = (modelMatrix * vec4(value, 0.0)).xyz;
-        vs_bitangent = normalize(cross(vs_normal, vs_tangent));
+        float sgn = vertexData[idx++];
+        vs_tangent = normalize((modelMatrix * vec4(value, 0.0)).xyz);
+        vs_bitangent = sgn * normalize(cross(vs_normal, vs_tangent));
     }
     gl_Position = cam.ProjViewMatrix * worldPos;
 }

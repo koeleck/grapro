@@ -11,7 +11,7 @@ namespace import
 
 struct Mesh
 {
-    static constexpr int VERSION = 1;
+    static constexpr int VERSION = 2;
 
     void makePointersRelative();
     void makePointersAbsolute();
@@ -20,7 +20,7 @@ struct Mesh
     std::uint32_t*  indices;
     glm::vec3*      vertices;
     glm::vec3*      normals;
-    glm::vec3*      tangents;
+    glm::vec4*      tangents;
     glm::vec3*      vertex_colors;
     glm::vec2*      texcoords;
     core::AABB      bbox;

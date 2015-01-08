@@ -617,10 +617,16 @@ char* dumpMesh(char* ptr, const std::pair<std::string, AssimpMesh>& mesh)
     }
 
     if (mesh.second.has_tangents) {
-        my_mesh->tangents = reinterpret_cast<glm::vec3*>(ptr);
+        my_mesh->tangents = reinterpret_cast<glm::vec4*>(ptr);
         ptr += aimesh->mNumVertices * sizeof(glm::vec3);
         for (unsigned int i = 0; i < aimesh->mNumVertices; ++i) {
-            my_mesh->tangents[i] = to_glm(aimesh->mTangents[i]);
+            const auto tangent = to_glm(aimesh->mTangents[i]);
+            const auto normal = to_glm(aimesh->mNormals[i]);
+            const auto bitan = to_glm(aimesh->mBitangents[i]);
+
+            const auto bitan2 = glm::cross(normal, tangent);
+            const auto sign = (glm::dot(bitan, bitan2) > .0f) ? 1.f : -1.f;
+            my_mesh->tangents[i] = glm::vec4(tangent, sign);
         }
     } else {
         my_mesh->tangents = nullptr;

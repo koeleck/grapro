@@ -32,7 +32,7 @@ void Mesh::makePointersRelative()
 
     if (tangents != nullptr) {
         pos = reinterpret_cast<const char*>(tangents);
-        tangents = reinterpret_cast<glm::vec3*>(pos - offset);
+        tangents = reinterpret_cast<glm::vec4*>(pos - offset);
     }
 
     if (vertex_colors != nullptr) {
@@ -75,7 +75,7 @@ void Mesh::makePointersAbsolute()
 
     if (tangents != nullptr) {
         pos = reinterpret_cast<std::size_t>(tangents);
-        tangents = reinterpret_cast<glm::vec3*>(offset + pos);
+        tangents = reinterpret_cast<glm::vec4*>(offset + pos);
     }
 
     if (vertex_colors != nullptr) {

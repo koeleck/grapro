@@ -45,7 +45,7 @@ Mesh* MeshManager::addMesh(const import::Mesh* mesh)
         components |= MeshComponents::TexCoords;
     }
     if (mesh->hasTangents()) {
-        per_vertex_size += 3 * sizeof(float);
+        per_vertex_size += 4 * sizeof(float);
         components |= MeshComponents::Tangents;
     }
 
@@ -94,6 +94,7 @@ Mesh* MeshManager::addMesh(const import::Mesh* mesh)
             *data++ = mesh->tangents[i].x;
             *data++ = mesh->tangents[i].y;
             *data++ = mesh->tangents[i].z;
+            *data++ = mesh->tangents[i].w;
         }
         if (mesh->hasVertexColors()) {
             *data++ = mesh->vertex_colors[i].x;
@@ -176,7 +177,7 @@ void MeshManager::initVAOs()
         if (c & MeshComponents::TexCoords)
             stride += static_cast<GLsizei>(2 * sizeof(float));
         if (c & MeshComponents::Tangents)
-            stride += static_cast<GLsizei>(3 * sizeof(float));
+            stride += static_cast<GLsizei>(4 * sizeof(float));
 
         gl::VertexArray vao;
         glBindVertexArray(vao);
@@ -201,9 +202,9 @@ void MeshManager::initVAOs()
         }
         if (c & MeshComponents::Tangents) {
             glEnableVertexAttribArray(3);
-            glVertexAttribPointer(3, 3, GL_FLOAT, GL_TRUE, stride,
+            glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, stride,
                     reinterpret_cast<GLvoid*>(offset));
-            offset += 3 * sizeof(float);
+            offset += 4 * sizeof(float);
         }
 
         assert(static_cast<GLsizei>(offset) == stride);
