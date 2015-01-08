@@ -3,6 +3,7 @@
 *.tmp
 *.swp
 *.pyc
+contrib/glfw
 bin/
 build/
 cache/
