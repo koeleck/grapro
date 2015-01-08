@@ -48,9 +48,11 @@ void main()
         value.x = vertexData[idx++];
         value.y = vertexData[idx++];
         value.z = vertexData[idx++];
-        float sgn = vertexData[idx++];
         vs_tangent = normalize((modelMatrix * vec4(value, 0.0)).xyz);
-        vs_bitangent = sgn * normalize(cross(vs_normal, vs_tangent));
+        value.x = vertexData[idx++];
+        value.y = vertexData[idx++];
+        value.z = vertexData[idx++];
+        vs_bitangent = normalize((modelMatrix * vec4(value, 0.0)).xyz);
     }
     gl_Position = cam.ProjViewMatrix * worldPos;
 }

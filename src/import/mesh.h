@@ -11,7 +11,7 @@ namespace import
 
 struct Mesh
 {
-    static constexpr int VERSION = 2;
+    static constexpr int VERSION = 3;
 
     void makePointersRelative();
     void makePointersAbsolute();
@@ -20,7 +20,8 @@ struct Mesh
     std::uint32_t*  indices;
     glm::vec3*      vertices;
     glm::vec3*      normals;
-    glm::vec4*      tangents;
+    glm::vec3*      tangents;
+    glm::vec3*      bitangents;
     glm::vec3*      vertex_colors;
     glm::vec2*      texcoords;
     core::AABB      bbox;
@@ -36,6 +37,11 @@ struct Mesh
     bool hasTangents() const noexcept
     {
         return tangents != nullptr;
+    }
+
+    bool hasBitangents() const noexcept
+    {
+        return bitangents != nullptr;
     }
 
     bool hasTexCoords() const noexcept

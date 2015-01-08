@@ -67,14 +67,11 @@ void main()
         texNormal.xy = texNormal.xy * 2.0 - 1.0;
         texNormal = normalize(texNormal);
 
-        //mat3 localToWorld = mat3(vs_tangent, vs_bitangent, vs_normal);
-        //normal =  localToWorld * texNormal;
         mat3 localToWorld_T = mat3(
                 vs_tangent.x, vs_bitangent.x, vs_normal.x,
                 vs_tangent.y, vs_bitangent.y, vs_normal.y,
                 vs_tangent.z, vs_bitangent.z, vs_normal.z);
         normal = texNormal * localToWorld_T;
-
     } else {
         normal = vs_normal;
     }

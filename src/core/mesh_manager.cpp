@@ -45,7 +45,7 @@ Mesh* MeshManager::addMesh(const import::Mesh* mesh)
         components |= MeshComponents::TexCoords;
     }
     if (mesh->hasTangents()) {
-        per_vertex_size += 4 * sizeof(float);
+        per_vertex_size += 6 * sizeof(float);
         components |= MeshComponents::Tangents;
     }
 
@@ -76,30 +76,32 @@ Mesh* MeshManager::addMesh(const import::Mesh* mesh)
                 offset, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
     float* data = static_cast<float*>(ptr);
     for (unsigned int i = 0; i < mesh->num_vertices; ++i) {
-        *data++ = mesh->vertices[i].x;
-        *data++ = mesh->vertices[i].y;
-        *data++ = mesh->vertices[i].z;
+        *data++ = mesh->vertices[i][0];
+        *data++ = mesh->vertices[i][1];
+        *data++ = mesh->vertices[i][2];
 
         // order is specified in shader::MeshStruct (shader_interface.h)
         if (mesh->hasNormals()) {
-            *data++ = mesh->normals[i].x;
-            *data++ = mesh->normals[i].y;
-            *data++ = mesh->normals[i].z;
+            *data++ = mesh->normals[i][0];
+            *data++ = mesh->normals[i][1];
+            *data++ = mesh->normals[i][2];
         }
         if (mesh->hasTexCoords()) {
-            *data++ = mesh->texcoords[i].x;
-            *data++ = mesh->texcoords[i].y;
+            *data++ = mesh->texcoords[i][0];
+            *data++ = mesh->texcoords[i][1];
         }
         if (mesh->hasTangents()) {
-            *data++ = mesh->tangents[i].x;
-            *data++ = mesh->tangents[i].y;
-            *data++ = mesh->tangents[i].z;
-            *data++ = mesh->tangents[i].w;
+            *data++ = mesh->tangents[i][0];
+            *data++ = mesh->tangents[i][1];
+            *data++ = mesh->tangents[i][2];
+            *data++ = mesh->bitangents[i][0];
+            *data++ = mesh->bitangents[i][1];
+            *data++ = mesh->bitangents[i][2];
         }
         if (mesh->hasVertexColors()) {
-            *data++ = mesh->vertex_colors[i].x;
-            *data++ = mesh->vertex_colors[i].y;
-            *data++ = mesh->vertex_colors[i].z;
+            *data++ = mesh->vertex_colors[i][0];
+            *data++ = mesh->vertex_colors[i][1];
+            *data++ = mesh->vertex_colors[i][2];
         }
     }
     GLubyte* indices = reinterpret_cast<GLubyte*>(data);
@@ -177,7 +179,7 @@ void MeshManager::initVAOs()
         if (c & MeshComponents::TexCoords)
             stride += static_cast<GLsizei>(2 * sizeof(float));
         if (c & MeshComponents::Tangents)
-            stride += static_cast<GLsizei>(4 * sizeof(float));
+            stride += static_cast<GLsizei>(6 * sizeof(float));
 
         gl::VertexArray vao;
         glBindVertexArray(vao);
@@ -202,9 +204,13 @@ void MeshManager::initVAOs()
         }
         if (c & MeshComponents::Tangents) {
             glEnableVertexAttribArray(3);
-            glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, stride,
+            glVertexAttribPointer(3, 3, GL_FLOAT, GL_TRUE, stride,
                     reinterpret_cast<GLvoid*>(offset));
-            offset += 4 * sizeof(float);
+            offset += 3 * sizeof(float);
+            glEnableVertexAttribArray(4);
+            glVertexAttribPointer(4, 3, GL_FLOAT, GL_TRUE, stride,
+                    reinterpret_cast<GLvoid*>(offset));
+            offset += 3 * sizeof(float);
         }
 
         assert(static_cast<GLsizei>(offset) == stride);

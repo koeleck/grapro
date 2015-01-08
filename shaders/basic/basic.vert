@@ -14,7 +14,8 @@ layout(location = 2) in vec2 in_uv;
 out vec2 vs_uv;
 #endif
 #ifdef HAS_TANGENTS
-layout(location = 3) in vec4 in_tangent;
+layout(location = 3) in vec3 in_tangent;
+layout(location = 4) in vec3 in_bitangent;
 out vec3 vs_tangent;
 out vec3 vs_bitangent;
 #endif
@@ -32,14 +33,14 @@ void main()
 
     vs_viewdir = normalize(cam.Position.xyz - worldPos.xyz);
 #ifdef HAS_NORMALS
-    vs_normal = (modelMatrix * vec4(in_normal, 0.0)).xyz;
+    vs_normal = normalize((modelMatrix * vec4(in_normal, 0.0)).xyz);
 #endif
 #ifdef HAS_TEXCOORDS
     vs_uv = in_uv;
 #endif
 #ifdef HAS_TANGENTS
-    vs_tangent = (modelMatrix * vec4(in_tangent.xyz, 0.0)).xyz;
-    vs_bitangent = in_tangent.w * normalize(cross(vs_normal, vs_tangent.xyz));
+    vs_tangent = normalize(modelMatrix * vec4(in_tangent.xyz, 0.0)).xyz);
+    vs_bitangent = normalize(modelMatrix * vec4(in_bitangent.xyz, 0.0)).xyz);
 #endif
     gl_Position = cam.ProjViewMatrix * worldPos;
 }

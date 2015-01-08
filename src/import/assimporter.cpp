@@ -454,7 +454,7 @@ std::size_t getSceneInfo(const std::string& filename, const aiScene* scene,
                     return 0;
                 }
                 mesh_props.has_tangents = true;
-                per_vertex_size += sizeof(glm::vec3);
+                per_vertex_size += 2 * sizeof(glm::vec3); // tangent & bitangent
             }
         } else if (mesh->HasVertexColors(0)) {
             mesh_props.has_vertex_colors = true;
@@ -617,19 +617,20 @@ char* dumpMesh(char* ptr, const std::pair<std::string, AssimpMesh>& mesh)
     }
 
     if (mesh.second.has_tangents) {
-        my_mesh->tangents = reinterpret_cast<glm::vec4*>(ptr);
+        my_mesh->tangents = reinterpret_cast<glm::vec3*>(ptr);
         ptr += aimesh->mNumVertices * sizeof(glm::vec3);
         for (unsigned int i = 0; i < aimesh->mNumVertices; ++i) {
-            const auto tangent = to_glm(aimesh->mTangents[i]);
-            const auto normal = to_glm(aimesh->mNormals[i]);
-            const auto bitan = to_glm(aimesh->mBitangents[i]);
+            my_mesh->tangents[i] = to_glm(aimesh->mTangents[i]);
+        }
 
-            const auto bitan2 = glm::cross(normal, tangent);
-            const auto sign = (glm::dot(bitan, bitan2) > .0f) ? 1.f : -1.f;
-            my_mesh->tangents[i] = glm::vec4(tangent, sign);
+        my_mesh->bitangents = reinterpret_cast<glm::vec3*>(ptr);
+        ptr += aimesh->mNumVertices * sizeof(glm::vec3);
+        for (unsigned int i = 0; i < aimesh->mNumVertices; ++i) {
+            my_mesh->bitangents[i] = to_glm(aimesh->mBitangents[i]);
         }
     } else {
         my_mesh->tangents = nullptr;
+        my_mesh->bitangents = nullptr;
     }
 
     if (mesh.second.has_vertex_colors) {
