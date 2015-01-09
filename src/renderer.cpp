@@ -157,6 +157,20 @@ void Renderer::render(const bool renderBBoxes)
         loc = glGetUniformLocation(m_voxel_prog, "u_height");
         glUniform1i(loc, vars.screen_height);
 
+        //Create an modelview-orthographic projection matrix see from X/Y/Z axis
+        glm::mat4 Ortho;
+        Ortho = glm::ortho( -1.0f, 1.0f, -1.0f, 1.0f, 2.0f-1.0f, 3.0f );
+        glm::mat4 mvpX = Ortho * glm::lookAt( glm::vec3( 2, 0, 0 ), glm::vec3( 0, 0, 0 ), glm::vec3( 0, 1, 0 ) );
+        glm::mat4 mvpY = Ortho * glm::lookAt( glm::vec3( 0, 2, 0 ), glm::vec3( 0, 0, 0 ), glm::vec3( 0, 0, -1 ) );
+        glm::mat4 mvpZ = Ortho * glm::lookAt( glm::vec3( 0, 0, 2 ), glm::vec3( 0, 0, 0 ), glm::vec3( 0, 1, 0 ) );
+        
+        loc = glGetUniformLocation(m_voxel_prog, "u_MVPx");
+        glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(mvpX));
+        loc = glGetUniformLocation(m_voxel_prog, "u_MVPy");
+        glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(mvpY));
+        loc = glGetUniformLocation(m_voxel_prog, "u_MVPz");
+        glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(mvpZ));
+
         glBindVertexArray(m_vertexpulling_vao);
         for (const auto& cmd : m_drawlist) {
             // Frustum Culling

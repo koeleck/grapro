@@ -3,6 +3,8 @@
 
 #include <vector>
 #include <unordered_map>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/glm.hpp>
 #include "core/instance.h"
 #include "core/program.h"
 #include "gl/opengl.h"
