@@ -47,7 +47,7 @@ struct Renderer::DrawCmd
 Renderer::Renderer()
 {
     // create programs
-    for (unsigned char i = 0; i < 8; ++i) {
+    /*for (unsigned char i = 0; i < 8; ++i) {
         util::bitfield<core::MeshComponents> c(i);
         std::string name_ext = "pos";
         std::string defines;
@@ -79,7 +79,7 @@ Renderer::Renderer()
     }
     core::res::shaders->registerShader("noop_frag", "basic/noop.frag", GL_FRAGMENT_SHADER);
     m_earlyz_prog = core::res::shaders->registerProgram("early_z_prog",
-            {"basic_vert_pos", "noop_frag"});
+            {"basic_vert_pos", "noop_frag"});*/
 
     initBBoxStuff();
 
@@ -90,6 +90,12 @@ Renderer::Renderer()
             GL_FRAGMENT_SHADER);
     m_vertexpulling_prog = core::res::shaders->registerProgram("vertexpulling_prog",
             {"vertexpulling_vert", "vertexpulling_frag"});
+
+    // voxel stuff
+    core::res::shaders->registerShader("voxelGeom", "tree/trianglemod.geom", GL_GEOMETRY_SHADER);
+    core::res::shaders->registerShader("voxelFrag", "tree/trianglemod.frag", GL_FRAGMENT_SHADER);
+    m_voxel_prog = core::res::shaders->registerProgram("voxel_prog",
+            {"vertexpulling_vert", "voxelGeom", "voxelFrag"});
 
     glBindVertexArray(m_vertexpulling_vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, core::res::meshes->getElementArrayBuffer());
@@ -136,6 +142,29 @@ void Renderer::render(const bool renderBBoxes)
     core::res::meshes->bind();
 
     const auto* cam = core::res::cameras->getDefaultCam();
+
+    if (true) {
+
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+        glDepthFunc(GL_LEQUAL);
+
+        glUseProgram(m_voxel_prog);
+        glBindVertexArray(m_vertexpulling_vao);
+        for (const auto& cmd : m_drawlist) {
+            // Frustum Culling
+            if (!cam->inFrustum(cmd.instance->getBoundingBox()))
+                continue;
+
+            glDrawElementsInstancedBaseVertexBaseInstance(cmd.mode, cmd.count, cmd.type,
+                    cmd.indices, 1, 0, cmd.instance->getIndex());
+        }
+
+        return;
+
+    }
+
+
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);

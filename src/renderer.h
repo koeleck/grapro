@@ -35,6 +35,8 @@ private:
 
     core::Program                       m_vertexpulling_prog;
     gl::VertexArray                     m_vertexpulling_vao;
+
+    core::Program                       m_voxel_prog;
 };
 
 #endif // RENDERER_H
