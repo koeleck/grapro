@@ -3,11 +3,24 @@
 layout (triangles) in;
 layout (triangle_strip, max_vertices = 3) out;
 
-out vec3 f_pos;
+flat in uint materialIDArr[];
+
+in vec3 vs_normalArr[];
+in vec2 vs_uvArr[];
+in vec3 vs_tangentArr[];
+in vec3 vs_bitangentArr[];
 
 flat out vec3 dominantAxis;
 flat out int f_axis;
 flat out vec4 f_AABB;
+
+flat out uint materialID;
+
+out vec3 f_pos;
+out vec3 vs_normal;
+out vec2 vs_uv;
+out vec3 vs_tangent;
+out vec3 vs_bitangent;
 
 uniform mat4 u_MVPx;
 uniform mat4 u_MVPy;
@@ -62,7 +75,7 @@ void main() {
 	AABB.zw = max(b.xy, AABB.zw);
 	AABB.xy = min(c.xy, AABB.xy);
 	AABB.zw = max(c.xy, AABB.zw);
-	//Enlarge half-pixel
+	//Enlarge by half-pixel
 	AABB.xy -= hPixel;
 	AABB.zw += hPixel;
 	f_AABB = AABB;
@@ -82,14 +95,29 @@ void main() {
 
 	gl_Position = a;
 	f_pos = a.xyz;
+	vs_uv = vs_uvArr[0];
+	vs_normal = vs_normalArr[0];
+	vs_tangent = vs_tangentArr[0];
+	vs_bitangent = vs_bitangentArr[0];
+	materialID = materialIDArr[0];
 	EmitVertex();
 
 	gl_Position = b;
 	f_pos = b.xyz;
+	vs_uv = vs_uvArr[1];
+	vs_normal = vs_normalArr[1];
+	vs_tangent = vs_tangentArr[1];
+	vs_bitangent = vs_bitangentArr[1];
+	materialID = materialIDArr[1];
 	EmitVertex();
 
 	gl_Position = c;
 	f_pos = c.xyz;
+	vs_uv = vs_uvArr[2];
+	vs_normal = vs_normalArr[2];
+	vs_tangent = vs_tangentArr[2];
+	vs_bitangent = vs_bitangentArr[2];
+	materialID = materialIDArr[2];
 	EmitVertex();
 
 }

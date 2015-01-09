@@ -92,9 +92,9 @@ Renderer::Renderer()
     m_vertexpulling_prog = core::res::shaders->registerProgram("vertexpulling_prog",
             {"vertexpulling_vert", "vertexpulling_frag"});
 
-    // voxel stuff
-    core::res::shaders->registerShader("voxelGeom", "tree/trianglemod.geom", GL_GEOMETRY_SHADER);
-    core::res::shaders->registerShader("voxelFrag", "tree/trianglemod.frag", GL_FRAGMENT_SHADER);
+    // voxel creation
+    core::res::shaders->registerShader("voxelGeom", "tree/voxelize.geom", GL_GEOMETRY_SHADER);
+    core::res::shaders->registerShader("voxelFrag", "tree/voxelize.frag", GL_FRAGMENT_SHADER);
     m_voxel_prog = core::res::shaders->registerProgram("voxel_prog",
             {"vertexpulling_vert", "voxelGeom", "voxelFrag"});
 
@@ -133,7 +133,8 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
 
 /****************************************************************************/
 
-void genAtomicBuffer(int num, unsigned int & buffer) {
+void genAtomicBuffer(int num, unsigned int & buffer)
+{
 
     GLuint initVal = 0;
 
@@ -145,7 +146,87 @@ void genAtomicBuffer(int num, unsigned int & buffer) {
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 
 }
-GLuint atomicBuffer = 0;
+
+struct VoxelStruct
+{
+    glm::uvec4 position;
+    glm::vec4 color;
+    glm::vec4 normal;
+};
+
+void Renderer::createVoxelList()
+{
+
+    //Create an modelview-orthographic projection matrix see from X/Y/Z axis
+    const glm::mat4 Ortho = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 2.0f-1.0f, 3.0f);
+    const glm::mat4 mvpX = Ortho * glm::lookAt(glm::vec3(2, 0, 0), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+    const glm::mat4 mvpY = Ortho * glm::lookAt(glm::vec3(0, 2, 0), glm::vec3(0, 0, 0), glm::vec3(0, 0, -1));
+    const glm::mat4 mvpZ = Ortho * glm::lookAt(glm::vec3(0, 0, 2), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glViewport(0, 0, vars.voxel_dim, vars.voxel_dim);
+
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+    glUseProgram(m_voxel_prog);
+
+    // uniforms
+    GLint loc;
+    loc = glGetUniformLocation(m_voxel_prog, "u_width");
+    glUniform1i(loc, vars.screen_width);
+    loc = glGetUniformLocation(m_voxel_prog, "u_height");
+    glUniform1i(loc, vars.screen_height);
+    loc = glGetUniformLocation(m_voxel_prog, "u_MVPx");
+    glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(mvpX));
+    loc = glGetUniformLocation(m_voxel_prog, "u_MVPy");
+    glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(mvpY));
+    loc = glGetUniformLocation(m_voxel_prog, "u_MVPz");
+    glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(mvpZ));
+
+    // buffer
+    genAtomicBuffer(1, m_atomicCounterBuffer);
+    glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, m_atomicCounterBuffer);
+
+    glGenBuffers(1, &m_voxelBuffer);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
+
+    // create empty storage for vars.max_voxel_fragments vec4 of positions
+    glBufferStorage(GL_SHADER_STORAGE_BUFFER, vars.max_voxel_fragments * sizeof(VoxelStruct), nullptr, GL_MAP_READ_BIT);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::VOXEL, m_voxelBuffer);
+
+    // render
+    glBindVertexArray(m_vertexpulling_vao);
+    for (const auto & cmd : m_drawlist) {
+
+        glDrawElementsInstancedBaseVertexBaseInstance(cmd.mode, cmd.count, cmd.type,
+                cmd.indices, 1, 0, cmd.instance->getIndex());
+
+    }
+
+    // debug output
+    /*glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
+    auto count = static_cast<GLuint *>(glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), GL_MAP_READ_BIT));
+    const auto numVoxelFrag = count[0];
+    LOG_INFO("Number of Entries in Voxel Fragment List: ", numVoxelFrag);
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
+    auto vecPtr = static_cast<VoxelStruct *>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, vars.max_voxel_fragments * sizeof(VoxelStruct), GL_MAP_READ_BIT));
+    if (vecPtr == nullptr) LOG_INFO("NULL!");
+    LOG_INFO("Position: ", vecPtr[0].position[0], " ", vecPtr[0].position[1], " ", vecPtr[0].position[2]);
+    LOG_INFO("Color: ", vecPtr[0].color[0], " ", vecPtr[0].color[1], " ", vecPtr[0].color[2]);
+    LOG_INFO("Normal: ", vecPtr[0].normal[0], " ", vecPtr[0].normal[1], " ", vecPtr[0].normal[2]);*/
+
+    glDeleteBuffers(1, &m_voxelBuffer);
+
+    glViewport(0, 0, vars.screen_width, vars.screen_height);
+
+}
+
+/****************************************************************************/
+
 void Renderer::render(const bool renderBBoxes)
 {
     if (m_geometry.empty())
@@ -155,87 +236,14 @@ void Renderer::render(const bool renderBBoxes)
     core::res::instances->bind();
     core::res::meshes->bind();
 
+    createVoxelList();
+
     const auto* cam = core::res::cameras->getDefaultCam();
-
-    if (true) {
-
-        glEnable(GL_DEPTH_TEST);
-        glEnable(GL_CULL_FACE);
-        glDepthFunc(GL_LEQUAL);
-
-        glUseProgram(m_voxel_prog);
-
-        GLint loc = glGetUniformLocation(m_voxel_prog, "u_width");
-        glUniform1i(loc, vars.screen_width);
-        loc = glGetUniformLocation(m_voxel_prog, "u_height");
-        glUniform1i(loc, vars.screen_height);
-
-        genAtomicBuffer(1, atomicBuffer);
-
-        glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, atomicBuffer);
-
-        //Create an modelview-orthographic projection matrix see from X/Y/Z axis
-        glm::mat4 Ortho;
-        Ortho = glm::ortho( -1.0f, 1.0f, -1.0f, 1.0f, 2.0f-1.0f, 3.0f );
-        glm::mat4 mvpX = Ortho * glm::lookAt( glm::vec3( 2, 0, 0 ), glm::vec3( 0, 0, 0 ), glm::vec3( 0, 1, 0 ) );
-        glm::mat4 mvpY = Ortho * glm::lookAt( glm::vec3( 0, 2, 0 ), glm::vec3( 0, 0, 0 ), glm::vec3( 0, 0, -1 ) );
-        glm::mat4 mvpZ = Ortho * glm::lookAt( glm::vec3( 0, 0, 2 ), glm::vec3( 0, 0, 0 ), glm::vec3( 0, 1, 0 ) );
-
-        loc = glGetUniformLocation(m_voxel_prog, "u_MVPx");
-        glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(mvpX));
-        loc = glGetUniformLocation(m_voxel_prog, "u_MVPy");
-        glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(mvpY));
-        loc = glGetUniformLocation(m_voxel_prog, "u_MVPz");
-        glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(mvpZ));
-
-        // texture stuff
-        const unsigned int tex_size = 512;
-
-        // TODO don't create textures for every frame
-        gl::Texture tex_voxel_pos;
-        gl::Texture tex_voxel_kd;
-        gl::Texture tex_voxel_normal;
-
-        glBindTexture(GL_TEXTURE_2D, tex_voxel_pos);
-        glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB10_A2UI, tex_size, tex_size);
-
-        glBindTexture(GL_TEXTURE_2D, tex_voxel_kd);
-        glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, tex_size, tex_size);
-
-        glBindTexture(GL_TEXTURE_2D, tex_voxel_normal);
-        glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, tex_size, tex_size);
-
-        // END TODO
-
-        glBindImageTexture(0, tex_voxel_pos, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGB10_A2UI);
-        glBindImageTexture(1, tex_voxel_kd, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
-        glBindImageTexture(2, tex_voxel_normal, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
-
-        // render
-        glBindVertexArray(m_vertexpulling_vao);
-        for (const auto& cmd : m_drawlist) {
-            // Frustum Culling
-            if (!cam->inFrustum(cmd.instance->getBoundingBox()))
-                continue;
-
-            glDrawElementsInstancedBaseVertexBaseInstance(cmd.mode, cmd.count, cmd.type,
-                    cmd.indices, 1, 0, cmd.instance->getIndex());
-        }
-
-        glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, atomicBuffer);
-        auto count = static_cast<GLuint *>(glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), GL_MAP_READ_BIT | GL_MAP_WRITE_BIT));
-        const auto numVoxelFrag = count[0];
-        LOG_INFO("Number of Entries in Voxel Fragment List: ", numVoxelFrag);
-
-        return;
-
-    }
-
-
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glDepthFunc(GL_LEQUAL);
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
     //GLuint prog = m_earlyz_prog;
     //GLuint vao = 0;

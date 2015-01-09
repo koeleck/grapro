@@ -24,6 +24,7 @@ private:
     using ProgramMap = std::unordered_map<unsigned char, core::Program>;
 
     void initBBoxStuff();
+    void createVoxelList();
 
     std::vector<const core::Instance*>  m_geometry;
     ProgramMap                          m_programs;
@@ -39,6 +40,8 @@ private:
     gl::VertexArray                     m_vertexpulling_vao;
 
     core::Program                       m_voxel_prog;
+    GLuint                              m_atomicCounterBuffer;
+    GLuint                              m_voxelBuffer;
 };
 
 #endif // RENDERER_H

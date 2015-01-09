@@ -30,6 +30,10 @@ DEF_VAR(screen_height, int, 480)
 DEF_VAR(cache_dir, std::string, "cache/")
 DEF_VAR(shader_dir, std::string, "shaders/")
 
+// Voxel
+DEF_VAR(voxel_dim, unsigned int, 512)
+DEF_VAR(max_voxel_fragments, unsigned int, 2097152)
+
 /***************************************************************
  *
  *  Core
