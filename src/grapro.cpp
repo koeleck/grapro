@@ -97,6 +97,8 @@ void GraPro::handle_keyboard(const double delta_t)
     // misc:
     if (getKey(GLFW_KEY_T) & framework::KeyState::PRESS)
         m_showgui = !m_showgui;
+    if (getKey(GLFW_KEY_ESCAPE) & framework::KeyState::RELEASE)
+        glfwSetWindowShouldClose(*this, GL_TRUE);
 }
 
 /****************************************************************************/
