@@ -174,20 +174,24 @@ void Renderer::render(const bool renderBBoxes)
         // texture stuff
         const unsigned int tex_size = 512;
 
+        // TODO don't create textures for every frame
         gl::Texture tex_voxel_pos;
         gl::Texture tex_voxel_kd;
         gl::Texture tex_voxel_normal;
 
+        glBindTexture(GL_TEXTURE_2D, tex_voxel_pos);
         glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB10_A2UI, tex_size, tex_size);
-        glActiveTexture(tex_voxel_pos);
-        glBindImageTexture(0, tex_voxel_pos, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGB10_A2UI);
 
+        glBindTexture(GL_TEXTURE_2D, tex_voxel_kd);
         glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, tex_size, tex_size);
-        glActiveTexture(tex_voxel_kd);
-        glBindImageTexture(1, tex_voxel_kd, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
 
+        glBindTexture(GL_TEXTURE_2D, tex_voxel_normal);
         glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, tex_size, tex_size);
-        glActiveTexture(tex_voxel_normal);
+
+        // END TODO
+
+        glBindImageTexture(0, tex_voxel_pos, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGB10_A2UI);
+        glBindImageTexture(1, tex_voxel_kd, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
         glBindImageTexture(2, tex_voxel_normal, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
 
         // render

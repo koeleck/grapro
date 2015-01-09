@@ -11,6 +11,10 @@ in vec3 f_pos;
 uniform int u_width;
 uniform int u_height;
 
+layout(binding = 0, rgb10_a2) uniform restrict image2D imgVoxelPos;
+layout(binding = 1, rgba8) uniform restrict image2D imgVoxelKd;
+layout(binding = 2, rgba16f) uniform restrict image2D imgVoxelNormal;
+
 void main()
 {
     if(f_pos.x < f_AABB.x || f_pos.y < f_AABB.y || f_pos.x > f_AABB.z || f_pos.y > f_AABB.w) {
