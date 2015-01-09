@@ -224,7 +224,8 @@ void Renderer::render(const bool renderBBoxes)
 
         glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, atomicBuffer);
         auto count = static_cast<GLuint *>(glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), GL_MAP_READ_BIT | GL_MAP_WRITE_BIT));
-        LOG_INFO("num written pixels: ", *count);
+        const auto numVoxelFrag = count[0];
+        LOG_INFO("Number of Entries in Voxel Fragment List: ", numVoxelFrag);
 
         return;
 

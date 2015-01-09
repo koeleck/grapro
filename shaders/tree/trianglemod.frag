@@ -43,5 +43,5 @@ void main()
 	uint idx = atomicCounterIncrement(u_voxelFragCount);
 
     //out_Color = vec4(dominantAxis, 0.f);
-    out_Color = vec4(idx) / 10000.f;
+    out_Color = vec4(idx) / 1000000.f;
 }
