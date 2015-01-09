@@ -47,9 +47,9 @@ void main() {
 	}
 
 	// to clip space
-	//a = proj * a;
-	//b = proj * b;
-	//c = proj * c;
+	a = proj * a;
+	b = proj * b;
+	c = proj * c;
 
 	//Next we enlarge the triangle to enable conservative rasterization
 	vec4 AABB;

@@ -18,7 +18,7 @@ void main()
     }
 
     uvec4 temp = uvec4(gl_FragCoord.xy, u_width * gl_FragCoord.z, 0);
-    uvec4 texcoord = temp;
+    uvec4 texcoord = temp; // default: f_axis == 2
 	if(f_axis == 0)	{
 
 		texcoord.x = u_width - temp.z;
