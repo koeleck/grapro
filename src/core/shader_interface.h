@@ -98,8 +98,10 @@ struct MeshStruct
     GLuint                          stride;
     GLuint                          components; // see mesh.h
     GLuint                          first;
+    GLuint                          firstIndex;
+    GLuint                          count;
 };
-static_assert(sizeof(MeshStruct) == 12 && sizeof(MeshStruct) % 4 == 0, "");
+static_assert(sizeof(MeshStruct) == 20 && sizeof(MeshStruct) % 4 == 0, "");
 
 } // namespace shader
 

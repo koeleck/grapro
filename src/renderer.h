@@ -6,7 +6,7 @@
 #include "core/instance.h"
 #include "core/program.h"
 #include "gl/opengl.h"
-
+#include "offscreen_buffer.h"
 
 class Renderer
 {
@@ -23,6 +23,8 @@ private:
 
     void initBBoxStuff();
 
+    void downsampleDepthBuffer(const OffscreenBuffer& buffer);
+
     std::vector<const core::Instance*>  m_geometry;
     std::vector<DrawCmd>                m_drawlist;
 
@@ -34,7 +36,11 @@ private:
 
     core::Program                       m_vertexpulling_prog;
     gl::VertexArray                     m_vertexpulling_vao;
+    gl::Buffer                          m_instanceIDs;
     gl::Buffer                          m_indirect_buffer;
+
+    // occlusion culling
+    core::Program                       m_oc_downsample_prog;
 };
 
 #endif // RENDERER_H

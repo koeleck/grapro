@@ -138,6 +138,9 @@ Mesh* MeshManager::addMesh(const import::Mesh* mesh)
     mesh_data->stride = static_cast<GLuint>(per_vertex_size / static_cast<GLsizei>(sizeof(float)));
     mesh_data->components = static_cast<GLuint>(components());
     mesh_data->first = static_cast<GLuint>(offset / static_cast<GLintptr>(sizeof(float)));
+    mesh_data->firstIndex = static_cast<GLuint>(reinterpret_cast<std::size_t>(indices) /
+            static_cast<std::size_t>(per_index_size));
+    mesh_data->count = static_cast<GLuint>(mesh->num_indices);
 
     auto res = m_meshes.emplace(std::move(name),
             std::unique_ptr<Mesh>(

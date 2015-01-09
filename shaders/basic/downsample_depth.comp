@@ -1,0 +1,28 @@
+#version 440 core
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0, r32f) uniform restrict readonly image2D   uDepthIn;
+layout(binding = 1, r32f) uniform restrict writeonly image2D  uDepthOut;
+
+void main()
+{
+
+    const uint x = gl_GlobalInvocationID.x;
+    const uint y = gl_GlobalInvocationID.y;
+
+    const ivec2 size = imageSize(uDepthOut).xy;
+    const ivec2 prev_size = imageSize(uDepthIn).xy;
+
+    if (x < size.x && y < size.y) {
+        ivec2 origin = 2 * ivec2(x, y);
+        bvec2 test = lessThan(origin + ivec2(1), prev_size);
+
+        const float d0 = imageLoad(uDepthIn, origin).r;
+        const float d1 = test.x ? imageLoad(uDepthIn, origin + ivec2(1, 0)).r : d0;
+        const float d2 = test.y ? imageLoad(uDepthIn, origin + ivec2(0, 1)).r : d0;
+        const float d3 = (test.x && test.y) ? imageLoad(uDepthIn, origin + ivec2(1)).r : d0;
+
+        imageStore(uDepthOut, ivec2(x, y), vec4(max(max(d0, d1), max(d2, d3))));
+    }
+}

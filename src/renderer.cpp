@@ -76,6 +76,11 @@ Renderer::Renderer()
     glBindVertexArray(m_vertexpulling_vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, core::res::meshes->getElementArrayBuffer());
     glBindVertexArray(0);
+
+    core::res::shaders->registerShader("downsample_depth_comp", "basic/downsample_depth.comp",
+            GL_COMPUTE_SHADER);
+    m_oc_downsample_prog = core::res::shaders->registerProgram("downsample_depth_prog",
+            {"downsample_depth_comp"});
 }
 
 /****************************************************************************/
@@ -104,8 +109,8 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
     m_drawlist.clear();
     m_drawlist.reserve(m_geometry.size());
 
-    std::vector<DrawElementsIndirectCommand> indirectCmds;
-    indirectCmds.reserve(m_geometry.size());
+    std::vector<GLuint> instanceIDs;
+    instanceIDs.reserve(m_geometry.size());
 
     std::size_t indirect = 0;
     m_drawlist.emplace_back(GL_TRIANGLES,
@@ -113,6 +118,8 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
             reinterpret_cast<const GLvoid*>(indirect), 0, 0);
     const auto* prev_mat = m_geometry.front()->getMaterial();
     for (const auto* g : m_geometry) {
+        instanceIDs.emplace_back(g->getIndex());
+
         const auto* mesh = g->getMesh();
         const auto* mat = g->getMaterial();
         if (mesh->type() != m_drawlist.back().type || mat != prev_mat) {
@@ -168,22 +175,18 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
             }
         }
 
-        {
-            indirectCmds.emplace_back();
-            auto& cmd = indirectCmds.back();
-            cmd.count = static_cast<GLuint>(mesh->count());
-            cmd.instanceCount = 1;
-            cmd.firstIndex = mesh->firstIndex();
-            cmd.baseVertex = 0;
-            cmd.baseInstance = g->getIndex();
-            indirect += sizeof(DrawElementsIndirectCommand);
-        }
+        indirect += sizeof(DrawElementsIndirectCommand);
     }
 
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_indirect_buffer);
     glBufferData(GL_DRAW_INDIRECT_BUFFER,
-            static_cast<GLsizeiptr>(indirectCmds.size() * sizeof(DrawElementsIndirectCommand)),
-            indirectCmds.data(), GL_STATIC_DRAW);
+            static_cast<GLsizeiptr>(m_geometry.size() * sizeof(DrawElementsIndirectCommand)),
+            nullptr, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_instanceIDs);
+    glBufferData(GL_SHADER_STORAGE_BUFFER,
+            static_cast<GLsizeiptr>(m_geometry.size() * sizeof(GLuint)),
+            instanceIDs.data(), GL_STATIC_DRAW);
 }
 
 /****************************************************************************/
@@ -192,6 +195,8 @@ void Renderer::render(const bool renderBBoxes)
 {
     if (m_geometry.empty())
         return;
+
+    return;
 
     core::res::materials->bind();
     core::res::instances->bind();
@@ -330,6 +335,26 @@ void Renderer::initBBoxStuff()
     core::res::shaders->registerShader("bbox_vert", "basic/bbox.vert", GL_VERTEX_SHADER);
     core::res::shaders->registerShader("bbox_frag", "basic/bbox.frag", GL_FRAGMENT_SHADER);
     m_bbox_prog = core::res::shaders->registerProgram("bbox_prog", {"bbox_vert", "bbox_frag"});
+}
+
+/****************************************************************************/
+
+void Renderer::downsampleDepthBuffer(const OffscreenBuffer& buffer)
+{
+    glUseProgram(m_oc_downsample_prog);
+
+    unsigned int width = static_cast<unsigned int>(buffer.m_width / 2);
+    unsigned int height = static_cast<unsigned int>(buffer.m_height / 2);
+    for (int i = 1; i < buffer.m_levels; ++i) {
+        glBindImageTexture(0, buffer.m_depthbuffer, i - 1, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
+        glBindImageTexture(1, buffer.m_depthbuffer, i, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);
+
+        glDispatchCompute((width + 15) / 16, (height + 15) / 16, 1);
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+        width /= 2;
+        height /= 2;
+    }
 }
 
 /****************************************************************************/
