@@ -7,5 +7,5 @@ flat in vec4 f_AABB;
 
 void main()
 {
-    out_Color = vec4(f_AABB);
+    out_Color = vec4(dominantAxis, 0.f);
 }
