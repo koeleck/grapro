@@ -23,8 +23,8 @@ DEF_VAR(tex_max_anisotropy, float, 1.0)
 
 // Window
 DEF_VAR(title, std::string, "grapro")
-DEF_VAR(screen_width, int, 640)
-DEF_VAR(screen_height, int, 480)
+DEF_VAR(screen_width, int, 1024)
+DEF_VAR(screen_height, int, 768)
 
 // Paths
 DEF_VAR(cache_dir, std::string, "cache/")
