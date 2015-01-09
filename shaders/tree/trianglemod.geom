@@ -3,9 +3,11 @@
 layout (triangles) in;
 layout (triangle_strip, max_vertices = 3) out;
 
+out vec3 f_pos;
+
 flat out vec3 dominantAxis;
+flat out int f_axis;
 flat out vec4 f_AABB;
-flat out float test;
 
 uniform mat4 u_MVPx;
 uniform mat4 u_MVPy;
@@ -29,15 +31,18 @@ void main() {
 
 	// choose dominantAxis & orthogonal projection
 	dominantAxis = axes[0];
+	f_axis = 0;
 	mat4 proj = u_MVPx;
 	float d0 = abs(dot(n, axes[0]));
 	float d1 = abs(dot(n, axes[1]));
 	float d2 = abs(dot(n, axes[2]));
 	if (d1 > d0 && d1 > d2) {
 		dominantAxis = axes[1];
+		f_axis = 1;
 		proj = u_MVPy;
 	} else if (d2 > d0 && d2 > d1) {
 		dominantAxis = axes[2];
+		f_axis = 2;
 		proj = u_MVPz;
 	}
 
@@ -76,12 +81,15 @@ void main() {
 	c.xy = c.xy + pl * ((e1.xy / dot(e1.xy, n2.xy)) + (e2.xy / dot(e2.xy, n1.xy)));
 
 	gl_Position = a;
+	f_pos = a.xyz;
 	EmitVertex();
 
 	gl_Position = b;
+	f_pos = b.xyz;
 	EmitVertex();
 
 	gl_Position = c;
+	f_pos = c.xyz;
 	EmitVertex();
 
 }
