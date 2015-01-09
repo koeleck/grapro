@@ -163,7 +163,7 @@ void Renderer::render(const bool renderBBoxes)
         glm::mat4 mvpX = Ortho * glm::lookAt( glm::vec3( 2, 0, 0 ), glm::vec3( 0, 0, 0 ), glm::vec3( 0, 1, 0 ) );
         glm::mat4 mvpY = Ortho * glm::lookAt( glm::vec3( 0, 2, 0 ), glm::vec3( 0, 0, 0 ), glm::vec3( 0, 0, -1 ) );
         glm::mat4 mvpZ = Ortho * glm::lookAt( glm::vec3( 0, 0, 2 ), glm::vec3( 0, 0, 0 ), glm::vec3( 0, 1, 0 ) );
-        
+
         loc = glGetUniformLocation(m_voxel_prog, "u_MVPx");
         glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(mvpX));
         loc = glGetUniformLocation(m_voxel_prog, "u_MVPy");
@@ -171,6 +171,26 @@ void Renderer::render(const bool renderBBoxes)
         loc = glGetUniformLocation(m_voxel_prog, "u_MVPz");
         glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(mvpZ));
 
+        // texture stuff
+        const unsigned int tex_size = 512;
+
+        gl::Texture tex_voxel_pos;
+        gl::Texture tex_voxel_kd;
+        gl::Texture tex_voxel_normal;
+
+        glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB10_A2UI, tex_size, tex_size);
+        glActiveTexture(tex_voxel_pos);
+        glBindImageTexture(0, tex_voxel_pos, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGB10_A2UI);
+
+        glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, tex_size, tex_size);
+        glActiveTexture(tex_voxel_kd);
+        glBindImageTexture(1, tex_voxel_kd, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
+
+        glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, tex_size, tex_size);
+        glActiveTexture(tex_voxel_normal);
+        glBindImageTexture(2, tex_voxel_normal, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
+
+        // render
         glBindVertexArray(m_vertexpulling_vao);
         for (const auto& cmd : m_drawlist) {
             // Frustum Culling
