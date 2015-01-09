@@ -1,13 +1,11 @@
 #version 440 core
 
-#include <extensions.glsl>
-#include <materials.glsl>
-#include <textures.glsl>
-#include <instances.glsl>
-
 layout(location = 0) out vec4 out_Color;
+
+flat in vec3 dominantAxis;
+flat in vec4 f_AABB;
 
 void main()
 {
-    out_Color = vec4(1.0);
+    out_Color = vec4(dominantAxis, 0.f);
 }
