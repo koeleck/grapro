@@ -13,6 +13,7 @@
 #include "core/shader_interface.h"
 #include "core/texture.h"
 #include "log/log.h"
+#include "framework/vars.h"
 
 /****************************************************************************/
 
@@ -150,6 +151,12 @@ void Renderer::render(const bool renderBBoxes)
         glDepthFunc(GL_LEQUAL);
 
         glUseProgram(m_voxel_prog);
+
+        GLint loc = glGetUniformLocation(m_voxel_prog, "u_width");
+        glUniform1i(loc, vars.screen_width);
+        loc = glGetUniformLocation(m_voxel_prog, "u_height");
+        glUniform1i(loc, vars.screen_height);
+
         glBindVertexArray(m_vertexpulling_vao);
         for (const auto& cmd : m_drawlist) {
             // Frustum Culling

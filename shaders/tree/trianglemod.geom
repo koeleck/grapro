@@ -5,11 +5,14 @@ layout (triangle_strip, max_vertices = 3) out;
 
 flat out vec3 dominantAxis;
 flat out vec4 f_AABB;
+flat out float test;
 
 uniform mat4 u_MVPx;
 uniform mat4 u_MVPy;
 uniform mat4 u_MVPz;
-uniform vec2 u_pixelSize;
+
+uniform int u_width;
+uniform int u_height;
 
 const vec3 axes[3] = vec3[3](vec3(1.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f), vec3(0.f, 0.f, 1.f));
 
@@ -45,6 +48,7 @@ void main() {
 
 	//Next we enlarge the triangle to enable conservative rasterization
 	vec4 AABB;
+	vec2 hPixel = vec2(1.f / u_width, 1.f / u_height);
 
 	//calculate AABB of this triangle
 	AABB.xy = a.xy;
@@ -54,8 +58,8 @@ void main() {
 	AABB.xy = min(c.xy, AABB.xy);
 	AABB.zw = max(c.xy, AABB.zw);
 	//Enlarge half-pixel
-	AABB.xy -= u_pixelSize.x;
-	AABB.zw += u_pixelSize.x;
+	AABB.xy -= hPixel;
+	AABB.zw += hPixel;
 	f_AABB = AABB;
 
 	//find 3 triangle edge plane
@@ -66,7 +70,7 @@ void main() {
 	vec3 n1 = cross(e1, vec3(0.f, 0.f, 1.f));
 	vec3 n2 = cross(e2, vec3(0.f, 0.f, 1.f));
 	//dilate the triangle
-	const float pl = sqrt(u_pixelSize[0] * u_pixelSize[0] + u_pixelSize[1] * u_pixelSize[1]);
+	const float pl = sqrt(hPixel[0] * hPixel[0] + hPixel[1] * hPixel[1]);
 	a.xy = a.xy + pl * ((e2.xy / dot(e2.xy, n0.xy)) + (e0.xy / dot(e0.xy, n2.xy)));
 	b.xy = b.xy + pl * ((e0.xy / dot(e0.xy, n1.xy)) + (e1.xy / dot(e1.xy, n0.xy)));
 	c.xy = c.xy + pl * ((e1.xy / dot(e1.xy, n2.xy)) + (e2.xy / dot(e2.xy, n1.xy)));
