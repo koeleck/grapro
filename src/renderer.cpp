@@ -4,6 +4,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "renderer.h"
+#include "framework/vars.h"
 #include "core/mesh.h"
 #include "core/shader_manager.h"
 #include "core/mesh_manager.h"
@@ -11,6 +12,7 @@
 #include "core/camera_manager.h"
 #include "core/material_manager.h"
 #include "core/shader_interface.h"
+#include "core/texture_manager.h"
 #include "core/texture.h"
 #include "log/log.h"
 
@@ -57,11 +59,17 @@ struct Renderer::DrawCmd
 /****************************************************************************/
 
 Renderer::Renderer()
+  : m_offscreen_buffer(1024, 768)
 {
-    // early-z
-    //core::res::shaders->registerShader("noop_frag", "basic/noop.frag", GL_FRAGMENT_SHADER);
-    //m_earlyz_prog = core::res::shaders->registerProgram("early_z_prog",
-    //        {"basic_vert_pos", "noop_frag"});
+    glBindTexture(GL_TEXTURE_2D, m_hiz_tex);
+    auto minsize = glm::min(m_offscreen_buffer.m_height, m_offscreen_buffer.m_width);
+    const auto levels = static_cast<int>(std::floor(std::log2(minsize)));
+    LOG_INFO("levels: ", levels);
+    glTexStorage2D(GL_TEXTURE_2D, levels, GL_R32F, m_offscreen_buffer.m_width, m_offscreen_buffer.m_height);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     initBBoxStuff();
 
@@ -81,6 +89,19 @@ Renderer::Renderer()
             GL_COMPUTE_SHADER);
     m_oc_downsample_prog = core::res::shaders->registerProgram("downsample_depth_prog",
             {"downsample_depth_comp"});
+
+    core::res::shaders->registerShader("occlusionculling_comp", "basic/occlusionculling.comp",
+            GL_COMPUTE_SHADER);
+    m_oc_culling_prog = core::res::shaders->registerProgram("occlusionculling_prog",
+            {"occlusionculling_comp"});
+
+
+    core::res::shaders->registerShader("debug_vert", "basic/debug.vert",
+            GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("debugtex_frag", "basic/debug_tex.frag",
+            GL_FRAGMENT_SHADER);
+    m_debugtex_prog = core::res::shaders->registerProgram("debugtex_prog",
+            {"debug_vert", "debugtex_frag"});
 }
 
 /****************************************************************************/
@@ -110,23 +131,24 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
     m_drawlist.reserve(m_geometry.size());
 
     std::vector<GLuint> instanceIDs;
-    instanceIDs.reserve(m_geometry.size());
+    instanceIDs.reserve(m_geometry.size() + 1);
+    // first entry in instanceIDs is the number of instances
+    instanceIDs.push_back(static_cast<GLuint>(m_geometry.size()));
 
     std::size_t indirect = 0;
-    m_drawlist.emplace_back(GL_TRIANGLES,
-            m_geometry.front()->getMesh()->type(),
-            reinterpret_cast<const GLvoid*>(indirect), 0, 0);
-    const auto* prev_mat = m_geometry.front()->getMaterial();
+    GLenum current_type = 0;
+    const core::Material* current_mat = nullptr;
     for (const auto* g : m_geometry) {
         instanceIDs.emplace_back(g->getIndex());
 
         const auto* mesh = g->getMesh();
         const auto* mat = g->getMaterial();
-        if (mesh->type() != m_drawlist.back().type || mat != prev_mat) {
+        if (mesh->type() != current_type || mat != current_mat) {
+            current_type = mesh->type();
+            current_mat = mat;
             m_drawlist.emplace_back(GL_TRIANGLES, mesh->type(),
                     reinterpret_cast<const GLvoid*>(indirect), 0, 0);
         }
-        prev_mat = mat;
         {
             auto& cmd = m_drawlist.back();
             cmd.drawcount++;
@@ -174,7 +196,6 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
                 cmd.textures[unit] = tex;
             }
         }
-
         indirect += sizeof(DrawElementsIndirectCommand);
     }
 
@@ -183,9 +204,14 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
             static_cast<GLsizeiptr>(m_geometry.size() * sizeof(DrawElementsIndirectCommand)),
             nullptr, GL_STATIC_DRAW);
 
+    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_bbox_indirect_buffer);
+    glBufferData(GL_DRAW_INDIRECT_BUFFER,
+            static_cast<GLsizeiptr>(m_geometry.size() * sizeof(DrawElementsIndirectCommand)),
+            nullptr, GL_STATIC_DRAW);
+
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_instanceIDs);
     glBufferData(GL_SHADER_STORAGE_BUFFER,
-            static_cast<GLsizeiptr>(m_geometry.size() * sizeof(GLuint)),
+            static_cast<GLsizeiptr>(instanceIDs.size() * sizeof(GLuint)),
             instanceIDs.data(), GL_STATIC_DRAW);
 }
 
@@ -196,20 +222,34 @@ void Renderer::render(const bool renderBBoxes)
     if (m_geometry.empty())
         return;
 
-    return;
-
     core::res::materials->bind();
     core::res::instances->bind();
     core::res::meshes->bind();
 
-    const auto* cam = core::res::cameras->getDefaultCam();
+    auto* cam = core::res::cameras->getDefaultCam();
+    reinterpret_cast<core::PerspectiveCamera*>(cam)->setNear(10.0);
+    reinterpret_cast<core::PerspectiveCamera*>(cam)->setFar(2000.0);
+
+    generateDrawcalls(m_offscreen_buffer);
+
+    //glDisable(GL_DEPTH_TEST);
+    //glUseProgram(m_debugtex_prog);
+    //glActiveTexture(GL_TEXTURE0);
+    //glBindVertexArray(m_vertexpulling_vao);
+    //glBindTexture(GL_TEXTURE_2D, m_hiz_tex);
+    //glUniform1i(0, 8);
+    //glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    // bind framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, m_offscreen_buffer.m_framebuffer);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glViewport(0, 0, m_offscreen_buffer.m_width, m_offscreen_buffer.m_height);
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glDepthFunc(GL_LEQUAL);
 
     GLuint textures[core::bindings::NUM_TEXT_UNITS] = {0,};
-
 
     glUseProgram(m_vertexpulling_prog);
     glBindVertexArray(m_vertexpulling_vao);
@@ -283,6 +323,33 @@ void Renderer::render(const bool renderBBoxes)
     glBindVertexArray(0);
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 
+    // unbind:
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, m_offscreen_buffer.m_framebuffer);
+    glBlitFramebuffer(0, 0, m_offscreen_buffer.m_width, m_offscreen_buffer.m_height,
+            0, 0, vars.screen_width, vars.screen_height,
+            GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, vars.screen_width, vars.screen_height);
+
+
+    //const auto* ptr = static_cast<DrawElementsIndirectCommand*>(glMapNamedBufferEXT(m_indirect_buffer, GL_READ_ONLY));
+    //unsigned int num_culled = 0;
+    //for (std::size_t i = 0; i < m_geometry.size(); ++i) {
+    //    //LOG_INFO("count: ", ptr[i].count,
+    //    //       "\ninstanceCount: ", ptr[i].instanceCount,
+    //    //       "\nfirstIndex: ", ptr[i].firstIndex,
+    //    //       "\nbaseVertex: ", ptr[i].baseVertex,
+    //    //       "\nbaseInstance: ", ptr[i].baseInstance, "\n");
+    //    if (ptr[i].count == 0)
+    //        num_culled++;
+    //}
+    //glUnmapNamedBufferEXT(m_indirect_buffer);
+    //LOG_INFO("Num culled: ", num_culled);
+
     if (renderBBoxes)
         renderBoundingBoxes();
 }
@@ -299,13 +366,12 @@ void Renderer::renderBoundingBoxes()
     GLuint prog = m_bbox_prog;
     glUseProgram(prog);
     glBindVertexArray(m_bbox_vao);
+    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_bbox_indirect_buffer);
 
     glDisable(GL_DEPTH_TEST);
 
-    for (const auto* g : m_geometry) {
-        glDrawElementsInstancedBaseVertexBaseInstance(GL_LINES, 24, GL_UNSIGNED_BYTE,
-                nullptr, 1, g->getMesh()->basevertex(), g->getIndex());
-    }
+    glMultiDrawElementsIndirect(GL_LINES, GL_UNSIGNED_BYTE,
+            nullptr, static_cast<GLsizei>(m_geometry.size()), 0);
 }
 
 /****************************************************************************/
@@ -339,15 +405,43 @@ void Renderer::initBBoxStuff()
 
 /****************************************************************************/
 
+void Renderer::generateDrawcalls(const OffscreenBuffer& buffer)
+{
+    downsampleDepthBuffer(buffer);
+
+    glUseProgram(m_oc_culling_prog);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_hiz_tex);
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, m_indirect_buffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, m_instanceIDs);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 10, m_bbox_indirect_buffer);
+
+    GLuint num_x = static_cast<GLuint>((m_geometry.size() + 255) / 256);
+    glDispatchCompute(num_x, 1, 1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+}
+
+/****************************************************************************/
+
 void Renderer::downsampleDepthBuffer(const OffscreenBuffer& buffer)
 {
+    auto minsize = glm::min(m_offscreen_buffer.m_height, m_offscreen_buffer.m_width);
+    const auto levels = static_cast<int>(std::floor(std::log2(minsize)));
+
     glUseProgram(m_oc_downsample_prog);
 
-    unsigned int width = static_cast<unsigned int>(buffer.m_width / 2);
-    unsigned int height = static_cast<unsigned int>(buffer.m_height / 2);
-    for (int i = 1; i < buffer.m_levels; ++i) {
-        glBindImageTexture(0, buffer.m_depthbuffer, i - 1, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
-        glBindImageTexture(1, buffer.m_depthbuffer, i, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_offscreen_buffer.m_depthbuffer);
+
+    unsigned int width = static_cast<unsigned int>(buffer.m_width);
+    unsigned int height = static_cast<unsigned int>(buffer.m_height);
+    for (int i = 0; i < levels; ++i) {
+        if (i != 0) {
+            glBindImageTexture(1, m_hiz_tex, i - 1, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
+        }
+        glBindImageTexture(2, m_hiz_tex, i, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);
 
         glDispatchCompute((width + 15) / 16, (height + 15) / 16, 1);
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -358,3 +452,4 @@ void Renderer::downsampleDepthBuffer(const OffscreenBuffer& buffer)
 }
 
 /****************************************************************************/
+

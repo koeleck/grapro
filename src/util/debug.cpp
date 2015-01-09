@@ -1,10 +1,4 @@
-#include <unistd.h>
-#include <stdio.h>
-#include <sys/ptrace.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <cstdlib>
-
+#include <signal.h>
 #include "debug.h"
 
 /***************************************************************************/
@@ -12,47 +6,26 @@
 namespace
 {
 
-int gdb_check() {
-    int pid = fork();
-    int status;
-    int res;
+int local_no_debugger = 0;
 
-    if (pid == -1) {
-        perror("fork");
-        return -1;
-    }
+void sigtrap_handler(int signum)
+{
+    local_no_debugger = 1;
+    signal(SIGTRAP, SIG_DFL);
+}
 
-    if (pid == 0) {
-        int ppid = getppid();
-
-        /* Child */
-        if (ptrace(PTRACE_ATTACH, ppid, NULL, NULL) == 0) {
-            /* Wait for the parent to stop and continue it */
-            waitpid(ppid, NULL, 0);
-            ptrace(PTRACE_CONT, NULL, NULL);
-
-            /* Detach */
-            ptrace(PTRACE_DETACH, getppid(), NULL, NULL);
-
-            /* We were the tracers, so gdb is not present */
-            res = 0;
-        } else {
-            /* Trace failed so gdb is present */
-            res = 1;
-        }
-        _Exit(res);
-    } else {
-        waitpid(pid, &status, 0);
-        res = WEXITSTATUS(status);
-    }
-    return res;
+int gdb_check()
+{
+    signal(SIGTRAP, sigtrap_handler);
+    raise(SIGTRAP);
+    return local_no_debugger == 0;
 }
 
 } // anonymous namespace
 
 /***************************************************************************/
 
-bool debugger_is_present = (gdb_check() == 1);
+bool debugger_is_present = (gdb_check() != 0);
 
 /***************************************************************************/
 
