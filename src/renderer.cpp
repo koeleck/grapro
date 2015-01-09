@@ -133,6 +133,19 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
 
 /****************************************************************************/
 
+void genAtomicBuffer(int num, unsigned int & buffer) {
+
+    GLuint initVal = 0;
+
+    if(buffer)
+        glDeleteBuffers(1, &buffer);
+    glGenBuffers(1, &buffer);
+    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, buffer);
+    glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(GLuint), &initVal, GL_STATIC_DRAW);
+    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
+
+}
+GLuint atomicBuffer = 0;
 void Renderer::render(const bool renderBBoxes)
 {
     if (m_geometry.empty())
@@ -157,13 +170,17 @@ void Renderer::render(const bool renderBBoxes)
         loc = glGetUniformLocation(m_voxel_prog, "u_height");
         glUniform1i(loc, vars.screen_height);
 
+        genAtomicBuffer(1, atomicBuffer);
+
+        glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, atomicBuffer);
+
         //Create an modelview-orthographic projection matrix see from X/Y/Z axis
         glm::mat4 Ortho;
         Ortho = glm::ortho( -1.0f, 1.0f, -1.0f, 1.0f, 2.0f-1.0f, 3.0f );
         glm::mat4 mvpX = Ortho * glm::lookAt( glm::vec3( 2, 0, 0 ), glm::vec3( 0, 0, 0 ), glm::vec3( 0, 1, 0 ) );
         glm::mat4 mvpY = Ortho * glm::lookAt( glm::vec3( 0, 2, 0 ), glm::vec3( 0, 0, 0 ), glm::vec3( 0, 0, -1 ) );
         glm::mat4 mvpZ = Ortho * glm::lookAt( glm::vec3( 0, 0, 2 ), glm::vec3( 0, 0, 0 ), glm::vec3( 0, 1, 0 ) );
-        
+
         loc = glGetUniformLocation(m_voxel_prog, "u_MVPx");
         glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(mvpX));
         loc = glGetUniformLocation(m_voxel_prog, "u_MVPy");
@@ -180,6 +197,10 @@ void Renderer::render(const bool renderBBoxes)
             glDrawElementsInstancedBaseVertexBaseInstance(cmd.mode, cmd.count, cmd.type,
                     cmd.indices, 1, 0, cmd.instance->getIndex());
         }
+
+        glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, atomicBuffer);
+        auto count = static_cast<GLuint *>(glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), GL_MAP_READ_BIT | GL_MAP_WRITE_BIT));
+        LOG_INFO("num written pixels: ", *count);
 
         return;
 

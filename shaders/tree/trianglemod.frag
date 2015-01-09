@@ -8,6 +8,9 @@ flat in vec4 f_AABB;
 
 in vec3 f_pos;
 
+//atomic counter
+layout(binding = 0, offset = 0) uniform atomic_uint u_voxelFragCount;
+
 uniform int u_width;
 uniform int u_height;
 
@@ -33,6 +36,8 @@ void main()
 
 	}
 
+	uint idx = atomicCounterIncrement(u_voxelFragCount);
+
     //out_Color = vec4(dominantAxis, 0.f);
-    out_Color = vec4(texcoord) / 1000.f;
+    out_Color = vec4(idx) / 10000.f;
 }
