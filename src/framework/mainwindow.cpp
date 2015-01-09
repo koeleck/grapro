@@ -66,7 +66,8 @@ void ImImpl_RenderDrawLists(ImDrawList** const cmd_lists, int cmd_lists_count)
     size_t neededBufferSize = total_vtx_count * sizeof(ImDrawVert);
     if (neededBufferSize > vbo_max_size) {
         vbo_max_size = neededBufferSize + 5000; // Grow buffer
-        glBufferData(GL_ARRAY_BUFFER, vbo_max_size, NULL, GL_STREAM_DRAW);
+        glBufferData(GL_ARRAY_BUFFER,
+                static_cast<GLsizeiptr>(vbo_max_size), NULL, GL_STREAM_DRAW);
     }
 
     // Copy and convert all vertices into a single contiguous buffer
@@ -127,6 +128,7 @@ MainWindow::MainWindow(GLFWwindow* window)
     resetInput();
     initGUI();
 
+    glfwSetWindowSize(*this, vars.screen_width, vars.screen_height);
     glfwGetWindowSize(*this, &m_width, &m_height);
 }
 
