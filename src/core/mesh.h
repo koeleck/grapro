@@ -26,6 +26,7 @@ public:
     GLint   basevertex() const;
     const AABB& bbox() const;
     GLuint index() const;
+    GLuint firstIndex() const;
 
 private:
     friend class MeshManager;

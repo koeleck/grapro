@@ -7,6 +7,7 @@
 #include "core/program.h"
 #include "gl/opengl.h"
 
+
 class Renderer
 {
 public:
@@ -19,12 +20,10 @@ public:
 
 private:
     struct DrawCmd;
-    using ProgramMap = std::unordered_map<unsigned char, core::Program>;
 
     void initBBoxStuff();
 
     std::vector<const core::Instance*>  m_geometry;
-    ProgramMap                          m_programs;
     std::vector<DrawCmd>                m_drawlist;
 
     core::Program                       m_earlyz_prog;
@@ -35,6 +34,7 @@ private:
 
     core::Program                       m_vertexpulling_prog;
     gl::VertexArray                     m_vertexpulling_vao;
+    gl::Buffer                          m_indirect_buffer;
 };
 
 #endif // RENDERER_H

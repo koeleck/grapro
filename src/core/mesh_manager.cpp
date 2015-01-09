@@ -110,6 +110,9 @@ Mesh* MeshManager::addMesh(const import::Mesh* mesh)
             *data++ = mesh->vertex_colors[i][2];
         }
     }
+    // since we're only pushing floats into the buffer,
+    // the start of out index array is always aligned to
+    // 4 bytes... good
     GLubyte* indices = reinterpret_cast<GLubyte*>(data);
     for (unsigned int i = 0; i < mesh->num_indices; ++i) {
         if (per_index_size == sizeof(GLubyte)) {
