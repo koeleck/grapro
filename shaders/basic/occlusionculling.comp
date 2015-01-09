@@ -1,0 +1,108 @@
+#version 440 core
+
+layout(local_size_x = 256, local_size_y = 1) in;
+
+#include "common/camera.glsl"
+#include "common/instances.glsl"
+#include "common/meshes.glsl"
+
+struct DrawElementsIndirectCommand
+{
+    uint count;
+    uint instanceCount;
+    uint firstIndex;
+    uint baseVertex;
+    uint baseInstance;
+};
+
+layout(std430, binding = 8) restrict writeonly buffer CommandBlock
+{
+    DrawElementsIndirectCommand commands[];
+};
+
+layout(std430, binding = 10) restrict writeonly buffer BBoxCommandBlock
+{
+    DrawElementsIndirectCommand bbox_commands[];
+};
+
+layout(std430, binding = 9) restrict readonly buffer InstanceIDBlock
+{
+    uint numInstances;
+    uint instanceIDs[];
+};
+
+layout(binding = 0) uniform sampler2D depthTex;
+
+void main()
+{
+    const uint idx = gl_GlobalInvocationID.x;
+
+    if (idx < numInstances) {
+        const uint ID = instanceIDs[idx];
+        vec3 bbox[2] = vec3[2](instances[ID].bbox_min.xyz, instances[ID].bbox_max.xyz);
+        bbox[0] -= vec3(10.0);
+        bbox[1] += vec3(10.0);
+
+        vec3 pmin = vec3(2.0);
+        vec3 pmax = vec3(-1.0);
+        for (int i = 0; i < 8; ++i) {
+            vec4 p = vec4(bbox[(i>>0) & 0x01].x,
+                          bbox[(i>>1) & 0x01].y,
+                          bbox[(i>>2) & 0x01].z,
+                          1.0);
+            p = cam.ProjViewMatrix * p;
+            vec3 tmp = (p.xyz / p.w) * 0.5 + 0.5;
+            pmin = min(pmin, tmp);
+            pmax = max(pmax, tmp);
+        }
+
+        float ref_depth = 1.0;
+        //if (all(greaterThan(pmax, vec3(0.0))) &&
+        //        all(lessThan(pmin, vec3(1.0))))
+        {
+            vec2 size = vec2(textureSize(depthTex, 0));
+            ivec2 txl_min = ivec2(size * max(pmin.xy, vec2(0.0)));
+            ivec2 txl_max = ivec2(size * min(pmax.xy, vec2(1.0)));
+
+            int level = int(ceil(log2(max(txl_max.x - txl_min.x, txl_max.y - txl_min.y))));
+            txl_min >>= level;
+            txl_max >>= level;
+
+            vec4 samples;
+            samples[0] = texelFetch(depthTex, txl_min, level).r;
+            samples[1] = texelFetch(depthTex, ivec2(txl_min.x, txl_max.y), level).r;
+            samples[2] = texelFetch(depthTex, ivec2(txl_max.x, txl_min.y), level).r;
+            samples[3] = texelFetch(depthTex, txl_max, level).r;
+
+            /*
+            pmin.xy = max(pmin.xy, vec2(0.0));
+            pmax.xy = min(pmax.xy, vec2(1.0));
+            vec2 size = vec2(textureSize(depthTex, 0));
+            ivec2 diff = ivec2(size * (pmax.xy - pmin.xy));
+            int level = int(ceil(log2(max(diff.x, diff.y)))) - 1;
+            level = min(level, 8);
+
+            vec4 samples;
+            samples[0] = textureLod(depthTex, pmin.xy, level).r;
+            samples[1] = textureLod(depthTex, vec2(pmin.x, pmax.y), level).r;
+            samples[2] = textureLod(depthTex, vec2(pmax.x, pmin.y), level).r;
+            samples[3] = textureLod(depthTex, pmax.xy, level).r;
+            */
+
+            ref_depth = max(max(samples[0], samples[1]), max(samples[2], samples[3]));
+        }
+
+        commands[idx].count = (ref_depth >= pmin.z) ? meshes[instances[ID].meshID].count : 0;
+        commands[idx].instanceCount = 1;
+        commands[idx].firstIndex = meshes[instances[ID].meshID].firstIndex;
+        commands[idx].baseVertex = 0;
+        commands[idx].baseInstance = ID;
+
+        bbox_commands[idx].count = (ref_depth >= pmin.z) ? 24 : 0;
+        bbox_commands[idx].instanceCount = 1;
+        bbox_commands[idx].firstIndex = 0;
+        bbox_commands[idx].baseVertex = 0;
+        bbox_commands[idx].baseInstance = ID;
+    }
+
+}
