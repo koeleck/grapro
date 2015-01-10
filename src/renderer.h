@@ -8,6 +8,8 @@
 #include "core/instance.h"
 #include "core/program.h"
 #include "gl/opengl.h"
+#include "core/aabb.h"
+#include "core/camera.h"
 
 class Renderer
 {
@@ -32,6 +34,7 @@ private:
     void createVoxelList();
     void buildVoxelTree();
 
+    core::AABB                          m_scene_bbox;
     std::vector<const core::Instance*>  m_geometry;
     ProgramMap                          m_programs;
     std::vector<DrawCmd>                m_drawlist;
@@ -45,6 +48,7 @@ private:
     core::Program                       m_vertexpulling_prog;
     gl::VertexArray                     m_vertexpulling_vao;
 
+    core::OrthogonalCamera*             m_voxelize_cam;
     core::Program                       m_voxel_prog;
     core::Program                       m_voxelFlag_prog;
     GLuint                              m_atomicCounterBuffer;
