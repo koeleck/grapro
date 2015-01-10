@@ -269,6 +269,8 @@ void Renderer::buildVoxelTree()
         totalNodes += tmp;
 
     }
+
+    // generate octree
     genOctreeNodeBuffer(totalNodes * sizeof(OctreeNodeStruct));
 
     glUseProgram(m_voxelFlag_prog);
@@ -277,11 +279,21 @@ void Renderer::buildVoxelTree()
     GLint loc;
     loc = glGetUniformLocation(m_voxelFlag_prog, "u_numVoxelFrag");
     glUniform1ui(loc, m_numVoxelFrag);
-    loc = glGetUniformLocation(m_voxelFlag_prog, "u_treeLevel");
+    loc = glGetUniformLocation(m_voxelFlag_prog, "u_treeLevels");
     glUniform1ui(loc, vars.voxel_octree_levels);
 
-    glDispatchCompute(dataWidth, dataHeight, 1);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
+
+        // flag nodes
+        loc = glGetUniformLocation(m_voxelFlag_prog, "u_maxLevel");
+        glUniform1ui(loc, i);
+
+        glDispatchCompute(dataWidth, dataHeight, 1);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+        // allocate child nodes
+
+    }
 
 }
 

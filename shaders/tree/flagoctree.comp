@@ -25,14 +25,15 @@ layout (std430, binding = OCTREE_BINDING) buffer octreeBlock {
 };
 
 uniform uint u_numVoxelFrag;
-uniform uint u_treeLevel;
+uniform uint u_treeLevels;
+uniform uint u_maxLevel;
 
 void main()
 {
 	// retrieve current thread id and return if out of bounds
 	const uint grid = 1024;
 	uint threadId = gl_GlobalInvocationID.y * grid + gl_GlobalInvocationID.x;
-	if(threadId >= u_numVoxelFrag)
+	if (threadId >= u_numVoxelFrag)
 		return;
 
 	// local vars
@@ -41,7 +42,7 @@ void main()
 	uint nodeptr = octree[childidx].id;
 	uint subnodeptr = 0;
 
-	uint voxel_dim = uint(pow(2, u_treeLevel));
+	uint voxel_dim = uint(pow(2, u_treeLevels));
 	bool has_to_be_flagged = true;
 
 	uvec3 umin = uvec3(0);
@@ -50,7 +51,7 @@ void main()
 	uvec4 pos  = voxel[threadId].position;
 
 	// iterate through all tree levels
-	for(uint i = 0; i < u_treeLevel; ++i) {
+	for (uint i = 0; i < u_maxLevel; ++i) {
 
 		// go to next dimension
 		voxel_dim /= 2;
@@ -66,22 +67,26 @@ void main()
 		childidx = uint(nodeptr & 0x7f000000);
 
 		// create subnodes
-		subnodeptr = clamp(uint(1 + pos.x - umin.x - voxel_dim), 0, 1);
-		subnodeptr += 4 * clamp(uint(1 + pos.y - umin.y - voxel_dim), 0, 1);
-		subnodeptr += 2 * clamp(uint(1 + pos.z - umin.z - voxel_dim), 0, 1);
+		uint subnodeptrX = clamp(uint(1 + pos.x - umin.x - voxel_dim), 0, 1);
+		uint subnodeptrY = clamp(uint(1 + pos.y - umin.y - voxel_dim), 0, 1);
+		uint subnodeptrZ = clamp(uint(1 + pos.z - umin.z - voxel_dim), 0, 1);
+
+		subnodeptr = subnodeptrX;
+		subnodeptr += 4 * subnodeptrY;
+		subnodeptr += 2 * subnodeptrZ;
 
 		childidx += uint(subnodeptr);
 
-		umin.x += voxel_dim * clamp(uint(1 + pos.x - umin.x - voxel_dim), 0, 1);
-		umin.y += voxel_dim * clamp(uint(1 + pos.y - umin.y - voxel_dim), 0, 1);
-		umin.z += voxel_dim * clamp(uint(1 + pos.z - umin.z - voxel_dim), 0, 1);
+		umin.x += voxel_dim * subnodeptrX;
+		umin.y += voxel_dim * subnodeptrY;
+		umin.z += voxel_dim * subnodeptrZ;
 
 		// update node
 		nodeptr = octree[childidx].id;
 	}
 
 	// check if current node has to be set "flagged"
-	if(has_to_be_flagged) {
+	if (has_to_be_flagged) {
 		nodeptr |= 0x80000000;
 		octree[childidx].id = nodeptr;
 	}
