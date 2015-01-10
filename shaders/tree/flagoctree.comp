@@ -41,11 +41,11 @@ void main()
 	uint nodeptr = octree[childidx].id;
 	uint subnodeptr = 0;
 
-	uint voxel_dim = (uint)pow(2, u_tree_level);
+	uint voxel_dim = uint(pow(2, u_tree_level));
 	bool flagged = true;
 
 	uvec3 umin = uvec3(0);
-	uvec3 umax = uvec3(voxel_dim)
+	uvec3 umax = uvec3(voxel_dim);
 
 	uvec4 pos  = voxel[threadId].position;
 
@@ -56,7 +56,7 @@ void main()
 		voxel_dim /= 2;
 
 		// check if the current node is flagged
-		if(nodeptr & 0x80000000 == 0) {
+		if((nodeptr & 0x80000000) == 0) {
 			// node is not flagged
 			flagged = false;
 		}
