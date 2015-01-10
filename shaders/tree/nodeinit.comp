@@ -13,17 +13,15 @@ layout (std430, binding = OCTREE_BINDING) buffer octreeBlock {
 	octreeBuffer octree[];
 };
 
-layout (binding = 0, offset = 0) uniform atomic_uint u_allocCount;
-
-uniform uint u_numVoxelFrag;
+uniform uint u_num;
 uniform uint u_allocStart;
 
 void main()
 {
 	// retrieve current thread id and return if out of bounds
-	uint threadId = gl_GlobalInvocationID.y * grid + gl_GlobalInvocationID.x;
-	if (threadId >= u_numVoxelFrag)
+	uint threadId = gl_GlobalInvocationID.y * 64 + gl_GlobalInvocationID.x;
+	if (threadId >= u_num)
 		return;
 
-	octree[u_allocStart + threadId] = 0;
+	octree[u_allocStart + threadId].id = 0;
 }
