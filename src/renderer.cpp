@@ -99,6 +99,10 @@ Renderer::Renderer()
     m_voxel_prog = core::res::shaders->registerProgram("voxel_prog",
             {"vertexpulling_vert", "voxelGeom", "voxelFrag"});
 
+    // octree building
+    core::res::shaders->registerShader("voxelFlagComp", "tree/flagoctree.comp", GL_COMPUTE_SHADER);
+    m_voxelFlag_prog = core::res::shaders->registerProgram("voxelFlag_prog", {"voxelFlagComp"});
+
     glBindVertexArray(m_vertexpulling_vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, core::res::meshes->getElementArrayBuffer());
     glBindVertexArray(0);
@@ -235,6 +239,14 @@ void Renderer::createVoxelList()
 
 void Renderer::buildVoxelTree()
 {
+
+    // calculate max invocations for compute shader to get all the voxel fragments
+    const auto dataWidth = 1024u;
+    const unsigned int dataHeight = (m_numVoxelFrag + 1023u) / dataWidth;
+
+    glUseProgram(m_voxelFlag_prog);
+    glDispatchCompute(dataWidth, dataHeight, 1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
 }
 

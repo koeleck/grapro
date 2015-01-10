@@ -1,5 +1,7 @@
 #version 440 core
 
+#include "common/bindings.glsl"
+
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 // voxel buffer
@@ -30,7 +32,7 @@ void main()
 	// retrieve current thread id and return if out of bounds
 	const uint grid = 1024;
 	uint threadId = gl_GlobalInvocationID.y * grid + gl_GlobalInvocationID.x;
-	if(threadId >= u_num_voxels) 
+	if(threadId >= u_num_voxels)
 		return;
 
 	// local vars
@@ -62,13 +64,13 @@ void main()
 		// get child pointer by ignoring the node's ptr MSB
 		childidx = uint(nodeptr & 0x7f000000);
 
-		// create subnodes 
+		// create subnodes
 		subnodeptr = clamp( int(1 + pos.x - umin.x - voxel_dim), 0, 1 );
 		subnodeptr += 4 * clamp( int(1 + pos.y - umin.y- voxel_dim), 0, 1 );
 		subnodeptr += 2 * clamp( int(1 + pos.z - umin.z- voxel_dim), 0, 1 );
-		
+
 		childidx += int(subnodeptr);
-		
+
 		umin.x += voxel_dim * clamp( int(1 + pos.x - umin.x - voxel_dim), 0, 1 );
 		umin.y += voxel_dim * clamp( int(1 + pos.y - umin.y- voxel_dim), 0, 1 );
 		umin.z += voxel_dim * clamp( int(1 + pos.z - umin.z- voxel_dim), 0, 1 );

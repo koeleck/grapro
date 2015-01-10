@@ -44,6 +44,7 @@ private:
     gl::VertexArray                     m_vertexpulling_vao;
 
     core::Program                       m_voxel_prog;
+    core::Program                       m_voxelFlag_prog;
     GLuint                              m_atomicCounterBuffer;
     GLuint                              m_voxelBuffer;
     unsigned int                        m_numVoxelFrag;
