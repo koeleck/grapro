@@ -101,7 +101,7 @@ Renderer::Renderer()
             {"vertexpulling_vert", "voxelGeom", "voxelFrag"});
 
     // octree building
-    core::res::shaders->registerShader("octreeNodeFlagComp", "tree/flagoctree.comp", GL_COMPUTE_SHADER);
+    core::res::shaders->registerShader("octreeNodeFlagComp", "tree/nodeflag.comp", GL_COMPUTE_SHADER);
     m_octreeNodeFlag_prog = core::res::shaders->registerProgram("octreeNodeFlag_prog", {"octreeNodeFlagComp"});
 
     core::res::shaders->registerShader("octreeNodeAllocComp", "tree/nodealloc.comp", GL_COMPUTE_SHADER);
