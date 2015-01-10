@@ -24,7 +24,7 @@ layout (std430, binding = OCTREE_BINDING) buffer octreeBlock {
 	octreeBuffer octree[];
 };
 
-uniform int u_num_voxels;
+uniform int u_numVoxelFrag;
 uniform int u_tree_level;
 
 void main()
@@ -32,7 +32,7 @@ void main()
 	// retrieve current thread id and return if out of bounds
 	const uint grid = 1024;
 	uint threadId = gl_GlobalInvocationID.y * grid + gl_GlobalInvocationID.x;
-	if(threadId >= u_num_voxels)
+	if(threadId >= u_numVoxelFrag)
 		return;
 
 	// local vars
