@@ -59,6 +59,7 @@ void main()
 		if((nodeptr & 0x80000000) == 0) {
 			// node is not flagged
 			flagged = false;
+            break;
 		}
 
 		// get child pointer by ignoring the node's ptr MSB
