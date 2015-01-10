@@ -24,6 +24,9 @@ private:
     using ProgramMap = std::unordered_map<unsigned char, core::Program>;
 
     void initBBoxStuff();
+
+    void genAtomicBuffer();
+    void genVoxelBuffer();
     void createVoxelList();
 
     std::vector<const core::Instance*>  m_geometry;

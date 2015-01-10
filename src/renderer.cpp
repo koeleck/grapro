@@ -14,6 +14,7 @@
 #include "core/texture.h"
 #include "log/log.h"
 #include "framework/vars.h"
+#include "voxel.h"
 
 /****************************************************************************/
 
@@ -133,26 +134,39 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
 
 /****************************************************************************/
 
-void genAtomicBuffer(int num, unsigned int & buffer)
+void Renderer::genAtomicBuffer()
 {
-
     GLuint initVal = 0;
 
-    if(buffer)
-        glDeleteBuffers(1, &buffer);
-    glGenBuffers(1, &buffer);
-    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, buffer);
-    glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(GLuint), &initVal, GL_STATIC_DRAW);
-    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
+    if(m_atomicCounterBuffer)
+        glDeleteBuffers(1, &m_atomicCounterBuffer);
 
+    glGenBuffers(1, &m_atomicCounterBuffer);
+    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
+
+    glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(GLuint), &initVal, GL_STATIC_DRAW);
+    glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, m_atomicCounterBuffer);
+
+    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 }
 
-struct VoxelStruct
+/****************************************************************************/
+
+void Renderer::genVoxelBuffer()
 {
-    glm::uvec4 position;
-    glm::vec4 color;
-    glm::vec4 normal;
-};
+    if(m_voxelBuffer)
+        glDeleteBuffers(1, &m_voxelBuffer);
+
+    glGenBuffers(1, &m_voxelBuffer);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
+
+    glBufferStorage(GL_SHADER_STORAGE_BUFFER, vars.max_voxel_fragments * sizeof(VoxelStruct), nullptr, GL_MAP_READ_BIT);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::VOXEL, m_voxelBuffer);
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
+}
+
+/****************************************************************************/
 
 void Renderer::createVoxelList()
 {
@@ -187,15 +201,8 @@ void Renderer::createVoxelList()
     glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(mvpZ));
 
     // buffer
-    genAtomicBuffer(1, m_atomicCounterBuffer);
-    glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, m_atomicCounterBuffer);
-
-    glGenBuffers(1, &m_voxelBuffer);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
-
-    // create empty storage for vars.max_voxel_fragments vec4 of positions
-    glBufferStorage(GL_SHADER_STORAGE_BUFFER, vars.max_voxel_fragments * sizeof(VoxelStruct), nullptr, GL_MAP_READ_BIT);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::VOXEL, m_voxelBuffer);
+    genAtomicBuffer();
+    genVoxelBuffer();
 
     // render
     glBindVertexArray(m_vertexpulling_vao);
@@ -218,8 +225,6 @@ void Renderer::createVoxelList()
     LOG_INFO("Position: ", vecPtr[0].position[0], " ", vecPtr[0].position[1], " ", vecPtr[0].position[2]);
     LOG_INFO("Color: ", vecPtr[0].color[0], " ", vecPtr[0].color[1], " ", vecPtr[0].color[2]);
     LOG_INFO("Normal: ", vecPtr[0].normal[0], " ", vecPtr[0].normal[1], " ", vecPtr[0].normal[2]);*/
-
-    glDeleteBuffers(1, &m_voxelBuffer);
 
     glViewport(0, 0, vars.screen_width, vars.screen_height);
 
