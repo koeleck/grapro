@@ -305,6 +305,24 @@ void Renderer::buildVoxelTree()
 
         glUseProgram(m_octreeNodeAllocate_prog);
 
+        // atomic counter
+        genAtomicBuffer();
+
+        // uniforms
+        loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_numVoxelFrag");
+        glUniform1ui(loc, m_numVoxelFrag);
+
+        // dispatch
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_ATOMIC_COUNTER_BARRIER_BIT);
+
+        GLuint tileAllocated;
+        GLuint reset = 0;
+        glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
+        glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), &tileAllocated);
+        glBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), &reset ); //reset counter to zero
+        glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
+        LOG_INFO("tileAllocated: ", tileAllocated);
+
     }
 
 }
