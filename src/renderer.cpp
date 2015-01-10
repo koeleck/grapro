@@ -61,10 +61,12 @@ struct Renderer::DrawCmd
 Renderer::Renderer()
   : m_offscreen_buffer(1024, 768)
 {
-    glBindTexture(GL_TEXTURE_2D, m_hiz_tex);
-    auto minsize = glm::min(m_offscreen_buffer.m_height, m_offscreen_buffer.m_width);
-    const auto levels = static_cast<int>(std::floor(std::log2(minsize)));
+    //auto minsize = glm::min(m_offscreen_buffer.m_height, m_offscreen_buffer.m_width);
+    //const auto levels = static_cast<int>(std::floor(std::log2(minsize)));
+    const auto levels = m_offscreen_buffer.m_levels;
     LOG_INFO("levels: ", levels);
+
+    glBindTexture(GL_TEXTURE_2D, m_hiz_tex);
     glTexStorage2D(GL_TEXTURE_2D, levels, GL_R32F, m_offscreen_buffer.m_width, m_offscreen_buffer.m_height);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -199,25 +201,38 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
         indirect += sizeof(DrawElementsIndirectCommand);
     }
 
+    m_indirect_buffer = gl::Buffer();
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_indirect_buffer);
-    glBufferData(GL_DRAW_INDIRECT_BUFFER,
+    //glBufferData(GL_DRAW_INDIRECT_BUFFER,
+    //        static_cast<GLsizeiptr>(m_geometry.size() * sizeof(DrawElementsIndirectCommand)),
+    //        nullptr, GL_STATIC_DRAW);
+    glBufferStorage(GL_DRAW_INDIRECT_BUFFER,
             static_cast<GLsizeiptr>(m_geometry.size() * sizeof(DrawElementsIndirectCommand)),
-            nullptr, GL_STATIC_DRAW);
+            nullptr, GL_MAP_READ_BIT);
 
+    m_bbox_indirect_buffer = gl::Buffer();
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_bbox_indirect_buffer);
-    glBufferData(GL_DRAW_INDIRECT_BUFFER,
+    //glBufferData(GL_DRAW_INDIRECT_BUFFER,
+    //        static_cast<GLsizeiptr>(m_geometry.size() * sizeof(DrawElementsIndirectCommand)),
+    //        nullptr, GL_STATIC_DRAW);
+    glBufferStorage(GL_DRAW_INDIRECT_BUFFER,
             static_cast<GLsizeiptr>(m_geometry.size() * sizeof(DrawElementsIndirectCommand)),
-            nullptr, GL_STATIC_DRAW);
+            nullptr, GL_MAP_READ_BIT);
 
+    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
+
+    m_instanceIDs = gl::Buffer();
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_instanceIDs);
-    glBufferData(GL_SHADER_STORAGE_BUFFER,
+    glBufferStorage(GL_SHADER_STORAGE_BUFFER,
             static_cast<GLsizeiptr>(instanceIDs.size() * sizeof(GLuint)),
-            instanceIDs.data(), GL_STATIC_DRAW);
+            instanceIDs.data(), 0);
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
 /****************************************************************************/
 
-void Renderer::render(const bool renderBBoxes)
+void Renderer::render(const bool renderBBoxes, bool hiz, int level)
 {
     if (m_geometry.empty())
         return;
@@ -226,19 +241,26 @@ void Renderer::render(const bool renderBBoxes)
     core::res::instances->bind();
     core::res::meshes->bind();
 
-    auto* cam = core::res::cameras->getDefaultCam();
-    reinterpret_cast<core::PerspectiveCamera*>(cam)->setNear(10.0);
-    reinterpret_cast<core::PerspectiveCamera*>(cam)->setFar(2000.0);
+    auto* cam = reinterpret_cast<core::PerspectiveCamera*>(core::res::cameras->getDefaultCam());
+    cam->setNear(1.0);
+    cam->setFar(5000.0);
+    const auto aspect_ratio_orig = cam->getAspectRatio();
+    cam->setAspectRatio(1024.0 / 768.0);
+
 
     generateDrawcalls(m_offscreen_buffer);
 
-    //glDisable(GL_DEPTH_TEST);
-    //glUseProgram(m_debugtex_prog);
-    //glActiveTexture(GL_TEXTURE0);
-    //glBindVertexArray(m_vertexpulling_vao);
-    //glBindTexture(GL_TEXTURE_2D, m_hiz_tex);
-    //glUniform1i(0, 8);
-    //glDrawArrays(GL_TRIANGLES, 0, 3);
+    if (hiz) {
+        level = std::max(level, 0);
+        level = std::min(m_offscreen_buffer.m_levels - 1, level);
+        glDisable(GL_DEPTH_TEST);
+        glUseProgram(m_debugtex_prog);
+        glActiveTexture(GL_TEXTURE0);
+        glBindVertexArray(m_vertexpulling_vao);
+        glBindTexture(GL_TEXTURE_2D, m_hiz_tex);
+        glUniform1i(0, level);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+    }
 
     // bind framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, m_offscreen_buffer.m_framebuffer);
@@ -327,13 +349,16 @@ void Renderer::render(const bool renderBBoxes)
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, m_offscreen_buffer.m_framebuffer);
-    glBlitFramebuffer(0, 0, m_offscreen_buffer.m_width, m_offscreen_buffer.m_height,
-            0, 0, vars.screen_width, vars.screen_height,
-            GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    glViewport(0, 0, vars.screen_width, vars.screen_height);
+    if (!hiz) {
+        glBlitFramebuffer(0, 0, m_offscreen_buffer.m_width, m_offscreen_buffer.m_height,
+                0, 0, vars.screen_width, vars.screen_height,
+                GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    }
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0, 0, vars.screen_width, vars.screen_height);
+    cam->setAspectRatio(aspect_ratio_orig);
 
 
     //const auto* ptr = static_cast<DrawElementsIndirectCommand*>(glMapNamedBufferEXT(m_indirect_buffer, GL_READ_ONLY));
@@ -420,15 +445,21 @@ void Renderer::generateDrawcalls(const OffscreenBuffer& buffer)
 
     GLuint num_x = static_cast<GLuint>((m_geometry.size() + 255) / 256);
     glDispatchCompute(num_x, 1, 1);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    //glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_COMMAND_BARRIER_BIT);
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, 0);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, 0);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 10, 0);
 }
 
 /****************************************************************************/
 
 void Renderer::downsampleDepthBuffer(const OffscreenBuffer& buffer)
 {
-    auto minsize = glm::min(m_offscreen_buffer.m_height, m_offscreen_buffer.m_width);
-    const auto levels = static_cast<int>(std::floor(std::log2(minsize)));
+    //auto minsize = glm::min(m_offscreen_buffer.m_height, m_offscreen_buffer.m_width);
+    //const auto levels = static_cast<int>(std::floor(std::log2(minsize)));
+    const auto levels = m_offscreen_buffer.m_levels;
 
     glUseProgram(m_oc_downsample_prog);
 
@@ -438,6 +469,7 @@ void Renderer::downsampleDepthBuffer(const OffscreenBuffer& buffer)
     unsigned int width = static_cast<unsigned int>(buffer.m_width);
     unsigned int height = static_cast<unsigned int>(buffer.m_height);
     for (int i = 0; i < levels; ++i) {
+        //LOG_INFO("Level ", i, ": ", width, "x", height);
         if (i != 0) {
             glBindImageTexture(1, m_hiz_tex, i - 1, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
         }
@@ -446,9 +478,11 @@ void Renderer::downsampleDepthBuffer(const OffscreenBuffer& buffer)
         glDispatchCompute((width + 15) / 16, (height + 15) / 16, 1);
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-        width /= 2;
-        height /= 2;
+        width = std::max(1u, width / 2);
+        height = std::max(1u, height / 2);
     }
+    glBindImageTexture(1, 0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
+    glBindImageTexture(2, 0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
 }
 
 /****************************************************************************/

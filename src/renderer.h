@@ -15,7 +15,7 @@ public:
     ~Renderer();
 
     void setGeometry(std::vector<const core::Instance*> geometry);
-    void render(bool renderBBoxes = false);
+    void render(bool renderBBoxes = false, bool hiz = false, int level = 0);
     void renderBoundingBoxes();
 
 private:

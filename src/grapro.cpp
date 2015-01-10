@@ -9,6 +9,9 @@
 #include "core/shader_manager.h"
 #include "log/log.h"
 
+static bool do_hiz = false;
+static int hiz_level = 0;
+
 /****************************************************************************/
 
 GraPro::GraPro(GLFWwindow* window)
@@ -33,7 +36,7 @@ void GraPro::render_scene()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     m_render_timer->start();
-    m_renderer.render(m_render_bboxes);
+    m_renderer.render(m_render_bboxes, do_hiz, hiz_level);
     m_render_timer->stop();
 }
 
@@ -44,7 +47,7 @@ void GraPro::update_gui(const double delta_t)
     if (!m_showgui)
         return;
     if (ImGui::Begin("DEBUG", &m_showgui)) {
-        ImGui::PushItemWidth(.65f * static_cast<float>(getWidth()));
+        ImGui::PushItemWidth(.15f * static_cast<float>(getWidth()));
 
         if (ImGui::Button("recompile shaders")) {
             core::res::shaders->recompile();
@@ -54,6 +57,9 @@ void GraPro::update_gui(const double delta_t)
         ImGui::Spacing();
 
         ImGui::Checkbox("bounding boxes", &m_render_bboxes);
+
+        ImGui::Checkbox("hiz", &do_hiz);
+        ImGui::SliderInt("hiz level", &hiz_level, 0, 10);
 
         // Timers: Just create your timer via m_timers and they will
         // appear here
