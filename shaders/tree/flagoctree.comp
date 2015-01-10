@@ -17,7 +17,7 @@ layout (std430, binding = VOXEL_BINDING) buffer voxelBlock {
 
 // octree buffer
 struct octreeBuffer {
-	uvec4 unkown;
+	uint id;
 };
 
 layout (std430, binding = ?) buffer octreeBlock {
@@ -36,10 +36,10 @@ void main()
 		return;
 
 	// local vars
-	uint nodeptr  = /*TODO*/;
-	uint subnodeptr = 0;
-
 	uint childidx = 0;
+
+	uint nodeptr = octree[childidx].id;
+	uint subnodeptr = 0;
 
 	uint voxel_dim = pow(2, u_tree_level);
 	bool flagged = true;
@@ -76,12 +76,12 @@ void main()
 		umin.z += voxel_dim * clamp( int(1 + pos.z - umin.z- voxel_dim), 0, 1 );
 
 		// update node
-		nodeptr = /*TODO*/;
+		nodeptr = octree[childidx].id;
 	}
 
 	// check if current node has to be set "flagged"
 	if(flagged) {
 		nodeptr |= 0x80000000;
-		/*TODO*/ = nodeptr;
+		octree[childidx].id = nodeptr;
 	}
 }
