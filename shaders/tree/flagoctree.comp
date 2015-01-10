@@ -20,12 +20,12 @@ struct octreeBuffer {
 	uint id;
 };
 
-layout (std430, binding = ?) buffer octreeBlock {
+layout (std430, binding = OCTREE_BINDING) buffer octreeBlock {
 	octreeBuffer octree[];
 };
 
 uniform int u_num_voxels;
-uinform int u_tree_level;
+uniform int u_tree_level;
 
 void main()
 {
@@ -41,7 +41,7 @@ void main()
 	uint nodeptr = octree[childidx].id;
 	uint subnodeptr = 0;
 
-	uint voxel_dim = pow(2, u_tree_level);
+	uint voxel_dim = (uint)pow(2, u_tree_level);
 	bool flagged = true;
 
 	uvec3 umin = uvec3(0);
@@ -56,7 +56,7 @@ void main()
 		voxel_dim /= 2;
 
 		// check if the current node is flagged
-		if(!(nodeptr & 0x80000000)) {
+		if(nodeptr & 0x80000000 == 0) {
 			// node is not flagged
 			flagged = false;
 		}
@@ -65,15 +65,15 @@ void main()
 		childidx = uint(nodeptr & 0x7f000000);
 
 		// create subnodes
-		subnodeptr = clamp( int(1 + pos.x - umin.x - voxel_dim), 0, 1 );
-		subnodeptr += 4 * clamp( int(1 + pos.y - umin.y- voxel_dim), 0, 1 );
-		subnodeptr += 2 * clamp( int(1 + pos.z - umin.z- voxel_dim), 0, 1 );
+		subnodeptr = clamp(uint(1 + pos.x - umin.x - voxel_dim), 0, 1);
+		subnodeptr += 4 * clamp(uint(1 + pos.y - umin.y - voxel_dim), 0, 1);
+		subnodeptr += 2 * clamp(uint(1 + pos.z - umin.z - voxel_dim), 0, 1);
 
-		childidx += int(subnodeptr);
+		childidx += uint(subnodeptr);
 
-		umin.x += voxel_dim * clamp( int(1 + pos.x - umin.x - voxel_dim), 0, 1 );
-		umin.y += voxel_dim * clamp( int(1 + pos.y - umin.y- voxel_dim), 0, 1 );
-		umin.z += voxel_dim * clamp( int(1 + pos.z - umin.z- voxel_dim), 0, 1 );
+		umin.x += voxel_dim * clamp(uint(1 + pos.x - umin.x - voxel_dim), 0, 1);
+		umin.y += voxel_dim * clamp(uint(1 + pos.y - umin.y - voxel_dim), 0, 1);
+		umin.z += voxel_dim * clamp(uint(1 + pos.z - umin.z - voxel_dim), 0, 1);
 
 		// update node
 		nodeptr = octree[childidx].id;

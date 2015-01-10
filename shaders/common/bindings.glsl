@@ -11,5 +11,6 @@
 #define INSTANCE_BINDING    4
 #define VERTEX_BINDING      5
 #define VOXEL_BINDING		6
+#define OCTREE_BINDING      7
 
 #endif // SHADERS_COMMON_BINDINGS_GLSL
