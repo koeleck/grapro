@@ -27,6 +27,7 @@ constexpr int MATERIAL  = 3;
 constexpr int INSTANCE  = 4;
 constexpr int VERTEX    = 5;
 constexpr int VOXEL     = 6;
+constexpr int OCTREE    = 7;
 
 // Vertex Attrib Arrays
 constexpr int POSITIONS = 0;
