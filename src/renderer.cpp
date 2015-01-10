@@ -232,6 +232,13 @@ void Renderer::createVoxelList()
 
 /****************************************************************************/
 
+void Renderer::buildVoxelTree()
+{
+
+}
+
+/****************************************************************************/
+
 void Renderer::render(const bool renderBBoxes)
 {
     if (m_geometry.empty())
@@ -242,6 +249,7 @@ void Renderer::render(const bool renderBBoxes)
     core::res::meshes->bind();
 
     createVoxelList();
+    buildVoxelTree();
 
     const auto* cam = core::res::cameras->getDefaultCam();
 

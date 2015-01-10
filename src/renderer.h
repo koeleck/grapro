@@ -28,6 +28,7 @@ private:
     void genAtomicBuffer();
     void genVoxelBuffer();
     void createVoxelList();
+    void buildVoxelTree();
 
     std::vector<const core::Instance*>  m_geometry;
     ProgramMap                          m_programs;
