@@ -2,6 +2,7 @@
 #include <algorithm>
 
 #include <glm/gtc/type_ptr.hpp>
+#include <vector>
 
 #include "renderer.h"
 #include "core/mesh.h"
@@ -103,8 +104,11 @@ Renderer::Renderer()
     core::res::shaders->registerShader("octreeNodeFlagComp", "tree/flagoctree.comp", GL_COMPUTE_SHADER);
     m_octreeNodeFlag_prog = core::res::shaders->registerProgram("octreeNodeFlag_prog", {"octreeNodeFlagComp"});
 
-    core::res::shaders->registerShader("octreeNodeAllocateComp", "tree/nodealloc.comp", GL_COMPUTE_SHADER);
-    m_octreeNodeAllocate_prog = core::res::shaders->registerProgram("octreeNodeAllocate_prog", {"octreeNodeAllocateComp"});
+    core::res::shaders->registerShader("octreeNodeAllocComp", "tree/nodealloc.comp", GL_COMPUTE_SHADER);
+    m_octreeNodeAlloc_prog = core::res::shaders->registerProgram("octreeNodeAlloc_prog", {"octreeNodeAllocComp"});
+
+    core::res::shaders->registerShader("octreeNodeInitComp", "tree/nodeinit.comp", GL_COMPUTE_SHADER);
+    m_octreeNodeInit_prog = core::res::shaders->registerProgram("octreeNodeInit_prog", {"octreeNodeInitComp"});
 
     glBindVertexArray(m_vertexpulling_vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, core::res::meshes->getElementArrayBuffer());
@@ -279,6 +283,10 @@ void Renderer::buildVoxelTree()
     // uniforms
     GLint loc;
 
+    unsigned int nodeOffset = 0; // offset to first node of next level
+    unsigned int allocOffset = 1; // offset to first free space for new children
+    std::vector<unsigned int> allocList(1, 1); // number of nodes in each tree level; root level = 1
+
     for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
 
         /*
@@ -303,25 +311,58 @@ void Renderer::buildVoxelTree()
          *  allocate child nodes
          */
 
-        glUseProgram(m_octreeNodeAllocate_prog);
+        glUseProgram(m_octreeNodeAlloc_prog);
 
-        // atomic counter
+        // atomic counter (counts how many child node have to be allocated)
         genAtomicBuffer();
 
+        unsigned int numThreads = allocList[i]; // number of child nodes to be allocated at this level
+
         // uniforms
-        loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_numVoxelFrag");
-        glUniform1ui(loc, m_numVoxelFrag);
+        loc = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_num");
+        glUniform1ui(loc, numThreads);
+        loc = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_start");
+        glUniform1ui(loc, nodeOffset);
+        loc = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_allocStart");
+        glUniform1ui(loc, allocOffset);
 
         // dispatch
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_ATOMIC_COUNTER_BARRIER_BIT);
 
-        GLuint tileAllocated;
+        /*
+         *  get how many child nodes have to be allocated
+         */
+
+        GLuint childNodesToBeAllocated;
         GLuint reset = 0;
         glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
-        glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), &tileAllocated);
+        glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), &childNodesToBeAllocated);
         glBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), &reset ); //reset counter to zero
         glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
-        LOG_INFO("tileAllocated: ", tileAllocated);
+        LOG_INFO("childNodesToBeAllocated: ", childNodesToBeAllocated);
+
+        /*
+         *  init child nodes
+         */
+
+        glUseProgram(m_octreeNodeInit_prog);
+
+        unsigned int nodeAllocated = childNodesToBeAllocated * 8;
+
+        // uniforms
+        loc = glGetUniformLocation(m_octreeNodeInit_prog, "u_num");
+        glUniform1ui(loc, nodeAllocated);
+        loc = glGetUniformLocation(m_octreeNodeInit_prog, "u_allocStart");
+        glUniform1ui(loc, allocOffset);
+
+        /*
+         *  update offsets
+         */
+
+        allocList.emplace_back(nodeAllocated);  // childNodesToBeAllocated * 8 is the number of threads
+                                                // we want to launch in the next level
+        nodeOffset += allocList[i]; // add number of newly allocated child nodes to offset
+        allocOffset += nodeAllocated;
 
     }
 
