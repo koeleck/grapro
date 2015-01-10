@@ -19,9 +19,9 @@ uniform uint u_allocStart;
 void main()
 {
 	// retrieve current thread id and return if out of bounds
-	uint threadId = gl_GlobalInvocationID.y * grid + gl_GlobalInvocationID.x;
+	uint threadId = gl_GlobalInvocationID.y * 64 + gl_GlobalInvocationID.x;
 	if (threadId >= u_num)
 		return;
 
-	octree[u_allocStart + threadId] = 0;
+	octree[u_allocStart + threadId].id = 0;
 }

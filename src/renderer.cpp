@@ -345,7 +345,7 @@ void Renderer::buildVoxelTree()
         // atomic counter (counts how many child node have to be allocated)
         genAtomicBuffer();
 
-        unsigned int numThreads = allocList[i]; // number of child nodes to be allocated at this level
+        const unsigned int numThreads = allocList[i]; // number of child nodes to be allocated at this level
 
         // uniforms
         loc = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_num");
@@ -356,6 +356,8 @@ void Renderer::buildVoxelTree()
         glUniform1ui(loc, allocOffset);
 
         // dispatch
+        const unsigned int allocGroupDim = (allocList[i]+63)/64;
+        glDispatchCompute(allocGroupDim, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_ATOMIC_COUNTER_BARRIER_BIT);
 
         /*
@@ -363,7 +365,7 @@ void Renderer::buildVoxelTree()
          */
 
         GLuint childNodesToBeAllocated;
-        GLuint reset = 0;
+        const GLuint reset = 0;
         glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
         glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), &childNodesToBeAllocated);
         glBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), &reset ); //reset counter to zero
@@ -376,7 +378,7 @@ void Renderer::buildVoxelTree()
 
         glUseProgram(m_octreeNodeInit_prog);
 
-        unsigned int nodeAllocated = childNodesToBeAllocated * 8;
+        const unsigned int nodeAllocated = childNodesToBeAllocated * 8;
 
         // uniforms
         loc = glGetUniformLocation(m_octreeNodeInit_prog, "u_num");
