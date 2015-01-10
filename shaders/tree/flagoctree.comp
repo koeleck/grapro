@@ -42,7 +42,7 @@ void main()
 	uint subnodeptr = 0;
 
 	uint voxel_dim = uint(pow(2, u_treeLevel));
-	bool flagged = true;
+	bool has_to_be_flagged = true;
 
 	uvec3 umin = uvec3(0);
 	uvec3 umax = uvec3(voxel_dim);
@@ -58,7 +58,7 @@ void main()
 		// check if the current node is flagged
 		if((nodeptr & 0x80000000) == 0) {
 			// node is not flagged
-			flagged = false;
+			has_to_be_flagged = false;
             break;
 		}
 
@@ -81,7 +81,7 @@ void main()
 	}
 
 	// check if current node has to be set "flagged"
-	if(flagged) {
+	if(has_to_be_flagged) {
 		nodeptr |= 0x80000000;
 		octree[childidx].id = nodeptr;
 	}
