@@ -57,6 +57,7 @@ private:
     GLuint                              m_voxelBuffer;
     GLuint                              m_octreeNodeBuffer;
     unsigned int                        m_numVoxelFrag;
+    bool                                m_rebuildTree;
 };
 
 #endif // RENDERER_H

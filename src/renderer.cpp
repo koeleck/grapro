@@ -48,6 +48,8 @@ struct Renderer::DrawCmd
 /****************************************************************************/
 
 Renderer::Renderer()
+  : m_numVoxelFrag{0u},
+    m_rebuildTree{true}
 {
     // create programs
     /*for (unsigned char i = 0; i < 8; ++i) {
@@ -397,6 +399,8 @@ void Renderer::buildVoxelTree()
 
     }
 
+    LOG_INFO("Total nodes consumed: ", allocOffset);
+
 }
 
 /****************************************************************************/
@@ -410,8 +414,11 @@ void Renderer::render(const bool renderBBoxes)
     core::res::instances->bind();
     core::res::meshes->bind();
 
-    createVoxelList();
-    buildVoxelTree();
+    if (m_rebuildTree) {
+        createVoxelList();
+        buildVoxelTree();
+        m_rebuildTree = false;
+    }
 
     const auto* cam = core::res::cameras->getDefaultCam();
 
