@@ -6,22 +6,22 @@ layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 // voxel buffer
 struct voxelStruct {
-	uvec4 position;
-	vec4 color;
-	vec4 normal;
+    uvec4 position;
+    vec4 color;
+    vec4 normal;
 };
 
 layout (std430, binding = VOXEL_BINDING) buffer voxelBlock {
-	voxelStruct voxel[];
+    voxelStruct voxel[];
 };
 
 // octree buffer
 struct octreeBuffer {
-	uint id;
+    uint id;
 };
 
 layout (std430, binding = OCTREE_BINDING) buffer octreeBlock {
-	octreeBuffer octree[];
+    octreeBuffer octree[];
 };
 
 uniform uint u_numVoxelFrag;
@@ -30,64 +30,64 @@ uniform uint u_maxLevel;
 
 void main()
 {
-	// retrieve current thread id and return if out of bounds
-	const uint grid = 1024;
-	uint threadId = gl_GlobalInvocationID.y * grid + gl_GlobalInvocationID.x;
-	if (threadId >= u_numVoxelFrag)
-		return;
+    // retrieve current thread id and return if out of bounds
+    const uint grid = 1024;
+    uint threadId = gl_GlobalInvocationID.y * grid + gl_GlobalInvocationID.x;
+    if (threadId >= u_numVoxelFrag)
+        return;
 
-	// local vars
-	uint childidx = 0;
+    // local vars
+    uint childidx = 0;
 
-	uint nodeptr = octree[childidx].id;
-	uint subnodeptr = 0;
+    uint nodeptr = octree[childidx].id;
+    uint subnodeptr = 0;
 
-	uint voxel_dim = uint(pow(2, u_treeLevels));
-	bool has_to_be_flagged = true;
+    uint voxel_dim = uint(pow(2, u_treeLevels));
+    bool has_to_be_flagged = true;
 
-	uvec3 umin = uvec3(0);
-	uvec3 umax = uvec3(voxel_dim);
+    uvec3 umin = uvec3(0);
+    uvec3 umax = uvec3(voxel_dim);
 
-	uvec4 pos  = voxel[threadId].position;
+    uvec4 pos  = voxel[threadId].position;
 
-	// iterate through all tree levels
-	for (uint i = 0; i < u_maxLevel; ++i) {
+    // iterate through all tree levels
+    for (uint i = 0; i < u_maxLevel; ++i) {
 
-		// go to next dimension
-		voxel_dim /= 2;
+        // go to next dimension
+        voxel_dim /= 2;
 
-		// check if the current node is flagged
-		if((nodeptr & 0x80000000) == 0) {
-			// node is not flagged
-			has_to_be_flagged = false;
+        // check if the current node is flagged
+        if ((nodeptr & 0x80000000) == 0) {
+            // node is not flagged
+            has_to_be_flagged = false;
             break;
-		}
+        }
 
-		// get child pointer by ignoring the node's ptr MSB
-		childidx = uint(nodeptr & 0x7f000000);
+        // get child pointer by ignoring the node's ptr MSB
+        childidx = uint(nodeptr & 0x7f000000);
 
-		// create subnodes
-		uint subnodeptrX = clamp(uint(1 + pos.x - umin.x - voxel_dim), 0, 1);
-		uint subnodeptrY = clamp(uint(1 + pos.y - umin.y - voxel_dim), 0, 1);
-		uint subnodeptrZ = clamp(uint(1 + pos.z - umin.z - voxel_dim), 0, 1);
+        // create subnodes
+        uint subnodeptrX = clamp(uint(1 + pos.x - umin.x - voxel_dim), 0, 1);
+        uint subnodeptrY = clamp(uint(1 + pos.y - umin.y - voxel_dim), 0, 1);
+        uint subnodeptrZ = clamp(uint(1 + pos.z - umin.z - voxel_dim), 0, 1);
 
-		subnodeptr = subnodeptrX;
-		subnodeptr += 4 * subnodeptrY;
-		subnodeptr += 2 * subnodeptrZ;
+        subnodeptr = subnodeptrX;
+        subnodeptr += 4 * subnodeptrY;
+        subnodeptr += 2 * subnodeptrZ;
 
-		childidx += uint(subnodeptr);
+        childidx += uint(subnodeptr);
 
-		umin.x += voxel_dim * subnodeptrX;
-		umin.y += voxel_dim * subnodeptrY;
-		umin.z += voxel_dim * subnodeptrZ;
+        umin.x += voxel_dim * subnodeptrX;
+        umin.y += voxel_dim * subnodeptrY;
+        umin.z += voxel_dim * subnodeptrZ;
 
-		// update node
-		nodeptr = octree[childidx].id;
-	}
+        // update node
+        nodeptr = octree[childidx].id;
+    }
 
-	// check if current node has to be set "flagged"
-	if (has_to_be_flagged) {
-		nodeptr |= 0x80000000;
-		octree[childidx].id = nodeptr;
-	}
+    // check if current node has to be set "flagged"
+    if (has_to_be_flagged) {
+        nodeptr |= 0x80000000;
+        octree[childidx].id = nodeptr;
+    }
 }

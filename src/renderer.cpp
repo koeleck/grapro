@@ -100,8 +100,11 @@ Renderer::Renderer()
             {"vertexpulling_vert", "voxelGeom", "voxelFrag"});
 
     // octree building
-    core::res::shaders->registerShader("voxelFlagComp", "tree/flagoctree.comp", GL_COMPUTE_SHADER);
-    m_voxelFlag_prog = core::res::shaders->registerProgram("voxelFlag_prog", {"voxelFlagComp"});
+    core::res::shaders->registerShader("octreeNodeFlagComp", "tree/flagoctree.comp", GL_COMPUTE_SHADER);
+    m_octreeNodeFlag_prog = core::res::shaders->registerProgram("octreeNodeFlag_prog", {"octreeNodeFlagComp"});
+
+    core::res::shaders->registerShader("octreeNodeAllocateComp", "tree/nodealloc.comp", GL_COMPUTE_SHADER);
+    m_octreeNodeAllocate_prog = core::res::shaders->registerProgram("octreeNodeAllocate_prog", {"octreeNodeAllocateComp"});
 
     glBindVertexArray(m_vertexpulling_vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, core::res::meshes->getElementArrayBuffer());
@@ -273,25 +276,34 @@ void Renderer::buildVoxelTree()
     // generate octree
     genOctreeNodeBuffer(totalNodes * sizeof(OctreeNodeStruct));
 
-    glUseProgram(m_voxelFlag_prog);
-
     // uniforms
     GLint loc;
-    loc = glGetUniformLocation(m_voxelFlag_prog, "u_numVoxelFrag");
-    glUniform1ui(loc, m_numVoxelFrag);
-    loc = glGetUniformLocation(m_voxelFlag_prog, "u_treeLevels");
-    glUniform1ui(loc, vars.voxel_octree_levels);
 
     for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
 
-        // flag nodes
+        /*
+         *  flag nodes
+         */
+
+        glUseProgram(m_octreeNodeFlag_prog);
+
+        // uniforms
+        loc = glGetUniformLocation(m_voxelFlag_prog, "u_numVoxelFrag");
+        glUniform1ui(loc, m_numVoxelFrag);
+        loc = glGetUniformLocation(m_voxelFlag_prog, "u_treeLevels");
+        glUniform1ui(loc, vars.voxel_octree_levels);
         loc = glGetUniformLocation(m_voxelFlag_prog, "u_maxLevel");
         glUniform1ui(loc, i);
 
-        glDispatchCompute(dataWidth, dataHeight, 1);
+        // dispatch
+        glDispatchCompute(dataWidth, dataHeight, 1); //  TO DO: less invocations!
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-        // allocate child nodes
+        /*
+         *  allocate child nodes
+         */
+
+        glUseProgram(m_octreeNodeAllocate_prog);
 
     }
 
