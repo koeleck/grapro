@@ -113,6 +113,9 @@ Renderer::Renderer()
     glBindVertexArray(m_vertexpulling_vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, core::res::meshes->getElementArrayBuffer());
     glBindVertexArray(0);
+
+    m_voxelize_cam = core::res::cameras->createOrthogonalCam("voxelization_cam",
+            glm::dvec3(0.0), glm::dvec3(0.0), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 }
 
 /****************************************************************************/
@@ -131,6 +134,7 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
                 return g0->getMesh()->components() < g1->getMesh()->components();
             });
 
+    m_scene_bbox = core::AABB();
     m_drawlist.clear();
     m_drawlist.reserve(m_geometry.size());
     for (const auto* g : m_geometry) {
@@ -140,7 +144,28 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
         m_drawlist.emplace_back(g, prog, vao, mesh->mode(),
                 mesh->count(), mesh->type(),
                 mesh->indices(), mesh->basevertex());
+        m_scene_bbox.expandBy(g->getBoundingBox());
     }
+
+    // make every side of the bounding box equally long
+    const auto maxExtend = m_scene_bbox.maxExtend();
+    const auto dist = (m_scene_bbox.pmax[maxExtend] - m_scene_bbox.pmin[maxExtend]) * .5f;
+    const auto center = m_scene_bbox.center();
+    for (int i = 0; i < 3; ++i) {
+        m_scene_bbox.pmin[i] = center[i] - dist;
+        m_scene_bbox.pmax[i] = center[i] + dist;
+    }
+
+    m_voxelize_cam->setLeft(m_scene_bbox.pmin.x);
+    m_voxelize_cam->setRight(m_scene_bbox.pmax.x);
+    m_voxelize_cam->setBottom(m_scene_bbox.pmin.y);
+    m_voxelize_cam->setTop(m_scene_bbox.pmax.y);
+    m_voxelize_cam->setZNear(m_scene_bbox.pmin.z);
+    m_voxelize_cam->setZFar(m_scene_bbox.pmax.z);
+    // set view matrix to identity
+    m_voxelize_cam->setPosition(glm::dvec3(0.));
+    m_voxelize_cam->setOrientation(glm::dquat());
+
 }
 
 /****************************************************************************/
@@ -206,8 +231,11 @@ void Renderer::createVoxelList()
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    const auto dim = static_cast<unsigned int>(std::pow(2, vars.voxel_octree_levels));
+    const auto dim = static_cast<int>(std::pow(2, vars.voxel_octree_levels));
     glViewport(0, 0, dim, dim);
+
+    auto* old_cam = core::res::cameras->getDefaultCam();
+    core::res::cameras->makeDefault(m_voxelize_cam);
 
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
@@ -255,6 +283,7 @@ void Renderer::createVoxelList()
     LOG_INFO("Normal: ", vecPtr[0].normal[0], " ", vecPtr[0].normal[1], " ", vecPtr[0].normal[2]);*/
 
     glViewport(0, 0, vars.screen_width, vars.screen_height);
+    core::res::cameras->makeDefault(old_cam);
 
 }
 

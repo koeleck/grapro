@@ -5,22 +5,27 @@ layout (triangle_strip, max_vertices = 3) out;
 
 flat in uint materialIDArr[];
 
-in vec3 vs_normalArr[];
-in vec2 vs_uvArr[];
-in vec3 vs_tangentArr[];
-in vec3 vs_bitangentArr[];
+in VertexData
+{
+    vec3 viewdir;
+    vec3 normal;
+    vec2 uv;
+    vec3 tangent;
+    vec3 bitangent;
+    flat uint materialID;
+} inData[];
 
-flat out vec3 dominantAxis;
-flat out int f_axis;
-flat out vec4 f_AABB;
-
-flat out uint materialID;
-
-out vec3 f_pos;
-out vec3 vs_normal;
-out vec2 vs_uv;
-out vec3 vs_tangent;
-out vec3 vs_bitangent;
+out VertexFragmentData
+{
+    flat vec4 AABB;
+    vec3 position;
+    flat float axis;
+    vec3 normal;
+    vec3 tangent;
+    vec3 bitangent;
+    flat uint materialID;
+    vec2 uv;
+} outData;
 
 uniform mat4 u_MVPx;
 uniform mat4 u_MVPy;
@@ -43,19 +48,19 @@ void main() {
 	vec3 n = cross(AC, AB);
 
 	// choose dominantAxis & orthogonal projection
-	dominantAxis = axes[0];
-	f_axis = 0;
+	vec3 dominantAxis = axes[0];
+	float axis = 0;
 	mat4 proj = u_MVPx;
 	float d0 = abs(dot(n, axes[0]));
 	float d1 = abs(dot(n, axes[1]));
 	float d2 = abs(dot(n, axes[2]));
 	if (d1 > d0 && d1 > d2) {
 		dominantAxis = axes[1];
-		f_axis = 1;
+		axis = 1;
 		proj = u_MVPy;
 	} else if (d2 > d0 && d2 > d1) {
 		dominantAxis = axes[2];
-		f_axis = 2;
+		axis = 2;
 		proj = u_MVPz;
 	}
 
@@ -78,7 +83,6 @@ void main() {
 	//Enlarge by half-pixel
 	AABB.xy -= hPixel;
 	AABB.zw += hPixel;
-	f_AABB = AABB;
 
 	//find 3 triangle edge plane
 	vec3 e0 = vec3(b.xy - a.xy, 0.f);
@@ -94,30 +98,36 @@ void main() {
 	c.xy = c.xy + pl * ((e1.xy / dot(e1.xy, n2.xy)) + (e2.xy / dot(e2.xy, n1.xy)));
 
 	gl_Position = a;
-	f_pos = a.xyz;
-	vs_uv = vs_uvArr[0];
-	vs_normal = vs_normalArr[0];
-	vs_tangent = vs_tangentArr[0];
-	vs_bitangent = vs_bitangentArr[0];
-	materialID = materialIDArr[0];
+    outData.AABB = AABB;
+    outData.position = a.xyz;
+    outData.axis = axis;
+    outData.normal = inData[0].normal;
+    outData.tangent = inData[0].tangent;
+    outData.bitangent = inData[0].bitangent;
+    outData.materialID = inData[0].materialID;
+    outData.uv = inData[0].uv;
 	EmitVertex();
 
 	gl_Position = b;
-	f_pos = b.xyz;
-	vs_uv = vs_uvArr[1];
-	vs_normal = vs_normalArr[1];
-	vs_tangent = vs_tangentArr[1];
-	vs_bitangent = vs_bitangentArr[1];
-	materialID = materialIDArr[1];
+    outData.AABB = AABB;
+    outData.position = b.xyz;
+    outData.axis = axis;
+    outData.normal = inData[1].normal;
+    outData.tangent = inData[1].tangent;
+    outData.bitangent = inData[1].bitangent;
+    outData.materialID = inData[1].materialID;
+    outData.uv = inData[1].uv;
 	EmitVertex();
 
 	gl_Position = c;
-	f_pos = c.xyz;
-	vs_uv = vs_uvArr[2];
-	vs_normal = vs_normalArr[2];
-	vs_tangent = vs_tangentArr[2];
-	vs_bitangent = vs_bitangentArr[2];
-	materialID = materialIDArr[2];
+    outData.AABB = AABB;
+    outData.position = c.xyz;
+    outData.axis = axis;
+    outData.normal = inData[2].normal;
+    outData.tangent = inData[2].tangent;
+    outData.bitangent = inData[2].bitangent;
+    outData.materialID = inData[2].materialID;
+    outData.uv = inData[2].uv;
 	EmitVertex();
 
 }

@@ -51,6 +51,25 @@ struct AABB
             return false;
         return true;
     }
+
+    int maxExtend() const noexcept
+    {
+        const auto d = pmax - pmin;
+        if (d.x > d.y) {
+            if (d.x > d.z)
+                return 0;
+            return 2;
+        }
+        if (d.y > d.z)
+            return 1;
+        return 2;
+    }
+
+    glm::vec3 center() const noexcept
+    {
+        return .5f * (pmin + pmax);
+    }
+
 };
 
 } // namespace core

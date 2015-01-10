@@ -6,12 +6,15 @@
 #include "common/meshes.glsl"
 #include "common/vertices.glsl"
 
-out vec3 vs_viewdir;
-out vec3 vs_normal;
-out vec2 vs_uv;
-out vec3 vs_tangent;
-out vec3 vs_bitangent;
-flat out uint materialID;
+out VertexData
+{
+    vec3 viewdir;
+    vec3 normal;
+    vec2 uv;
+    vec3 tangent;
+    vec3 bitangent;
+    flat uint materialID;
+} outData;
 
 void main()
 {
@@ -20,7 +23,7 @@ void main()
     const uint components = meshes[meshID].components;
     const mat4 modelMatrix = instances[instanceID].modelMatrix;
 
-    materialID = instances[instanceID].materialID;
+    outData.materialID = instances[instanceID].materialID;
 
     uint idx = meshes[meshID].first + gl_VertexID * meshes[meshID].stride;
 
@@ -31,30 +34,30 @@ void main()
 
     const vec4 worldPos = modelMatrix* vec4(value, 1.0);
 
-    vs_viewdir = normalize(cam.Position.xyz - worldPos.xyz);
+    outData.viewdir = normalize(cam.Position.xyz - worldPos.xyz);
 
     if ((components & MESH_COMPONENT_TEXCOORD) != 0) {
         value.x = vertexData[idx++];
         value.y = vertexData[idx++];
-        vs_uv = value.xy;
+        outData.uv = value.xy;
     }
     if ((components & MESH_COMPONENT_NORMAL) != 0) {
         value.x = vertexData[idx++];
         value.y = vertexData[idx++];
         value.z = vertexData[idx++];
-        vs_normal = normalize((modelMatrix * vec4(value, 0.0)).xyz);
+        outData.normal = normalize((modelMatrix * vec4(value, 0.0)).xyz);
     }
     if ((components & MESH_COMPONENT_TANGENT) != 0) {
         value.x = vertexData[idx++];
         value.y = vertexData[idx++];
         value.z = vertexData[idx++];
-        vs_tangent = normalize((modelMatrix * vec4(value, 0.0)).xyz);
+        outData.tangent = normalize((modelMatrix * vec4(value, 0.0)).xyz);
         value.x = vertexData[idx++];
         value.y = vertexData[idx++];
         value.z = vertexData[idx++];
-        vs_bitangent = normalize((modelMatrix * vec4(value, 0.0)).xyz);
+        outData.bitangent = normalize((modelMatrix * vec4(value, 0.0)).xyz);
         const float reflect_normal = vertexData[idx++];
-        vs_normal = reflect_normal * normalize(cross(vs_tangent, vs_bitangent));
+        outData.normal = reflect_normal * normalize(cross(outData.tangent, outData.bitangent));
     }
     gl_Position = cam.ProjViewMatrix * worldPos;
 }
