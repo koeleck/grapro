@@ -27,6 +27,8 @@ private:
 
     void genAtomicBuffer();
     void genVoxelBuffer();
+    void genOctreeNodeBuffer(const std::size_t size);
+
     void createVoxelList();
     void buildVoxelTree();
 
@@ -47,6 +49,7 @@ private:
     core::Program                       m_voxelFlag_prog;
     GLuint                              m_atomicCounterBuffer;
     GLuint                              m_voxelBuffer;
+    GLuint                              m_octreeNodeBuffer;
     unsigned int                        m_numVoxelFrag;
 };
 

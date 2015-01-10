@@ -10,4 +10,9 @@ struct VoxelStruct
     glm::vec4 normal;
 };
 
+struct OctreeNodeStruct
+{
+    unsigned int id;
+};
+
 #endif // VOXEL_H

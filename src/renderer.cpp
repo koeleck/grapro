@@ -172,6 +172,22 @@ void Renderer::genVoxelBuffer()
 
 /****************************************************************************/
 
+void Renderer::genOctreeNodeBuffer(const std::size_t size)
+{
+    if(m_octreeNodeBuffer)
+        glDeleteBuffers(1, &m_octreeNodeBuffer);
+
+    glGenBuffers(1, &m_octreeNodeBuffer);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
+
+    glBufferStorage(GL_SHADER_STORAGE_BUFFER, size, nullptr, GL_MAP_READ_BIT);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::OCTREE, m_octreeNodeBuffer);
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
+}
+
+/****************************************************************************/
+
 void Renderer::createVoxelList()
 {
 
@@ -243,6 +259,17 @@ void Renderer::buildVoxelTree()
     // calculate max invocations for compute shader to get all the voxel fragments
     const auto dataWidth = 1024u;
     const unsigned int dataHeight = (m_numVoxelFrag + 1023u) / dataWidth;
+
+    // calculate max possible size of octree
+    unsigned int totalNodes = 1;
+    unsigned int tmp = 1;
+    for(unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
+
+        tmp *= 8;
+        totalNodes += tmp;
+
+    }
+    genOctreeNodeBuffer(totalNodes * sizeof(OctreeNodeStruct));
 
     glUseProgram(m_voxelFlag_prog);
     glDispatchCompute(dataWidth, dataHeight, 1);
