@@ -179,7 +179,8 @@ void Renderer::createVoxelList()
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glViewport(0, 0, vars.voxel_dim, vars.voxel_dim);
+    const auto dim = static_cast<unsigned int>(std::pow(2, vars.voxel_octree_levels));
+    glViewport(0, 0, dim, dim);
 
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
@@ -213,13 +214,13 @@ void Renderer::createVoxelList()
 
     }
 
-    // debug output
-    /*glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
+    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
     auto count = static_cast<GLuint *>(glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), GL_MAP_READ_BIT));
-    const auto numVoxelFrag = count[0];
-    LOG_INFO("Number of Entries in Voxel Fragment List: ", numVoxelFrag);
+    glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
+    m_numVoxelFrag = count[0];
+    //LOG_INFO("Number of Entries in Voxel Fragment List: ", numVoxelFrag);
 
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
+    /*glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
     auto vecPtr = static_cast<VoxelStruct *>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, vars.max_voxel_fragments * sizeof(VoxelStruct), GL_MAP_READ_BIT));
     if (vecPtr == nullptr) LOG_INFO("NULL!");
     LOG_INFO("Position: ", vecPtr[0].position[0], " ", vecPtr[0].position[1], " ", vecPtr[0].position[2]);

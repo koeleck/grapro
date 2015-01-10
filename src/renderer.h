@@ -46,6 +46,7 @@ private:
     core::Program                       m_voxel_prog;
     GLuint                              m_atomicCounterBuffer;
     GLuint                              m_voxelBuffer;
+    unsigned int                        m_numVoxelFrag;
 };
 
 #endif // RENDERER_H
