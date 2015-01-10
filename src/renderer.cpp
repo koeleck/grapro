@@ -112,6 +112,7 @@ Renderer::Renderer()
 
     m_voxelize_cam = core::res::cameras->createOrthogonalCam("voxelization_cam",
             glm::dvec3(0.0), glm::dvec3(0.0), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    assert(m_voxelize_cam->getViewMatrix() == glm::dmat4(1.0));
 }
 
 /****************************************************************************/
@@ -219,12 +220,6 @@ void Renderer::genOctreeNodeBuffer(const std::size_t size)
 void Renderer::createVoxelList()
 {
 
-    //Create an modelview-orthographic projection matrix see from X/Y/Z axis
-    const glm::mat4 Ortho = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 2.0f-1.0f, 3.0f);
-    const glm::mat4 mvpX = Ortho * glm::lookAt(glm::vec3(2, 0, 0), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-    const glm::mat4 mvpY = Ortho * glm::lookAt(glm::vec3(0, 2, 0), glm::vec3(0, 0, 0), glm::vec3(0, 0, -1));
-    const glm::mat4 mvpZ = Ortho * glm::lookAt(glm::vec3(0, 0, 2), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     const auto dim = static_cast<int>(std::pow(2, vars.voxel_octree_levels));
@@ -245,12 +240,6 @@ void Renderer::createVoxelList()
     glUniform1i(loc, vars.screen_width);
     loc = glGetUniformLocation(m_voxel_prog, "u_height");
     glUniform1i(loc, vars.screen_height);
-    loc = glGetUniformLocation(m_voxel_prog, "u_MVPx");
-    glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(mvpX));
-    loc = glGetUniformLocation(m_voxel_prog, "u_MVPy");
-    glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(mvpY));
-    loc = glGetUniformLocation(m_voxel_prog, "u_MVPz");
-    glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(mvpZ));
 
     // buffer
     genAtomicBuffer();
