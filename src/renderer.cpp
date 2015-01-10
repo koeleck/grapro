@@ -100,8 +100,11 @@ Renderer::Renderer()
             {"vertexpulling_vert", "voxelGeom", "voxelFrag"});
 
     // octree building
-    core::res::shaders->registerShader("voxelFlagComp", "tree/flagoctree.comp", GL_COMPUTE_SHADER);
-    m_voxelFlag_prog = core::res::shaders->registerProgram("voxelFlag_prog", {"voxelFlagComp"});
+    core::res::shaders->registerShader("octreeNodeFlagComp", "tree/flagoctree.comp", GL_COMPUTE_SHADER);
+    m_octreeNodeFlag_prog = core::res::shaders->registerProgram("octreeNodeFlag_prog", {"octreeNodeFlagComp"});
+
+    core::res::shaders->registerShader("octreeNodeAllocateComp", "tree/nodealloc.comp", GL_COMPUTE_SHADER);
+    m_octreeNodeAllocate_prog = core::res::shaders->registerProgram("octreeNodeAllocate_prog", {"octreeNodeAllocateComp"});
 
     glBindVertexArray(m_vertexpulling_vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, core::res::meshes->getElementArrayBuffer());
@@ -298,19 +301,58 @@ void Renderer::buildVoxelTree()
         totalNodes += tmp;
 
     }
-    genOctreeNodeBuffer(totalNodes * sizeof(OctreeNodeStruct));
 
-    glUseProgram(m_voxelFlag_prog);
+    // generate octree
+    genOctreeNodeBuffer(totalNodes * sizeof(OctreeNodeStruct));
 
     // uniforms
     GLint loc;
-    loc = glGetUniformLocation(m_voxelFlag_prog, "u_numVoxelFrag");
-    glUniform1ui(loc, m_numVoxelFrag);
-    loc = glGetUniformLocation(m_voxelFlag_prog, "u_treeLevel");
-    glUniform1ui(loc, vars.voxel_octree_levels);
 
-    glDispatchCompute(dataWidth, dataHeight, 1);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
+
+        /*
+         *  flag nodes
+         */
+
+        glUseProgram(m_octreeNodeFlag_prog);
+
+        // uniforms
+        loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_numVoxelFrag");
+        glUniform1ui(loc, m_numVoxelFrag);
+        loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_treeLevels");
+        glUniform1ui(loc, vars.voxel_octree_levels);
+        loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_maxLevel");
+        glUniform1ui(loc, i);
+
+        // dispatch
+        glDispatchCompute(dataWidth, dataHeight, 1); //  TO DO: less invocations!
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+        /*
+         *  allocate child nodes
+         */
+
+        glUseProgram(m_octreeNodeAllocate_prog);
+
+        // atomic counter
+        genAtomicBuffer();
+
+        // uniforms
+        loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_numVoxelFrag");
+        glUniform1ui(loc, m_numVoxelFrag);
+
+        // dispatch
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_ATOMIC_COUNTER_BARRIER_BIT);
+
+        GLuint tileAllocated;
+        GLuint reset = 0;
+        glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
+        glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), &tileAllocated);
+        glBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), &reset ); //reset counter to zero
+        glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
+        LOG_INFO("tileAllocated: ", tileAllocated);
+
+    }
 
 }
 

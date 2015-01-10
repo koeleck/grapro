@@ -50,7 +50,8 @@ private:
 
     core::OrthogonalCamera*             m_voxelize_cam;
     core::Program                       m_voxel_prog;
-    core::Program                       m_voxelFlag_prog;
+    core::Program                       m_octreeNodeFlag_prog;
+    core::Program                       m_octreeNodeAllocate_prog;
     GLuint                              m_atomicCounterBuffer;
     GLuint                              m_voxelBuffer;
     GLuint                              m_octreeNodeBuffer;
