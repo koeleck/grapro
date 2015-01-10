@@ -288,11 +288,11 @@ void Renderer::buildVoxelTree()
         glUseProgram(m_octreeNodeFlag_prog);
 
         // uniforms
-        loc = glGetUniformLocation(m_voxelFlag_prog, "u_numVoxelFrag");
+        loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_numVoxelFrag");
         glUniform1ui(loc, m_numVoxelFrag);
-        loc = glGetUniformLocation(m_voxelFlag_prog, "u_treeLevels");
+        loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_treeLevels");
         glUniform1ui(loc, vars.voxel_octree_levels);
-        loc = glGetUniformLocation(m_voxelFlag_prog, "u_maxLevel");
+        loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_maxLevel");
         glUniform1ui(loc, i);
 
         // dispatch
