@@ -4,17 +4,6 @@
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
-// voxel buffer
-struct voxelStruct {
-	uvec4 position;
-	vec4 color;
-	vec4 normal;
-};
-
-layout (std430, binding = VOXEL_BINDING) buffer voxelBlock {
-	voxelStruct voxel[];
-};
-
 // octree buffer
 struct octreeBuffer {
 	uint id;
