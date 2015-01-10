@@ -285,12 +285,14 @@ void Renderer::buildVoxelTree()
 
     // calculate max invocations for compute shader to get all the voxel fragments
     const auto dataWidth = 1024u;
-    const unsigned int dataHeight = (m_numVoxelFrag + 1023u) / dataWidth;
+    unsigned int dataHeight = (m_numVoxelFrag + dataWidth - 1) / dataWidth;
+    const unsigned int groupDimX = dataWidth / 8;
+    const unsigned int groupDimY = (dataHeight + 7) / 8;
 
     // calculate max possible size of octree
     unsigned int totalNodes = 1;
     unsigned int tmp = 1;
-    for(unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
+    for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
 
         tmp *= 8;
         totalNodes += tmp;
@@ -324,7 +326,7 @@ void Renderer::buildVoxelTree()
         glUniform1ui(loc, i);
 
         // dispatch
-        glDispatchCompute(dataWidth, dataHeight, 1); //  TO DO: less invocations!
+        glDispatchCompute(groupDimX, groupDimY, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         /*
@@ -377,11 +379,19 @@ void Renderer::buildVoxelTree()
         loc = glGetUniformLocation(m_octreeNodeInit_prog, "u_allocStart");
         glUniform1ui(loc, allocOffset);
 
+        dataHeight = (nodeAllocated + dataWidth - 1) / dataWidth;
+        const unsigned int initGroupDimX = dataWidth / 8;
+        const unsigned int initGroupDimY = (dataHeight + 7) / 8;
+
+        // dispatch
+        glDispatchCompute(initGroupDimX, initGroupDimY, 1);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
         /*
          *  update offsets
          */
 
-        allocList.emplace_back(nodeAllocated);  // childNodesToBeAllocated * 8 is the number of threads
+        allocList.emplace_back(nodeAllocated);  // nodeAllocated is the number of threads
                                                 // we want to launch in the next level
         nodeOffset += allocList[i]; // add number of newly allocated child nodes to offset
         allocOffset += nodeAllocated;
