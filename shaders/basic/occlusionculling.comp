@@ -56,7 +56,7 @@ void main()
             pmax = max(pmax, tmp);
         }
 
-        float ref_depth = -100.0;
+        float ref_depth = pmin.z;
         if (all(greaterThanEqual(pmax, vec3(0.0))) &&
                 all(lessThanEqual(pmin, vec3(1.0))))
         {
@@ -83,7 +83,7 @@ void main()
 
 
             ref_depth = max(max(samples[0], samples[1]), max(samples[2], samples[3]));
-            //ref_depth += 0.001;
+            //ref_depth = 1.0;
         }
 
         commands[idx].count = (ref_depth > pmin.z) ? meshes[instances[ID].meshID].count : 0;
