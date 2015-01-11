@@ -313,6 +313,11 @@ void Renderer::buildVoxelTree()
 
     for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
 
+        LOG_INFO("");
+        LOG_INFO("##########################");
+        LOG_INFO("Starting with max level ", i);
+        LOG_INFO("##########################");
+
         /*
          *  flag nodes
          */
@@ -328,6 +333,8 @@ void Renderer::buildVoxelTree()
         glUniform1ui(loc, i);
 
         // dispatch
+        LOG_INFO("Dispatching NodeFlag with ", groupDimX * groupDimY, " groups with 64 threads each");
+        LOG_INFO("--> ", groupDimX * groupDimY * 64, " threads");
         glDispatchCompute(groupDimX, groupDimY, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
@@ -353,6 +360,8 @@ void Renderer::buildVoxelTree()
         // dispatch
         const unsigned int allocwidth = 64;
         const unsigned int allocGroupDim = (allocList[i]+allocwidth-1)/allocwidth;
+        LOG_INFO("Dispatching NodeAlloc with ", allocGroupDim, " groups with 64 threads each");
+        LOG_INFO("--> ", allocGroupDim * 64, " threads");
         glDispatchCompute(allocGroupDim, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_ATOMIC_COUNTER_BARRIER_BIT);
 
@@ -366,7 +375,7 @@ void Renderer::buildVoxelTree()
         glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), &childNodesToBeAllocated);
         glBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), &reset ); //reset counter to zero
         glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
-        LOG_INFO("childNodesToBeAllocated: ", childNodesToBeAllocated);
+        LOG_INFO(childNodesToBeAllocated, " child nodes have been allocated");
 
         /*
          *  init child nodes
@@ -387,6 +396,8 @@ void Renderer::buildVoxelTree()
         const unsigned int initGroupDimY = (dataHeight + 7) / 8;
 
         // dispatch
+        LOG_INFO("Dispatching NodeInit with ", initGroupDimX * initGroupDimY, " groups with 64 threads each");
+        LOG_INFO("--> ", initGroupDimX * initGroupDimY * 64, " threads");
         glDispatchCompute(initGroupDimX, initGroupDimY, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
