@@ -59,7 +59,7 @@ struct Renderer::DrawCmd
 /****************************************************************************/
 
 Renderer::Renderer()
-  : m_offscreen_buffer(1024, 768)
+  : m_offscreen_buffer(1024, 1024)
 {
     //auto minsize = glm::min(m_offscreen_buffer.m_height, m_offscreen_buffer.m_width);
     //const auto levels = static_cast<int>(std::floor(std::log2(minsize)));
@@ -243,9 +243,9 @@ void Renderer::render(const bool renderBBoxes, bool hiz, int level)
 
     auto* cam = reinterpret_cast<core::PerspectiveCamera*>(core::res::cameras->getDefaultCam());
     cam->setNear(1.0);
-    cam->setFar(5000.0);
+    cam->setFar(500.0);
     const auto aspect_ratio_orig = cam->getAspectRatio();
-    cam->setAspectRatio(1024.0 / 768.0);
+    cam->setAspectRatio(1.0);
 
 
     generateDrawcalls(m_offscreen_buffer);

@@ -51,7 +51,7 @@ void main()
                             BBox[(i>>2) & 0x01].z,
                             1.0);
             pos = cam.ProjViewMatrix * pos;
-            vec3 tmp = ((pos.xyz / pos.w) + 1.0) * 0.5;
+            vec3 tmp = (pos.xyz / pos.w) * 0.5 + 0.5;
             pmin = min(pmin, tmp);
             pmax = max(pmax, tmp);
         }
@@ -60,30 +60,42 @@ void main()
         if (all(greaterThanEqual(pmax, vec3(0.0))) &&
                 all(lessThanEqual(pmin, vec3(1.0))))
         {
-            vec4 bounds = vec4(min(pmin.xy, vec2(0.0)), max(pmax.xy, vec2(1.0)));
+            vec4 bounds = vec4(max(pmin.xy, vec2(0.0)), min(pmax.xy, vec2(1.0)));
 
             // first estimation
             vec2 view = vec2(textureSize(depthTex, 0));
-            vec2 area = bounds.zw - bounds.xy;
-            float square = dot(view,view) * dot(area,area);
-            float flod = ceil(0.5 * log2(square)) - 1.0;
+            //vec2 area = bounds.zw - bounds.xy;
+            //float square = dot(view,view) * dot(area,area);
+            //float flod = ceil(0.5 * log2(square)) - 1.0;
+
+            float LOD = ceil(log2(max( ViewSizeX, ViewSizeY ))) - 1.0;
+
             // move to the next level, if that's not enough
-            //vec4 addr = floor(bounds * view.xyxy * exp2(-flod));
-            vec2 view_lod = vec2(textureSize(depthTex, int(flod)));
-            vec4 addr = floor(bounds * view_lod.xyxy);
+            vec4 addr = floor(bounds * view.xyxy * exp2(-flod));
+            //vec2 view_lod = vec2(textureSize(depthTex, int(flod)));
+            //vec4 addr = floor(bounds * view_lod.xyxy);
             vec2 diff = addr.zw - addr.xy;
             flod += step(3.0, dot(diff,diff));
             int level = int(flod);
 
+            //vec4 samples = vec4(
+            //        textureLod(depthTex, bounds.xy, level).r,
+            //        textureLod(depthTex, bounds.xw, level).r,
+            //        textureLod(depthTex, bounds.zy, level).r,
+            //        textureLod(depthTex, bounds.zw, level).r);
+            ivec4 txl = ivec4(ivec2(bounds.xy * vec2(textureSize(depthTex, level))),
+                              ivec2(bounds.zw * vec2(textureSize(depthTex, level))));
             vec4 samples = vec4(
-                    textureLod(depthTex, bounds.xy, level).r,
-                    textureLod(depthTex, bounds.xw, level).r,
-                    textureLod(depthTex, bounds.zy, level).r,
-                    textureLod(depthTex, bounds.zw, level).r);
+                    texelFetch(depthTex, txl.xy, level).r,
+                    texelFetch(depthTex, txl.xw, level).r,
+                    texelFetch(depthTex, txl.zy, level).r,
+                    texelFetch(depthTex, txl.zw, level).r);
 
 
             ref_depth = max(max(samples[0], samples[1]), max(samples[2], samples[3]));
-            //ref_depth = 1.0;
+            if (pmin.z < 0.0) {
+                ref_depth = 1.0;
+            }
         }
 
         commands[idx].count = (ref_depth > pmin.z) ? meshes[instances[ID].meshID].count : 0;
