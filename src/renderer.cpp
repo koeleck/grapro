@@ -349,7 +349,8 @@ void Renderer::buildVoxelTree()
         glUniform1ui(loc, allocOffset);
 
         // dispatch
-        const unsigned int allocGroupDim = (allocList[i]+63)/64;
+        const unsigned int allocwidth = 64;
+        const unsigned int allocGroupDim = (allocList[i]+allocwidth-1)/allocwidth;
         glDispatchCompute(allocGroupDim, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_ATOMIC_COUNTER_BARRIER_BIT);
 
