@@ -333,7 +333,7 @@ void Renderer::buildVoxelTree()
         glUniform1ui(loc, i);
 
         // dispatch
-        LOG_INFO("Dispatching NodeFlag with ", groupDimX * groupDimY, " groups with 64 threads each");
+        LOG_INFO("Dispatching NodeFlag with ", groupDimX, "*", groupDimY, "*1 groups with 8*8*1 threads each");
         LOG_INFO("--> ", groupDimX * groupDimY * 64, " threads");
         glDispatchCompute(groupDimX, groupDimY, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
@@ -360,7 +360,7 @@ void Renderer::buildVoxelTree()
         // dispatch
         const unsigned int allocwidth = 64;
         const unsigned int allocGroupDim = (allocList[i]+allocwidth-1)/allocwidth;
-        LOG_INFO("Dispatching NodeAlloc with ", allocGroupDim, " groups with 64 threads each");
+        LOG_INFO("Dispatching NodeAlloc with ", allocGroupDim, "*1*1 groups with 64*1*1 threads each");
         LOG_INFO("--> ", allocGroupDim * 64, " threads");
         glDispatchCompute(allocGroupDim, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_ATOMIC_COUNTER_BARRIER_BIT);
@@ -396,7 +396,7 @@ void Renderer::buildVoxelTree()
         const unsigned int initGroupDimY = (dataHeight + 7) / 8;
 
         // dispatch
-        LOG_INFO("Dispatching NodeInit with ", initGroupDimX * initGroupDimY, " groups with 64 threads each");
+        LOG_INFO("Dispatching NodeInit with ", initGroupDimX, "*", initGroupDimY, "*1 groups with 8*8*1 threads each");
         LOG_INFO("--> ", initGroupDimX * initGroupDimY * 64, " threads");
         glDispatchCompute(initGroupDimX, initGroupDimY, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
