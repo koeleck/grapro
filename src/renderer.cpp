@@ -201,7 +201,14 @@ void Renderer::genVoxelBuffer()
     glGenBuffers(1, &m_voxelBuffer);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
 
+    // allocate
     glBufferStorage(GL_SHADER_STORAGE_BUFFER, vars.max_voxel_fragments * sizeof(VoxelStruct), nullptr, GL_MAP_READ_BIT);
+
+    // fill with zeroes
+    const GLuint zero = 0;
+    glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+
+    // bind to binding point
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::VOXEL, m_voxelBuffer);
 
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
@@ -217,7 +224,14 @@ void Renderer::genOctreeNodeBuffer(const std::size_t size)
     glGenBuffers(1, &m_octreeNodeBuffer);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
 
+    // allocate
     glBufferStorage(GL_SHADER_STORAGE_BUFFER, size, nullptr, GL_MAP_READ_BIT);
+
+    // fill with zeroes
+    const GLuint zero = 0;
+    glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+
+    // bind to binding point
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::OCTREE, m_octreeNodeBuffer);
 
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
@@ -227,6 +241,13 @@ void Renderer::genOctreeNodeBuffer(const std::size_t size)
 
 void Renderer::createVoxelList()
 {
+
+    LOG_INFO("");
+    LOG_INFO("###########################");
+    LOG_INFO("# Voxel Fragment Creation #");
+    LOG_INFO("###########################");
+
+    m_render_timer->start();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -266,7 +287,7 @@ void Renderer::createVoxelList()
     auto count = static_cast<GLuint *>(glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), GL_MAP_READ_BIT));
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
     m_numVoxelFrag = count[0];
-    LOG_INFO("Number of Entries in Voxel Fragment List: ", m_numVoxelFrag);
+
 
     /*glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
     auto vecPtr = static_cast<VoxelStruct *>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, vars.max_voxel_fragments * sizeof(VoxelStruct), GL_MAP_READ_BIT));
@@ -278,12 +299,31 @@ void Renderer::createVoxelList()
     glViewport(0, 0, vars.screen_width, vars.screen_height);
     core::res::cameras->makeDefault(old_cam);
 
+    m_render_timer->stop();
+
+    LOG_INFO("");
+
+    for (const auto& t : m_timers.getTimers()) {
+        auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(
+                t.second->time()).count();
+        LOG_INFO("Elapsed Time: ", static_cast<int>(msec), "ms");
+    }
+    LOG_INFO("Number of Entries in Voxel Fragment List: ", m_numVoxelFrag);
+    LOG_INFO("");
+
 }
 
 /****************************************************************************/
 
 void Renderer::buildVoxelTree()
 {
+
+    LOG_INFO("");
+    LOG_INFO("###########################");
+    LOG_INFO("#     Octree Creation     #");
+    LOG_INFO("###########################");
+
+    m_render_timer->start();
 
     // calculate max invocations for compute shader to get all the voxel fragments
     const auto dataWidth = 1024u;
@@ -304,6 +344,9 @@ void Renderer::buildVoxelTree()
     // generate octree
     genOctreeNodeBuffer(totalNodes * sizeof(OctreeNodeStruct));
 
+    // atomic counter (counts how many child node have to be allocated)
+    genAtomicBuffer();
+
     // uniforms
     GLint loc;
 
@@ -314,9 +357,7 @@ void Renderer::buildVoxelTree()
     for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
 
         LOG_INFO("");
-        LOG_INFO("##########################");
         LOG_INFO("Starting with max level ", i);
-        LOG_INFO("##########################");
 
         /*
          *  flag nodes
@@ -344,9 +385,6 @@ void Renderer::buildVoxelTree()
 
         glUseProgram(m_octreeNodeAlloc_prog);
 
-        // atomic counter (counts how many child node have to be allocated)
-        genAtomicBuffer();
-
         const unsigned int numThreads = allocList[i]; // number of child nodes to be allocated at this level
 
         // uniforms
@@ -370,16 +408,18 @@ void Renderer::buildVoxelTree()
          */
 
         GLuint childNodesToBeAllocated;
-        const GLuint reset = 0;
+        const GLuint zero = 0;
         glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
         glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), &childNodesToBeAllocated);
-        glBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), &reset ); //reset counter to zero
+        glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero); //reset counter to zero
         glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
         LOG_INFO(childNodesToBeAllocated, " child nodes have been allocated");
 
         /*
          *  init child nodes
          */
+
+        // DO WE REALLY NEED THIS ????
 
         glUseProgram(m_octreeNodeInit_prog);
 
@@ -412,7 +452,18 @@ void Renderer::buildVoxelTree()
 
     }
 
-    LOG_INFO("Total nodes consumed: ", allocOffset);
+    LOG_INFO("");
+    LOG_INFO("Total Nodes created: ", nodeOffset);
+
+    m_render_timer->stop();
+
+    for (const auto& t : m_timers.getTimers()) {
+        auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(
+                t.second->time()).count();
+        LOG_INFO("Elapsed Time: ", static_cast<int>(msec), "ms");
+    }
+
+    LOG_INFO("");
 
 }
 
@@ -429,29 +480,9 @@ void Renderer::render(const bool renderBBoxes)
 
     if (m_rebuildTree) {
 
-        m_render_timer->start();
-
         createVoxelList();
 
-        m_render_timer->stop();
-
-        for (const auto& t : m_timers.getTimers()) {
-            auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    t.second->time()).count();
-            LOG_INFO("Voxel Fragments Creation: ", static_cast<int>(msec), "ms");
-        }
-
-        m_render_timer->start();
-
         buildVoxelTree();
-
-        m_render_timer->stop();
-
-        for (const auto& t : m_timers.getTimers()) {
-            auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(
-                    t.second->time()).count();
-            LOG_INFO("Octree Building: ", static_cast<int>(msec), "ms");
-        }
 
         m_rebuildTree = false;
 

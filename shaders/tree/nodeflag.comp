@@ -31,15 +31,14 @@ uniform uint u_maxLevel;
 void main()
 {
     // retrieve current thread id and return if out of bounds
-    const uint grid = 1024;
-    uint threadId = gl_GlobalInvocationID.y * grid + gl_GlobalInvocationID.x;
+    uint threadId = gl_GlobalInvocationID.y * 1024 + gl_GlobalInvocationID.x;
     if (threadId >= u_numVoxelFrag)
         return;
 
     // local vars
     uint childidx = 0;
 
-    uint nodeptr = octree[childidx].id;
+    uint nodeptr = octree[childidx].id; // root address
     uint subnodeptr = 0;
 
     uint voxel_dim = uint(pow(2, u_treeLevels));

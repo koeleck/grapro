@@ -24,5 +24,5 @@ void main()
 	if (threadId >= u_num)
 		return;
 
-	octree[u_allocStart + threadId].id = 0;
+	//octree[u_allocStart + threadId].id = 0;
 }
