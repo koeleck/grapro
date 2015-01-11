@@ -64,7 +64,7 @@ void main()
         }
 
         // get child pointer by ignoring the node's ptr MSB
-        childidx = uint(nodeptr & 0x7f000000);
+        childidx = uint(nodeptr & 0x7FFFFFFF);
 
         // create subnodes
         uint subnodeptrX = clamp(uint(1 + pos.x - umin.x - voxel_dim), 0, 1);
