@@ -31,7 +31,7 @@ uniform uint u_maxLevel;
 void main()
 {
     // retrieve current thread id and return if out of bounds
-    uint threadId = gl_GlobalInvocationID.y * 1024 + gl_GlobalInvocationID.x;
+    uint threadId = gl_GlobalInvocationID.y * gl_NumWorkGroups.x * gl_WorkGroupSize.x + gl_GlobalInvocationID.x;
     if (threadId >= u_numVoxelFrag)
         return;
 
