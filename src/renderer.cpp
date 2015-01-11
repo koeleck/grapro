@@ -183,7 +183,7 @@ void Renderer::genAtomicBuffer()
     GLuint initVal = 0;
     if(m_atomicCounterBuffer)
         glDeleteBuffers(1, &m_atomicCounterBuffer);
-    
+
     glGenBuffers(1, &m_atomicCounterBuffer);
 
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
@@ -423,9 +423,9 @@ void Renderer::buildVoxelTree()
 
         // DO WE REALLY NEED THIS ????
 
-        glUseProgram(m_octreeNodeInit_prog);
+        /*glUseProgram(m_octreeNodeInit_prog);
 
-        const unsigned int nodeAllocated = childNodesToBeAllocated * 8;
+        */const unsigned int nodeAllocated = childNodesToBeAllocated * 8;/*
 
         // uniforms
         loc = glGetUniformLocation(m_octreeNodeInit_prog, "u_num");
@@ -441,7 +441,7 @@ void Renderer::buildVoxelTree()
         LOG_INFO("Dispatching NodeInit with ", initGroupDimX, "*", initGroupDimY, "*1 groups with 8*8*1 threads each");
         LOG_INFO("--> ", initGroupDimX * initGroupDimY * 64, " threads");
         glDispatchCompute(initGroupDimX, initGroupDimY, 1);
-        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);*/
 
         /*
          *  update offsets
@@ -468,11 +468,11 @@ void Renderer::buildVoxelTree()
     LOG_INFO("");
 
 
-    /*  
+    /*
      *  flag non-empty leaf nodes
      */
-    
-    LOG_INFO("\nflagging non-empty leaf nodes...");
+
+    LOG_INFO("flagging non-empty leaf nodes...");
     glUseProgram(m_octreeNodeFlag_prog);
 
     // uniforms
@@ -489,10 +489,10 @@ void Renderer::buildVoxelTree()
     glDispatchCompute(groupDimX, groupDimY, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-    /*  
+    /*
      *  write information to leafs
      */
-    
+
     LOG_INFO("\nfilling leafs...");
     glUseProgram(m_octreeLeafStore_prog);
 
