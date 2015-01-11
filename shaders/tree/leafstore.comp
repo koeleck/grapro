@@ -1,0 +1,40 @@
+#version 440 core
+
+#include "common/bindings.glsl"
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+// voxel buffer
+struct voxelStruct {
+    uvec4 position;
+    vec4 color;
+    vec4 normal;
+};
+
+layout (std430, binding = VOXEL_BINDING) buffer voxelBlock {
+    voxelStruct voxel[];
+};
+
+// octree buffer
+struct octreeBuffer {
+    uint id;
+};
+
+layout (std430, binding = OCTREE_BINDING) buffer octreeBlock {
+    octreeBuffer octree[];
+};
+
+uniform uint u_numVoxelFrag;
+uniform uint u_treeLevels;
+uniform uint u_maxLevel;
+
+void main()
+{
+    // retrieve current thread id and return if out of bounds
+    const uint grid = 1024;
+    uint threadId = gl_GlobalInvocationID.y * grid + gl_GlobalInvocationID.x;
+    if (threadId >= u_numVoxelFrag)
+        return;
+
+    /* TODO */
+}
