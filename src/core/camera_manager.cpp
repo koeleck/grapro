@@ -103,6 +103,8 @@ const Camera* CameraManager::getCam(const std::string& name) const
 
 void CameraManager::makeDefault(const Camera* cam)
 {
+    if (cam == nullptr)
+        return;
     m_default_cam = const_cast<Camera*>(cam);
     if (m_default_cam != nullptr) {
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, bindings::CAMERA,

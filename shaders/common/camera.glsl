@@ -15,6 +15,7 @@ struct Camera
     mat4        ProjMatrix;
     mat4        ProjViewMatrix;
     vec4        Position;
+    vec4        padding[3];
 };
 
 layout(std430, binding = CAMERA_BINDING) restrict readonly buffer CameraBlock

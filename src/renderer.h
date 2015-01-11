@@ -15,7 +15,7 @@
 class Renderer
 {
 public:
-    Renderer();
+    Renderer(core::TimerArray& timer_array);
     ~Renderer();
 
     void setGeometry(std::vector<const core::Instance*> geometry);
@@ -28,9 +28,7 @@ private:
 
     void initBBoxStuff();
 
-    void genAtomicBuffer();
-    void genVoxelBuffer();
-    void genOctreeNodeBuffer(const std::size_t size);
+    void renderGeometry(GLuint prog);
 
     void createVoxelList();
     void buildVoxelTree();
@@ -55,13 +53,14 @@ private:
     core::Program                       m_octreeNodeAlloc_prog;
     core::Program                       m_octreeNodeInit_prog;
     core::Program                       m_octreeLeafStore_prog;
-    GLuint                              m_atomicCounterBuffer;
-    GLuint                              m_voxelBuffer;
-    GLuint                              m_octreeNodeBuffer;
+    gl::Buffer                          m_atomicCounterBuffer;
+    gl::Buffer                          m_voxelBuffer;
+    gl::Buffer                          m_octreeNodeBuffer;
     unsigned int                        m_numVoxelFrag;
     bool                                m_rebuildTree;
-    core::TimerArray                    m_timers;
-    core::GPUTimer*                     m_render_timer;
+    core::TimerArray&                   m_timers;
+    core::GPUTimer*                     m_tree_timer;
+    core::GPUTimer*                     m_voxelize_timer;
 };
 
 #endif // RENDERER_H

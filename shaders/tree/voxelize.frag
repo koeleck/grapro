@@ -23,13 +23,13 @@ layout(binding = 0, offset = 0) uniform atomic_uint u_voxelFragCount;
 
 // voxel buffer
 struct voxelStruct {
-	uvec4 position;
-	vec4 color;
-	vec4 normal;
+    uvec4 position;
+    vec4 color;
+    vec4 normal;
 };
 
 layout (std430, binding = VOXEL_BINDING) buffer voxelBlock {
-	voxelStruct voxel[];
+    voxelStruct voxel[];
 };
 
 uniform int u_width;
@@ -44,7 +44,7 @@ vec3 m_ambient_color;
 
 void setNormal() {
 
-	if (materials[inData.materialID].hasNormalTex != 0) {
+    if (materials[inData.materialID].hasNormalTex != 0) {
         vec3 texNormal = texture(uNormalTex, inData.uv).rgb;
         texNormal.xy = texNormal.xy * 2.0 - 1.0;
         texNormal = normalize(texNormal);
@@ -62,7 +62,7 @@ void setNormal() {
 
 void setColor() {
 
-	if (materials[inData.materialID].hasDiffuseTex != 0) {
+    if (materials[inData.materialID].hasDiffuseTex != 0) {
         m_diffuse_color = texture(uDiffuseTex, inData.uv).rgb;
     } else {
         m_diffuse_color = materials[inData.materialID].diffuseColor;
@@ -81,24 +81,24 @@ void main()
 
     const uvec4 temp = uvec4(gl_FragCoord.xy, u_width * gl_FragCoord.z, 0);
     uvec4 texcoord = temp; // default: inData.axis == 2
-	if(inData.axis == 0) {
-		texcoord.x = u_width - temp.z;
-		texcoord.z = temp.x;
-		texcoord.y = temp.y;
-	} else if (inData.axis == 1) {
-		texcoord.z = temp.y;
-		texcoord.y = u_width - temp.z;
-		texcoord.x = temp.x;
-	}
+    if(inData.axis == 0) {
+        texcoord.x = u_width - temp.z;
+        texcoord.z = temp.x;
+        texcoord.y = temp.y;
+    } else if (inData.axis == 1) {
+        texcoord.z = temp.y;
+        texcoord.y = u_width - temp.z;
+        texcoord.x = temp.x;
+    }
 
-	setNormal();
-	setColor();
+    setNormal();
+    setColor();
 
-	const uint idx = atomicCounterIncrement(u_voxelFragCount);
+    const uint idx = atomicCounterIncrement(u_voxelFragCount);
 
-	voxel[idx].position = uvec4(texcoord.xyz, 0);
-	voxel[idx].color = vec4(m_diffuse_color, 0.f);
-	voxel[idx].normal = vec4(m_normal, 0.f);
+    voxel[idx].position = uvec4(texcoord.xyz, 0);
+    voxel[idx].color = vec4(m_diffuse_color, 0.f);
+    voxel[idx].normal = vec4(m_normal, 0.f);
 
     out_Color = vec4(1.f);
 
