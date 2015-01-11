@@ -112,6 +112,9 @@ Renderer::Renderer()
     core::res::shaders->registerShader("octreeNodeInitComp", "tree/nodeinit.comp", GL_COMPUTE_SHADER);
     m_octreeNodeInit_prog = core::res::shaders->registerProgram("octreeNodeInit_prog", {"octreeNodeInitComp"});
 
+    core::res::shaders->registerShader("octreeLeafStoreComp", "tree/leafstore.comp", GL_COMPUTE_SHADER);
+    m_octreeLeafStore_prog = core::res::shaders->registerProgram("octreeLeafStore_prog", {"octreeLeafStoreComp"});
+
     m_render_timer = m_timers.addGPUTimer("Octree");
 
     glBindVertexArray(m_vertexpulling_vao);
@@ -178,16 +181,15 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
 void Renderer::genAtomicBuffer()
 {
     GLuint initVal = 0;
-
     if(m_atomicCounterBuffer)
         glDeleteBuffers(1, &m_atomicCounterBuffer);
-
+    
     glGenBuffers(1, &m_atomicCounterBuffer);
+
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
-
     glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(GLuint), &initVal, GL_STATIC_DRAW);
-    glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, m_atomicCounterBuffer);
 
+    glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, m_atomicCounterBuffer);
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 }
 
@@ -465,6 +467,48 @@ void Renderer::buildVoxelTree()
 
     LOG_INFO("");
 
+
+    /*  
+     *  flag non-empty leaf nodes
+     */
+    
+    LOG_INFO("\nflagging non-empty leaf nodes...");
+    glUseProgram(m_octreeNodeFlag_prog);
+
+    // uniforms
+    loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_numVoxelFrag");
+    glUniform1ui(loc, m_numVoxelFrag);
+    loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_treeLevels");
+    glUniform1ui(loc, vars.voxel_octree_levels);
+    loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_maxLevel");
+    glUniform1ui(loc, vars.voxel_octree_levels);
+
+    // dispatch
+    LOG_INFO("Dispatching NodeFlag with ", groupDimX, "*", groupDimY, "*1 groups with 8*8*1 threads each");
+    LOG_INFO("--> ", groupDimX * groupDimY * 64, " threads");
+    glDispatchCompute(groupDimX, groupDimY, 1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+    /*  
+     *  write information to leafs
+     */
+    
+    LOG_INFO("\nfilling leafs...");
+    glUseProgram(m_octreeLeafStore_prog);
+
+    // uniforms
+    loc = glGetUniformLocation(m_octreeLeafStore_prog, "u_numVoxelFrag");
+    glUniform1ui(loc, m_numVoxelFrag);
+    loc = glGetUniformLocation(m_octreeLeafStore_prog, "u_treeLevels");
+    glUniform1ui(loc, vars.voxel_octree_levels);
+    loc = glGetUniformLocation(m_octreeLeafStore_prog, "u_maxLevel");
+    glUniform1ui(loc, vars.voxel_octree_levels);
+
+    // dispatch
+    LOG_INFO("Dispatching NodeFlag with ", groupDimX, "*", groupDimY, "*1 groups with 8*8*1 threads each");
+    LOG_INFO("--> ", groupDimX * groupDimY * 64, " threads");
+    glDispatchCompute(groupDimX, groupDimY, 1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 }
 
 /****************************************************************************/
