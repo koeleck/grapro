@@ -10,6 +10,7 @@
 #include "gl/opengl.h"
 #include "core/aabb.h"
 #include "core/camera.h"
+#include "core/timer_array.h"
 
 class Renderer
 {
@@ -58,6 +59,8 @@ private:
     GLuint                              m_octreeNodeBuffer;
     unsigned int                        m_numVoxelFrag;
     bool                                m_rebuildTree;
+    core::TimerArray                    m_timers;
+    core::GPUTimer*                     m_render_timer;
 };
 
 #endif // RENDERER_H

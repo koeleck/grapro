@@ -112,6 +112,8 @@ Renderer::Renderer()
     core::res::shaders->registerShader("octreeNodeInitComp", "tree/nodeinit.comp", GL_COMPUTE_SHADER);
     m_octreeNodeInit_prog = core::res::shaders->registerProgram("octreeNodeInit_prog", {"octreeNodeInitComp"});
 
+    m_render_timer = m_timers.addGPUTimer("Octree");
+
     glBindVertexArray(m_vertexpulling_vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, core::res::meshes->getElementArrayBuffer());
     glBindVertexArray(0);
@@ -264,7 +266,7 @@ void Renderer::createVoxelList()
     auto count = static_cast<GLuint *>(glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), GL_MAP_READ_BIT));
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
     m_numVoxelFrag = count[0];
-    //LOG_INFO("Number of Entries in Voxel Fragment List: ", numVoxelFrag);
+    LOG_INFO("Number of Entries in Voxel Fragment List: ", m_numVoxelFrag);
 
     /*glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
     auto vecPtr = static_cast<VoxelStruct *>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, vars.max_voxel_fragments * sizeof(VoxelStruct), GL_MAP_READ_BIT));
@@ -415,9 +417,33 @@ void Renderer::render(const bool renderBBoxes)
     core::res::meshes->bind();
 
     if (m_rebuildTree) {
+
+        m_render_timer->start();
+
         createVoxelList();
+
+        m_render_timer->stop();
+
+        for (const auto& t : m_timers.getTimers()) {
+            auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    t.second->time()).count();
+            LOG_INFO("Voxel Fragments Creation: ", static_cast<int>(msec), "ms");
+        }
+
+        m_render_timer->start();
+
         buildVoxelTree();
+
+        m_render_timer->stop();
+
+        for (const auto& t : m_timers.getTimers()) {
+            auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    t.second->time()).count();
+            LOG_INFO("Octree Building: ", static_cast<int>(msec), "ms");
+        }
+
         m_rebuildTree = false;
+
     }
 
     const auto* cam = core::res::cameras->getDefaultCam();
