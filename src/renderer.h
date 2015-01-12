@@ -35,6 +35,7 @@ private:
     void genOctreeNodeBuffer();
     void reallocOctreeNodeBuffer();
     void debugRenderTree();
+    void resizeVoxelizeFBO();
 
     void createVoxelList(bool debug_output);
     void buildVoxelTree(bool debug_output);
@@ -61,6 +62,7 @@ private:
     gl::Buffer                          m_atomicCounterBuffer;
     gl::Buffer                          m_voxelBuffer;
     gl::Buffer                          m_octreeNodeBuffer;
+    gl::Framebuffer                     m_voxelizationFBO;
     unsigned int                        m_numVoxelFrag;
     unsigned int                        m_tree_levels;
     bool                                m_rebuildTree;

@@ -100,6 +100,9 @@ Renderer::Renderer(core::TimerArray& timer_array)
 
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
+    // FBO for voxelization
+    resizeVoxelizeFBO();
+
     // debug render
     core::res::shaders->registerShader("octreeDebugBBox_vert", "tree/bbox.vert", GL_VERTEX_SHADER);
     core::res::shaders->registerShader("octreeDebugBBox_frag", "tree/bbox.frag", GL_FRAGMENT_SHADER);
@@ -164,6 +167,18 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
     m_voxelize_cam->setOrientation(glm::dquat());
     assert(m_voxelize_cam->getViewMatrix() == glm::dmat4(1.0));
 
+}
+
+void Renderer::resizeVoxelizeFBO()
+{
+    const auto dim = static_cast<int>(std::pow(2, m_tree_levels));
+    glBindFramebuffer(GL_FRAMEBUFFER, m_voxelizationFBO);
+    glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, dim);
+    glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, dim);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        LOG_ERROR("Empty framebuffer is not complete");
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 /****************************************************************************/
@@ -254,14 +269,13 @@ void Renderer::createVoxelList(const bool debug_output)
 
     m_voxelize_timer->start();
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    //const auto dim = static_cast<int>(std::pow(2, vars.voxel_octree_levels));
-    const auto dim = static_cast<int>(std::pow(2, m_tree_levels));
-    glViewport(0, 0, dim, dim);
-
     auto* old_cam = core::res::cameras->getDefaultCam();
     core::res::cameras->makeDefault(m_voxelize_cam);
+
+    const auto dim = static_cast<int>(std::pow(2, m_tree_levels));
+
+    glBindFramebuffer(GL_FRAMEBUFFER, m_voxelizationFBO);
+    glViewport(0, 0, dim, dim);
 
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
@@ -271,9 +285,7 @@ void Renderer::createVoxelList(const bool debug_output)
 
     // uniforms
     GLint loc;
-    loc = glGetUniformLocation(m_voxel_prog, "u_width");
-    glUniform1i(loc, dim);
-    loc = glGetUniformLocation(m_voxel_prog, "u_height");
+    loc = glGetUniformLocation(m_voxel_prog, "u_numVoxels");
     glUniform1i(loc, dim);
 
     // buffer
@@ -294,6 +306,7 @@ void Renderer::createVoxelList(const bool debug_output)
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
     m_numVoxelFrag = count[0];
 
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, vars.screen_width, vars.screen_height);
     core::res::cameras->makeDefault(old_cam);
 

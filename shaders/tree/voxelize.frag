@@ -32,9 +32,7 @@ layout (std430, binding = VOXEL_BINDING) buffer voxelBlock {
 	voxelStruct voxel[];
 };
 
-uniform int u_width;
-uniform int u_height;
-uniform sampler2D u_colorTex;
+uniform int u_numVoxels;
 
 vec3 m_normal;
 vec3 m_diffuse_color;
@@ -79,15 +77,15 @@ void main()
         discard;
     }
 
-    const uvec4 temp = uvec4(gl_FragCoord.xy, u_width * gl_FragCoord.z, 0);
+    const uvec4 temp = uvec4(gl_FragCoord.xy, float(u_numVoxels) * gl_FragCoord.z, 0);
     uvec4 texcoord = temp; // default: inData.axis == 2
 	if(inData.axis == 0) {
-		texcoord.x = u_width - temp.z;
+		texcoord.x = u_numVoxels - temp.z;
 		texcoord.z = temp.x;
 		texcoord.y = temp.y;
 	} else if (inData.axis == 1) {
 		texcoord.z = temp.y;
-		texcoord.y = u_width - temp.z;
+		texcoord.y = u_numVoxels - temp.z;
 		texcoord.x = temp.x;
 	}
 
