@@ -46,9 +46,10 @@ void main() {
     // swap some values. This will be reversed in the
     // fragment shader
     float axisID = 2;
-    float d0 = abs(dot(n, axes[0]));
-    float d1 = abs(dot(n, axes[1]));
-    float d2 = abs(dot(n, axes[2]));
+    /*
+    float d0 = abs(dot(n, axis[0]));
+    float d1 = abs(dot(n, axis[1]));
+    float d2 = abs(dot(n, axis[2]));
     if (d1 > d0 && d1 > d2) {
         // y dominant
         axisID = 1;
@@ -72,6 +73,7 @@ void main() {
         c.x = c.z;
         c.z = tmp.z;
     }
+    */
 
     //Next we enlarge the triangle to enable conservative rasterization
     vec4 AABB;
@@ -97,10 +99,10 @@ void main() {
     vec3 n2 = cross(vec3(0.f, 0.f, 1.f), e2);
 
     //dilate the triangle
-    const float pl = sqrt(dot(hPixel, hPixel));
-    a.xy += pl * ((e2.xy / dot(e2.xy, n0.xy)) + (e0.xy / dot(e0.xy, n2.xy)));
-    b.xy += pl * ((e0.xy / dot(e0.xy, n1.xy)) + (e1.xy / dot(e1.xy, n0.xy)));
-    c.xy += pl * ((e1.xy / dot(e1.xy, n2.xy)) + (e2.xy / dot(e2.xy, n1.xy)));
+    //const float pl = sqrt(dot(hPixel, hPixel));
+    //a.xy += pl * ((e2.xy / dot(e2.xy, n0.xy)) + (e0.xy / dot(e0.xy, n2.xy)));
+    //b.xy += pl * ((e0.xy / dot(e0.xy, n1.xy)) + (e1.xy / dot(e1.xy, n0.xy)));
+    //c.xy += pl * ((e1.xy / dot(e1.xy, n2.xy)) + (e2.xy / dot(e2.xy, n1.xy)));
 
     gl_Position = a;
     outData.AABB = AABB;
