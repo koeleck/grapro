@@ -56,8 +56,9 @@ struct CameraStruct
     glm::mat4                       ProjMatrix;
     glm::mat4                       ProjViewMatrix;
     glm::vec4                       CameraPosition;
+    glm::vec4                       padding[3];
 };
-static_assert(sizeof(CameraStruct) == 208 && sizeof(CameraStruct) % 16 == 0, "");
+static_assert(sizeof(CameraStruct) == 256 && sizeof(CameraStruct) % 16 == 0, "");
 
 
 struct MaterialStruct

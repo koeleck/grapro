@@ -25,7 +25,7 @@ layout (std430, binding = OCTREE_BINDING) buffer octreeBlock {
 };
 
 uniform uint u_numVoxelFrag;
-uniform uint u_treeLevels;
+uniform uint u_voxelDim;
 uniform uint u_maxLevel;
 
 void main()
@@ -39,14 +39,13 @@ void main()
     uint childidx = 0;
 
     uint nodeptr = octree[childidx].id; // root address
-    uint subnodeptr = 0;
 
-    uint voxel_dim = uint(pow(2, u_treeLevels));
+    int voxel_dim = int(u_voxelDim);
     bool has_to_be_flagged = true;
 
-    uvec3 umin = uvec3(0);
+    ivec3 umin = ivec3(0);
 
-    uvec4 pos  = voxel[threadId].position;
+    ivec4 pos = ivec4(voxel[threadId].position);
 
     // iterate through all tree levels
     for (uint i = 0; i < u_maxLevel; ++i) {
@@ -66,19 +65,17 @@ void main()
         childidx = uint(nodeptr & 0x7FFFFFFF);
 
         // create subnodes
-        uint subnodeptrX = clamp(int(1 + pos.x - umin.x - voxel_dim), 0, 1);
-        uint subnodeptrY = clamp(int(1 + pos.y - umin.y - voxel_dim), 0, 1);
-        uint subnodeptrZ = clamp(int(1 + pos.z - umin.z - voxel_dim), 0, 1);
+        ivec3 subnodeptrXYZ = clamp(ivec3(1 + pos - umin - voxel_dim), 0, 1);
 
-        subnodeptr = subnodeptrX;
-        subnodeptr += 4 * subnodeptrY;
-        subnodeptr += 2 * subnodeptrZ;
+        int subnodeptr = subnodeptrXYZ.x;
+        subnodeptr += 2 * subnodeptrXYZ.y;
+        subnodeptr += 4 * subnodeptrXYZ.z;
 
         childidx += subnodeptr;
 
-        umin.x += voxel_dim * subnodeptrX;
-        umin.y += voxel_dim * subnodeptrY;
-        umin.z += voxel_dim * subnodeptrZ;
+        umin.x += voxel_dim * subnodeptrXYZ.x;
+        umin.y += voxel_dim * subnodeptrXYZ.y;
+        umin.z += voxel_dim * subnodeptrXYZ.z;
 
         // update node
         nodeptr = octree[childidx].id;

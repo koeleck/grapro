@@ -30,7 +30,8 @@ private:
 
     void genAtomicBuffer();
     void genVoxelBuffer();
-    void genOctreeNodeBuffer(const std::size_t size);
+    void genOctreeNodeBuffer();
+    void debugRenderTree();
 
     void createVoxelList();
     void buildVoxelTree();
@@ -55,13 +56,15 @@ private:
     core::Program                       m_octreeNodeAlloc_prog;
     core::Program                       m_octreeNodeInit_prog;
     core::Program                       m_octreeLeafStore_prog;
-    GLuint                              m_atomicCounterBuffer;
-    GLuint                              m_voxelBuffer;
-    GLuint                              m_octreeNodeBuffer;
+    gl::Buffer                          m_atomicCounterBuffer;
+    gl::Buffer                          m_voxelBuffer;
+    gl::Buffer                          m_octreeNodeBuffer;
     unsigned int                        m_numVoxelFrag;
     bool                                m_rebuildTree;
     core::TimerArray                    m_timers;
     core::GPUTimer*                     m_render_timer;
+    std::vector<core::AABB>             m_voxel_bboxes;
+    core::Program                       m_voxel_bbox_prog;
 };
 
 #endif // RENDERER_H
