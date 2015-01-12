@@ -330,6 +330,11 @@ void Renderer::buildVoxelTree()
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
         }
 
+        if (i + 1 == vars.voxel_octree_levels) {
+            // no more nodes required
+            break;
+        }
+
         /*
          *  allocate child nodes
          */
@@ -425,9 +430,9 @@ void Renderer::buildVoxelTree()
         const auto bbox = stack[top].second;
 
         const auto childidx = nodes[idx];
-        if ((childidx & 0x80000000) != 0) {
+        if (childidx == 0x80000000) {
             m_voxel_bboxes.emplace_back(bbox);
-
+        } else if ((childidx & 0x80000000) != 0) {
             const auto baseidx = uint(childidx & 0x7FFFFFFFu);
             const auto c = bbox.center();
             for (unsigned int i = 0; i < 8; ++i) {
