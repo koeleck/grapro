@@ -19,7 +19,7 @@ public:
     ~Renderer();
 
     void setGeometry(std::vector<const core::Instance*> geometry);
-    void render(bool renderBBoxes = false);
+    void render(bool renderBBoxes = false, bool render_octree = false);
     void renderBoundingBoxes();
 
 private:
@@ -29,6 +29,7 @@ private:
     void initBBoxStuff();
 
     void renderGeometry(GLuint prog);
+    void debugRenderTree();
 
     void createVoxelList();
     void buildVoxelTree();
@@ -51,7 +52,6 @@ private:
     core::Program                       m_voxel_prog;
     core::Program                       m_octreeNodeFlag_prog;
     core::Program                       m_octreeNodeAlloc_prog;
-    core::Program                       m_octreeNodeInit_prog;
     core::Program                       m_octreeLeafStore_prog;
     gl::Buffer                          m_atomicCounterBuffer;
     gl::Buffer                          m_voxelBuffer;
@@ -61,6 +61,10 @@ private:
     core::TimerArray&                   m_timers;
     core::GPUTimer*                     m_tree_timer;
     core::GPUTimer*                     m_voxelize_timer;
+
+    // debug voxeltree
+    std::vector<core::AABB>             m_voxel_bboxes;
+    core::Program                       m_voxel_bbox_prog;
 };
 
 #endif // RENDERER_H

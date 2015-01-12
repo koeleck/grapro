@@ -19,7 +19,7 @@ in VertexFragmentData
 } inData;
 
 // atomic counter
-layout(binding = 0, offset = 0) uniform atomic_uint u_voxelFragCount;
+layout(binding = 0) uniform atomic_uint u_voxelFragCount;
 
 // voxel buffer
 struct voxelStruct {

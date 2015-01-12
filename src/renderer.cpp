@@ -19,6 +19,16 @@
 
 /****************************************************************************/
 
+namespace
+{
+
+constexpr int FLAG_PROG_LOCAL_SIZE = 64;
+constexpr int ALLOC_PROG_LOCAL_SIZE = 256;
+
+} // anonymous namespace
+
+/****************************************************************************/
+
 struct Renderer::DrawCmd
 {
     DrawCmd(const core::Instance* instance_, core::Program prog_,
@@ -70,17 +80,22 @@ Renderer::Renderer(core::TimerArray& timer_array)
             {"vertexpulling_vert", "voxelGeom", "voxelFrag"});
 
     // octree building
-    core::res::shaders->registerShader("octreeNodeFlagComp", "tree/nodeflag.comp", GL_COMPUTE_SHADER);
+    core::res::shaders->registerShader("octreeNodeFlagComp", "tree/nodeflag.comp", GL_COMPUTE_SHADER,
+            "LOCAL_SIZE " + std::to_string(FLAG_PROG_LOCAL_SIZE));
     m_octreeNodeFlag_prog = core::res::shaders->registerProgram("octreeNodeFlag_prog", {"octreeNodeFlagComp"});
 
-    core::res::shaders->registerShader("octreeNodeAllocComp", "tree/nodealloc.comp", GL_COMPUTE_SHADER);
+    core::res::shaders->registerShader("octreeNodeAllocComp", "tree/nodealloc.comp", GL_COMPUTE_SHADER,
+            "LOCAL_SIZE " + std::to_string(ALLOC_PROG_LOCAL_SIZE));
     m_octreeNodeAlloc_prog = core::res::shaders->registerProgram("octreeNodeAlloc_prog", {"octreeNodeAllocComp"});
-
-    core::res::shaders->registerShader("octreeNodeInitComp", "tree/nodeinit.comp", GL_COMPUTE_SHADER);
-    m_octreeNodeInit_prog = core::res::shaders->registerProgram("octreeNodeInit_prog", {"octreeNodeInitComp"});
 
     core::res::shaders->registerShader("octreeLeafStoreComp", "tree/leafstore.comp", GL_COMPUTE_SHADER);
     m_octreeLeafStore_prog = core::res::shaders->registerProgram("octreeLeafStore_prog", {"octreeLeafStoreComp"});
+
+    // debug render
+    core::res::shaders->registerShader("octreeDebugBBox_vert", "tree/bbox.vert", GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("octreeDebugBBox_frag", "tree/bbox.frag", GL_FRAGMENT_SHADER);
+    m_voxel_bbox_prog = core::res::shaders->registerProgram("octreeDebugBBox_prog",
+            {"octreeDebugBBox_vert", "octreeDebugBBox_frag"});
 
     m_voxelize_timer = m_timers.addGPUTimer("Voxelize");
     m_tree_timer = m_timers.addGPUTimer("Octree");
@@ -97,25 +112,40 @@ Renderer::Renderer(core::TimerArray& timer_array)
     // voxel buffer
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
     glBufferStorage(GL_SHADER_STORAGE_BUFFER, vars.max_voxel_fragments * sizeof(VoxelStruct), nullptr, GL_MAP_READ_BIT);
-    const GLuint zero = 0;
-    glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::VOXEL, m_voxelBuffer);
+    //glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
 
     // node buffer
-    const auto dim = static_cast<int>(std::pow(2, vars.voxel_octree_levels));
-    const auto max_nodes = static_cast<unsigned int>(dim * dim * dim / 4);
+    unsigned int max_num_nodes = 1;
+    unsigned int tmp = 1;
+    for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
+        tmp *= 8;
+        max_num_nodes += tmp;
+    }
+    unsigned int mem = max_num_nodes * 4;
+    std::string unit = "B";
+    if (mem > 1024) {
+        unit = "kiB";
+        mem /= 1024;
+    }
+    if (mem > 1024) {
+        unit = "MiB";
+        mem /= 1024;
+    }
+    if (mem > 1024) {
+        unit = "GiB";
+        mem /= 1024;
+    }
+    LOG_INFO("max nodes: ", max_num_nodes, " (", mem, unit, ")");
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
-    glBufferStorage(GL_SHADER_STORAGE_BUFFER, max_nodes * sizeof(GLuint), nullptr, GL_MAP_READ_BIT);
-    glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::OCTREE, m_octreeNodeBuffer);
+    glBufferStorage(GL_SHADER_STORAGE_BUFFER, max_num_nodes * sizeof(GLuint), nullptr, GL_MAP_READ_BIT);
+    //glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
 
     // Atomic counter
     // The first GLuint is for voxel fragments
     // The second GLuint is for nodes
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
     glBufferStorage(GL_ATOMIC_COUNTER_BUFFER, 2 * sizeof(GLuint), nullptr, GL_MAP_READ_BIT);
-    glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
-    glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, m_atomicCounterBuffer);
+    //glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
 }
 
 /****************************************************************************/
@@ -174,13 +204,13 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
 void Renderer::createVoxelList()
 {
 
-    LOG_INFO("");
-    LOG_INFO("###########################");
-    LOG_INFO("# Voxel Fragment Creation #");
-    LOG_INFO("###########################");
+    LOG_INFO("###########################\n"
+             "# Voxel Fragment Creation #\n"
+             "###########################");
 
     m_voxelize_timer->start();
 
+    // TODO Use empty framebuffer (https://www.opengl.org/wiki/Framebuffer_Object#Empty_framebuffers)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     const auto dim = static_cast<int>(std::pow(2, vars.voxel_octree_levels));
@@ -201,28 +231,30 @@ void Renderer::createVoxelList()
     // reset counter
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
     const GLuint zero = 0;
-    glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
-    glBindBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, m_atomicCounterBuffer, 0, sizeof(GLuint));
+    glClearBufferSubData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, 0, sizeof(GLuint),
+            GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
 
+    // setup
+    glBindBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, m_atomicCounterBuffer, 0, sizeof(GLuint));
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::VOXEL, m_voxelBuffer);
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
     glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
     renderGeometry(voxel_prog);
 
     // TODO move to shader
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
-    m_numVoxelFrag = *static_cast<GLuint*>(glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), GL_READ_ONLY));
-    glUnmapBuffer(GL_ATOMIC_COUNTER_BUFFER);
+    glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), &m_numVoxelFrag);
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 
+    m_voxelize_timer->stop();
 
     glViewport(0, 0, vars.screen_width, vars.screen_height);
     core::res::cameras->makeDefault(old_cam);
 
-    m_voxelize_timer->stop();
 
     LOG_INFO("Number of Entries in Voxel Fragment List: ", m_numVoxelFrag);
-    LOG_INFO("");
 
 }
 
@@ -231,26 +263,36 @@ void Renderer::createVoxelList()
 void Renderer::buildVoxelTree()
 {
 
-    LOG_INFO("");
-    LOG_INFO("###########################");
-    LOG_INFO("#     Octree Creation     #");
-    LOG_INFO("###########################");
+    LOG_INFO("###########################\n"
+             "#     Octree Creation     #\n"
+             "###########################");
 
     m_tree_timer->start();
 
     // calculate max invocations for compute shader to get all the voxel fragments
-    const auto dataWidth = 1024u;
-    unsigned int dataHeight = (m_numVoxelFrag + dataWidth - 1) / dataWidth;
-    const unsigned int groupDimX = dataWidth / 8;
-    const unsigned int groupDimY = (dataHeight + 7) / 8;
-
+    const unsigned int flag_num_workgroups = (m_numVoxelFrag + FLAG_PROG_LOCAL_SIZE - 1) / FLAG_PROG_LOCAL_SIZE;
 
     GLint loc;
+    const GLuint flag_prog = m_octreeNodeFlag_prog;
+    const GLuint alloc_prog = m_octreeNodeAlloc_prog;
 
-    unsigned int nodeOffset = 0; // offset to first node of next level
-    unsigned int allocOffset = 1; // offset to first free space for new children
-    std::vector<unsigned int> allocList(1, 1); // number of nodes in each tree level; root level = 1
+    // uniforms
+    loc = glGetUniformLocation(flag_prog, "uNumVoxelFrag");
+    glProgramUniform1ui(flag_prog, loc, m_numVoxelFrag);
+    loc = glGetUniformLocation(m_octreeNodeFlag_prog, "uTreeLevels");
+    glProgramUniform1ui(flag_prog, loc, vars.voxel_octree_levels);
 
+    GLint uMaxLevel = glGetUniformLocation(flag_prog, "uMaxLevel");
+    GLint uStartNode = glGetUniformLocation(alloc_prog, "uStartNode");
+    GLint uCount = glGetUniformLocation(alloc_prog, "uCount");
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::OCTREE, m_octreeNodeBuffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::VOXEL, m_voxelBuffer);
+    glBindBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, m_atomicCounterBuffer, sizeof(GLuint), sizeof(GLuint));
+
+    unsigned int previously_allocated = 8; // only root node was allocated
+    unsigned int numAllocated = 8; // we're only allocating one block of 8 nodes, so yeah, 8;
+    unsigned int start_node = 0;
     for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
 
         LOG_INFO("");
@@ -259,146 +301,158 @@ void Renderer::buildVoxelTree()
         /*
          *  flag nodes
          */
+        if (i == 0) {
+            // rootnode will always be subdivided, so don't run
+            // the compute shader, but flag the first node
+            // with glClearBufferSubData
+            const GLuint flag = 0x80000000;
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
+            glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, 0, sizeof(GLuint),
+                GL_RED_INTEGER, GL_UNSIGNED_INT, &flag);
 
-        glUseProgram(m_octreeNodeFlag_prog);
+            // clear the remaining 7 nodes
+            const GLuint zero = 0;
+            glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, sizeof(GLuint),
+                7 * sizeof(GLuint), GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
 
-        // uniforms
-        loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_numVoxelFrag");
-        glUniform1ui(loc, m_numVoxelFrag);
-        loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_treeLevels");
-        glUniform1ui(loc, vars.voxel_octree_levels);
-        loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_maxLevel");
-        glUniform1ui(loc, i);
+            // set the allocation counter to 1, so we don't overwrite the root node
+            glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
+            const GLuint one = 1;
+            glClearBufferSubData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, sizeof(GLuint), sizeof(GLuint),
+                GL_RED_INTEGER, GL_UNSIGNED_INT, &one);
 
-        // dispatch
-        LOG_INFO("Dispatching NodeFlag with ", groupDimX, "*", groupDimY, "*1 groups with 8*8*1 threads each");
-        LOG_INFO("--> ", groupDimX * groupDimY * 64, " threads");
-        glDispatchCompute(groupDimX, groupDimY, 1);
-        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+        } else {
+            glUseProgram(flag_prog);
+
+            glProgramUniform1ui(flag_prog, uMaxLevel, i);
+
+            glDispatchCompute(flag_num_workgroups, 1, 1);
+            glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+        }
 
         /*
          *  allocate child nodes
          */
+        glUseProgram(alloc_prog);
 
-        glUseProgram(m_octreeNodeAlloc_prog);
+        glProgramUniform1ui(alloc_prog, uCount, previously_allocated);
+        glProgramUniform1ui(alloc_prog, uStartNode, start_node);
 
-        const unsigned int numThreads = allocList[i]; // number of child nodes to be allocated at this level
-
-        // uniforms
-        loc = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_num");
-        glUniform1ui(loc, numThreads);
-        loc = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_start");
-        glUniform1ui(loc, nodeOffset);
-        loc = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_allocStart");
-        glUniform1ui(loc, allocOffset);
-
-        // dispatch
-        const unsigned int allocwidth = 64;
-        const unsigned int allocGroupDim = (allocList[i]+allocwidth-1)/allocwidth;
-        LOG_INFO("Dispatching NodeAlloc with ", allocGroupDim, "*1*1 groups with 64*1*1 threads each");
-        LOG_INFO("--> ", allocGroupDim * 64, " threads");
-        glDispatchCompute(allocGroupDim, 1, 1);
+        GLuint alloc_workgroups = (previously_allocated + ALLOC_PROG_LOCAL_SIZE - 1) / ALLOC_PROG_LOCAL_SIZE;
+        glDispatchCompute(alloc_workgroups, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_ATOMIC_COUNTER_BARRIER_BIT);
 
-        /*
-         *  get how many child nodes have to be allocated
-         */
+        // start_node points to the first node that was allocated in this iteration
+        start_node += previously_allocated;
 
-        GLuint childNodesToBeAllocated;
-        const GLuint zero = 0;
+        /*
+         *  How many child node were allocated?
+         */
+        GLuint counter_value;
         glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
-        glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), &childNodesToBeAllocated);
-        glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero); //reset counter to zero
-        glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
-        LOG_INFO(childNodesToBeAllocated, " child nodes have been allocated");
+        glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER, sizeof(GLuint), sizeof(GLuint), &counter_value);
+        counter_value *= 8;
+        previously_allocated = counter_value - numAllocated;
+        numAllocated = counter_value;
 
-        /*
-         *  init child nodes
-         */
-
-        // DO WE REALLY NEED THIS ????
-
-        /*glUseProgram(m_octreeNodeInit_prog);
-
-        */const unsigned int nodeAllocated = childNodesToBeAllocated * 8;/*
-
-        // uniforms
-        loc = glGetUniformLocation(m_octreeNodeInit_prog, "u_num");
-        glUniform1ui(loc, nodeAllocated);
-        loc = glGetUniformLocation(m_octreeNodeInit_prog, "u_allocStart");
-        glUniform1ui(loc, allocOffset);
-
-        dataHeight = (nodeAllocated + dataWidth - 1) / dataWidth;
-        const unsigned int initGroupDimX = dataWidth / 8;
-        const unsigned int initGroupDimY = (dataHeight + 7) / 8;
-
-        // dispatch
-        LOG_INFO("Dispatching NodeInit with ", initGroupDimX, "*", initGroupDimY, "*1 groups with 8*8*1 threads each");
-        LOG_INFO("--> ", initGroupDimX * initGroupDimY * 64, " threads");
-        glDispatchCompute(initGroupDimX, initGroupDimY, 1);
-        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);*/
-
-        /*
-         *  update offsets
-         */
-
-        allocList.emplace_back(nodeAllocated);  // nodeAllocated is the number of threads
-                                                // we want to launch in the next level
-        nodeOffset += allocList[i]; // add number of newly allocated child nodes to offset
-        allocOffset += nodeAllocated;
-
+        LOG_INFO(" num allocated this iterator: ", previously_allocated);
     }
-
-    LOG_INFO("");
-    LOG_INFO("Total Nodes created: ", nodeOffset);
-
     m_tree_timer->stop();
 
+    LOG_INFO("\nTotal Nodes created: ", numAllocated);
+
+    // TODO
     /*
      *  flag non-empty leaf nodes
      */
-    LOG_INFO("flagging non-empty leaf nodes...");
-    glUseProgram(m_octreeNodeFlag_prog);
+    //LOG_INFO("flagging non-empty leaf nodes...");
+    //glUseProgram(m_octreeNodeFlag_prog);
 
-    // uniforms
-    loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_numVoxelFrag");
-    glUniform1ui(loc, m_numVoxelFrag);
-    loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_treeLevels");
-    glUniform1ui(loc, vars.voxel_octree_levels);
-    loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_maxLevel");
-    glUniform1ui(loc, vars.voxel_octree_levels);
+    //// uniforms
+    //loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_numVoxelFrag");
+    //glUniform1ui(loc, m_numVoxelFrag);
+    //loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_treeLevels");
+    //glUniform1ui(loc, vars.voxel_octree_levels);
+    //loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_maxLevel");
+    //glUniform1ui(loc, vars.voxel_octree_levels);
 
-    // dispatch
-    LOG_INFO("Dispatching NodeFlag with ", groupDimX, "*", groupDimY, "*1 groups with 8*8*1 threads each");
-    LOG_INFO("--> ", groupDimX * groupDimY * 64, " threads");
-    glDispatchCompute(groupDimX, groupDimY, 1);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    //// dispatch
+    //LOG_INFO("Dispatching NodeFlag with ", groupDimX, "*", groupDimY, "*1 groups with 8*8*1 threads each");
+    //LOG_INFO("--> ", groupDimX * groupDimY * 64, " threads");
+    //glDispatchCompute(groupDimX, groupDimY, 1);
+    //glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-    /*
-     *  write information to leafs
-     */
+    ///*
+    // *  write information to leafs
+    // */
 
-    LOG_INFO("\nfilling leafs...");
-    glUseProgram(m_octreeLeafStore_prog);
+    //LOG_INFO("\nfilling leafs...");
+    //glUseProgram(m_octreeLeafStore_prog);
 
-    // uniforms
-    loc = glGetUniformLocation(m_octreeLeafStore_prog, "u_numVoxelFrag");
-    glUniform1ui(loc, m_numVoxelFrag);
-    loc = glGetUniformLocation(m_octreeLeafStore_prog, "u_treeLevels");
-    glUniform1ui(loc, vars.voxel_octree_levels);
-    loc = glGetUniformLocation(m_octreeLeafStore_prog, "u_maxLevel");
-    glUniform1ui(loc, vars.voxel_octree_levels);
+    //// uniforms
+    //loc = glGetUniformLocation(m_octreeLeafStore_prog, "u_numVoxelFrag");
+    //glUniform1ui(loc, m_numVoxelFrag);
+    //loc = glGetUniformLocation(m_octreeLeafStore_prog, "u_treeLevels");
+    //glUniform1ui(loc, vars.voxel_octree_levels);
+    //loc = glGetUniformLocation(m_octreeLeafStore_prog, "u_maxLevel");
+    //glUniform1ui(loc, vars.voxel_octree_levels);
 
-    // dispatch
-    LOG_INFO("Dispatching NodeFlag with ", groupDimX, "*", groupDimY, "*1 groups with 8*8*1 threads each");
-    LOG_INFO("--> ", groupDimX * groupDimY * 64, " threads");
-    glDispatchCompute(groupDimX, groupDimY, 1);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    //// dispatch
+    //LOG_INFO("Dispatching NodeFlag with ", groupDimX, "*", groupDimY, "*1 groups with 8*8*1 threads each");
+    //LOG_INFO("--> ", groupDimX * groupDimY * 64, " threads");
+    //glDispatchCompute(groupDimX, groupDimY, 1);
+    //glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+    // DEBUG --- create bounding boxes
+    std::vector<GLuint> nodes(numAllocated);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
+    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, numAllocated * sizeof(GLuint), nodes.data());
+
+    //for (auto idx : nodes) {
+    //    bool flag = idx & 0x80000000u;
+    //    GLuint n = idx & 0x7FFFFFFFu;
+    //    LOG_INFO(" [", flag, "] ", n);
+    //}
+
+    m_voxel_bboxes.clear();
+    m_voxel_bboxes.reserve(numAllocated);
+    std::pair<GLuint, core::AABB> stack[128];
+    stack[0] = std::make_pair(0u, m_scene_bbox);
+    std::size_t top = 1;
+    do {
+        top--;
+        const auto idx = stack[top].first;
+        const auto bbox = stack[top].second;
+
+        const auto childidx = nodes[idx];
+        if ((childidx & 0x80000000) != 0) {
+            m_voxel_bboxes.emplace_back(bbox);
+
+            const auto baseidx = uint(childidx & 0x7FFFFFFFu);
+            const auto c = bbox.center();
+            for (unsigned int i = 0; i < 8; ++i) {
+                int x = (i>>0) & 0x01;
+                int y = (i>>1) & 0x01;
+                int z = (i>>2) & 0x01;
+
+                core::AABB newBBox;
+                newBBox.pmin.x = (x == 0) ? bbox.pmin.x : c.x;
+                newBBox.pmin.y = (y == 0) ? bbox.pmin.y : c.y;
+                newBBox.pmin.z = (z == 0) ? bbox.pmin.z : c.z;
+
+                newBBox.pmax.x = (x == 0) ? c.x : bbox.pmax.x;
+                newBBox.pmax.y = (y == 0) ? c.y : bbox.pmax.y;
+                newBBox.pmax.z = (z == 0) ? c.z : bbox.pmax.z;
+
+                stack[top++] = std::make_pair(baseidx + i, newBBox);
+            }
+        }
+    } while (top != 0);
 }
 
 /****************************************************************************/
 
-void Renderer::render(const bool renderBBoxes)
+void Renderer::render(const bool renderBBoxes, const bool renderOctree)
 {
     if (m_geometry.empty())
         return;
@@ -417,6 +471,8 @@ void Renderer::render(const bool renderBBoxes)
 
     if (renderBBoxes)
         renderBoundingBoxes();
+    if (renderOctree)
+        debugRenderTree();
 }
 
 /****************************************************************************/
@@ -550,6 +606,30 @@ void Renderer::initBBoxStuff()
     core::res::shaders->registerShader("bbox_vert", "basic/bbox.vert", GL_VERTEX_SHADER);
     core::res::shaders->registerShader("bbox_frag", "basic/bbox.frag", GL_FRAGMENT_SHADER);
     m_bbox_prog = core::res::shaders->registerProgram("bbox_prog", {"bbox_vert", "bbox_frag"});
+}
+
+/****************************************************************************/
+
+void Renderer::debugRenderTree()
+{
+    if (m_voxel_bboxes.empty())
+        return;
+
+    GLuint prog = m_voxel_bbox_prog;
+    glUseProgram(prog);
+    glBindVertexArray(m_bbox_vao);
+
+    glEnable(GL_DEPTH_TEST);
+
+    for (const auto& bbox : m_voxel_bboxes) {
+        float data[6] = {bbox.pmin.x, bbox.pmin.y, bbox.pmin.z,
+                         bbox.pmax.x, bbox.pmax.y, bbox.pmax.z};
+        glUniform3fv(0, 2, data);
+        glDrawElements(GL_LINES, 24, GL_UNSIGNED_BYTE, nullptr);
+
+        //glDrawElementsInstancedBaseVertexBaseInstance(GL_LINES, 24, GL_UNSIGNED_BYTE,
+        //        nullptr, 1, g->getMesh()->basevertex(), g->getIndex());
+    }
 }
 
 /****************************************************************************/
