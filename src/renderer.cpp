@@ -17,6 +17,12 @@
 #include "framework/vars.h"
 #include "voxel.h"
 
+extern int gui_tree_level;
+extern bool gui_voxel_bboxes;
+extern bool gui_debug_output;
+unsigned int tree_level = gui_tree_level;
+unsigned int old_tree_level = gui_tree_level;
+
 /****************************************************************************/
 
 struct Renderer::DrawCmd
@@ -91,7 +97,8 @@ Renderer::Renderer()
     // calculate max possible size of octree
     unsigned int totalNodes = 1;
     unsigned int tmp = 1;
-    for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
+    for (unsigned int i = 0; i < tree_level; ++i) {
+    //for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
         tmp *= 8;
         totalNodes += tmp;
     }
@@ -210,19 +217,53 @@ void Renderer::genOctreeNodeBuffer()
 
 /****************************************************************************/
 
+void Renderer::reallocOctreeNodeBuffer()
+{
+
+    if(m_octreeNodeBuffer) {
+        gl::Buffer newBuffer;
+        m_octreeNodeBuffer.swap(newBuffer);
+    }
+
+    // calculate max possible size of octree
+    unsigned int totalNodes = 1;
+    unsigned int tmp = 1;
+    for (unsigned int i = 0; i < tree_level; ++i) {
+        tmp *= 8;
+        totalNodes += tmp;
+    }
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
+    glBufferStorage(GL_SHADER_STORAGE_BUFFER, totalNodes * sizeof(OctreeNodeStruct), nullptr, GL_MAP_READ_BIT);
+
+    // fill with zeroes
+    const GLuint zero = 0;
+    glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+
+    // bind to binding point
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::OCTREE, m_octreeNodeBuffer);
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+}
+
+/****************************************************************************/
+
 void Renderer::createVoxelList()
 {
 
-    LOG_INFO("");
-    LOG_INFO("###########################");
-    LOG_INFO("# Voxel Fragment Creation #");
-    LOG_INFO("###########################");
+    if (gui_debug_output) {
+        LOG_INFO("");
+        LOG_INFO("###########################");
+        LOG_INFO("# Voxel Fragment Creation #");
+        LOG_INFO("###########################");
+    }
 
     m_render_timer->start();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    const auto dim = static_cast<int>(std::pow(2, vars.voxel_octree_levels));
+    //const auto dim = static_cast<int>(std::pow(2, vars.voxel_octree_levels));
+    const auto dim = static_cast<int>(std::pow(2, tree_level));
     glViewport(0, 0, dim, dim);
 
     auto* old_cam = core::res::cameras->getDefaultCam();
@@ -264,15 +305,17 @@ void Renderer::createVoxelList()
 
     m_render_timer->stop();
 
-    LOG_INFO("");
+    if (gui_debug_output) {
+        LOG_INFO("");
 
-    for (const auto& t : m_timers.getTimers()) {
-        auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(
-                t.second->time()).count();
-        LOG_INFO("Elapsed Time: ", static_cast<int>(msec), "ms");
+        for (const auto& t : m_timers.getTimers()) {
+            auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    t.second->time()).count();
+            LOG_INFO("Elapsed Time: ", static_cast<int>(msec), "ms");
+        }
+        LOG_INFO("Number of Entries in Voxel Fragment List: ", m_numVoxelFrag);
+        LOG_INFO("");
     }
-    LOG_INFO("Number of Entries in Voxel Fragment List: ", m_numVoxelFrag);
-    LOG_INFO("");
 
 }
 
@@ -281,10 +324,12 @@ void Renderer::createVoxelList()
 void Renderer::buildVoxelTree()
 {
 
-    LOG_INFO("");
-    LOG_INFO("###########################");
-    LOG_INFO("#     Octree Creation     #");
-    LOG_INFO("###########################");
+    if (gui_debug_output) {
+        LOG_INFO("");
+        LOG_INFO("###########################");
+        LOG_INFO("#     Octree Creation     #");
+        LOG_INFO("###########################");
+    }
 
     m_render_timer->start();
 
@@ -310,7 +355,8 @@ void Renderer::buildVoxelTree()
     GLint loc_u_nodeOffset = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_nodeOffset");
     GLint loc_u_allocOffset = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_allocOffset");
 
-    const unsigned int voxelDim = static_cast<unsigned int>(std::pow(2, vars.voxel_octree_levels));
+    const unsigned int voxelDim = static_cast<unsigned int>(std::pow(2, tree_level));
+    //const unsigned int voxelDim = static_cast<unsigned int>(std::pow(2, vars.voxel_octree_levels));
     glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_numVoxelFrag, m_numVoxelFrag);
     glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_voxelDim, voxelDim);
 
@@ -574,10 +620,13 @@ void Renderer::buildVoxelTree()
      *
      */
 
-    for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
+    for (unsigned int i = 0; i < tree_level; ++i) {
+    //for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
 
-        LOG_INFO("");
-        LOG_INFO("Starting with max level ", i);
+        if (gui_debug_output) {
+            LOG_INFO("");
+            LOG_INFO("Starting with max level ", i);
+        }
 
         /*
          *  flag nodes
@@ -589,13 +638,16 @@ void Renderer::buildVoxelTree()
         glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_maxLevel, i);
 
         // dispatch
-        LOG_INFO("Dispatching NodeFlag with ", groupDimX, "*", groupDimY, "*1 groups with 8*8*1 threads each");
-        LOG_INFO("--> ", groupDimX * groupDimY * 64, " threads");
+        if (gui_debug_output) {
+            LOG_INFO("Dispatching NodeFlag with ", groupDimX, "*", groupDimY, "*1 groups with 8*8*1 threads each");
+            LOG_INFO("--> ", groupDimX * groupDimY * 64, " threads");
+        }
         glDispatchCompute(groupDimX, groupDimY, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         // break to avoid allocating with ptrs to more children
-        if (i == vars.voxel_octree_levels - 1) {
+        if (i == tree_level - 1) {
+        //if (i == vars.voxel_octree_levels - 1) {
 
             nodeOffset += maxNodesPerLevel[i];
             break;
@@ -615,8 +667,10 @@ void Renderer::buildVoxelTree()
 
         // dispatch
         const unsigned int allocGroupDim = (maxNodesPerLevel[i] + allocwidth - 1) / allocwidth;
-        LOG_INFO("Dispatching NodeAlloc with ", allocGroupDim, "*1*1 groups with 64*1*1 threads each");
-        LOG_INFO("--> ", allocGroupDim * 64, " threads");
+        if (gui_debug_output) {
+            LOG_INFO("Dispatching NodeAlloc with ", allocGroupDim, "*1*1 groups with 64*1*1 threads each");
+            LOG_INFO("--> ", allocGroupDim * 64, " threads");
+        }
         glDispatchCompute(allocGroupDim, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_ATOMIC_COUNTER_BARRIER_BIT);
 
@@ -629,7 +683,9 @@ void Renderer::buildVoxelTree()
         glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), &actualNodesAllocated);
         glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero); //reset counter to zero
         glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
-        LOG_INFO(actualNodesAllocated, " nodes have been allocated");
+        if (gui_debug_output) {
+            LOG_INFO(actualNodesAllocated, " nodes have been allocated");
+        }
         const unsigned int maxNodesToBeAllocated = actualNodesAllocated * 8;
 
         /*
@@ -643,18 +699,22 @@ void Renderer::buildVoxelTree()
 
     }
 
-    LOG_INFO("");
-    LOG_INFO("Total Nodes created: ", nodeOffset);
+    if (gui_debug_output) {
+        LOG_INFO("");
+        LOG_INFO("Total Nodes created: ", nodeOffset);
+    }
 
     m_render_timer->stop();
 
-    for (const auto& t : m_timers.getTimers()) {
-        auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(
-                t.second->time()).count();
-        LOG_INFO("Elapsed Time: ", static_cast<int>(msec), "ms");
-    }
+    if (gui_debug_output) {
+        for (const auto& t : m_timers.getTimers()) {
+            auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    t.second->time()).count();
+            LOG_INFO("Elapsed Time: ", static_cast<int>(msec), "ms");
+        }
 
-    LOG_INFO("");
+        LOG_INFO("");
+    }
 
     /*
      *  write information to leafs
@@ -734,12 +794,17 @@ void Renderer::render(const bool renderBBoxes)
     core::res::instances->bind();
     core::res::meshes->bind();
 
+    tree_level = gui_tree_level;
+    if (old_tree_level != tree_level) {
+        m_rebuildTree = true;
+        old_tree_level = tree_level;
+    }
+
     if (m_rebuildTree) {
 
+        reallocOctreeNodeBuffer();
         createVoxelList();
-
         buildVoxelTree();
-
         m_rebuildTree = false;
 
     }
@@ -862,7 +927,8 @@ void Renderer::render(const bool renderBBoxes)
     if (renderBBoxes)
         renderBoundingBoxes();
 
-    debugRenderTree();
+    if (gui_voxel_bboxes)
+        debugRenderTree();
 }
 
 /****************************************************************************/

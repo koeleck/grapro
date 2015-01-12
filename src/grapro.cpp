@@ -9,6 +9,11 @@
 #include "core/shader_manager.h"
 #include "log/log.h"
 
+// extern debug variable for selecting tree level
+int gui_tree_level = 3;
+bool gui_voxel_bboxes = true;
+bool gui_debug_output = true;
+
 /****************************************************************************/
 
 GraPro::GraPro(GLFWwindow* window)
@@ -44,7 +49,7 @@ void GraPro::update_gui(const double delta_t)
     if (!m_showgui)
         return;
     if (ImGui::Begin("DEBUG", &m_showgui)) {
-        ImGui::PushItemWidth(.65f * static_cast<float>(getWidth()));
+        ImGui::PushItemWidth(.1f * static_cast<float>(getWidth()));
 
         if (ImGui::Button("recompile shaders")) {
             core::res::shaders->recompile();
@@ -54,6 +59,16 @@ void GraPro::update_gui(const double delta_t)
         ImGui::Spacing();
 
         ImGui::Checkbox("bounding boxes", &m_render_bboxes);
+
+        // octree
+        if (ImGui::CollapsingHeader("Octree", nullptr, false, true)) {
+            if (ImGui::Button("rebuild octree")) {
+                m_renderer.setRebuildTree();
+            }
+            ImGui::SliderInt("tree levels", &gui_tree_level, 1, 8);
+            ImGui::Checkbox("show voxel bounding boxes", &gui_voxel_bboxes);
+            ImGui::Checkbox("show debug output", &gui_debug_output);
+        }
 
         // Timers: Just create your timer via m_timers and they will
         // appear here

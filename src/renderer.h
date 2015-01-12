@@ -22,6 +22,8 @@ public:
     void render(bool renderBBoxes = false);
     void renderBoundingBoxes();
 
+    void setRebuildTree() { m_rebuildTree = true; }
+
 private:
     struct DrawCmd;
     using ProgramMap = std::unordered_map<unsigned char, core::Program>;
@@ -31,6 +33,7 @@ private:
     void genAtomicBuffer();
     void genVoxelBuffer();
     void genOctreeNodeBuffer();
+    void reallocOctreeNodeBuffer();
     void debugRenderTree();
 
     void createVoxelList();
