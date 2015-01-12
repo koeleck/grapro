@@ -37,7 +37,7 @@ void GraPro::render_scene()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     m_render_timer->start();
-    assert(m_tree_levels > 0);
+    assert(m_tree_levels >= 0);
     m_renderer.render(static_cast<unsigned int>(m_tree_levels), m_render_bboxes,
                       m_render_octree, m_debug_output);
     m_render_timer->stop();
@@ -66,7 +66,7 @@ void GraPro::update_gui(const double delta_t)
             if (ImGui::Button("rebuild octree")) {
                 m_renderer.setRebuildTree();
             }
-            ImGui::SliderInt("tree levels", &m_tree_levels, 1, 8);
+            ImGui::SliderInt("tree levels", &m_tree_levels, 0, 8);
             ImGui::Checkbox("show voxel bounding boxes", &m_render_octree);
             ImGui::Checkbox("show debug output", &m_debug_output);
         }
@@ -101,7 +101,7 @@ void GraPro::handle_keyboard(const double delta_t)
     // Camera:
     double movement_scale = 2.0;
     if (glfwGetKey(*this, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-        movement_scale *= 5.0;
+        movement_scale *= 20.0;
     if (glfwGetKey(*this, GLFW_KEY_W) == GLFW_PRESS)
         m_cam->move(movement_scale * glm::dvec3(0.0, 0.0, 1.0));
     if (glfwGetKey(*this, GLFW_KEY_S) == GLFW_PRESS)

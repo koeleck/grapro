@@ -1,7 +1,7 @@
 #version 440 core
 
-layout (triangles) in;
-layout (triangle_strip, max_vertices = 3) out;
+layout(triangles) in;
+layout(triangle_strip, max_vertices = 3) out;
 
 in VertexData
 {
@@ -27,8 +27,9 @@ out VertexFragmentData
 
 uniform int u_numVoxels;
 
-const vec3 axes[3] = vec3[3](vec3(1.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f), vec3(0.f, 0.f, 1.f));
-
+const vec3 axes[3] = vec3[3](vec3(1.f, 0.f, 0.f),
+                             vec3(0.f, 1.f, 0.f),
+                             vec3(0.f, 0.f, 1.f));
 void main() {
 
     vec4 a = gl_in[0].gl_Position;
@@ -74,12 +75,10 @@ void main() {
     }
 
     //Next we enlarge the triangle to enable conservative rasterization
-    vec4 AABB;
-    vec2 hPixel = vec2(1.0 / float(u_numVoxels));
+    const float hPixel = 1.f / float(u_numVoxels);
 
     //calculate AABB of this triangle
-    AABB.xy = a.xy;
-    AABB.zw = a.xy;
+    vec4 AABB = vec4(a.xy, a.xy);
     AABB.xy = min(b.xy, AABB.xy);
     AABB.zw = max(b.xy, AABB.zw);
     AABB.xy = min(c.xy, AABB.xy);
@@ -92,14 +91,16 @@ void main() {
     vec3 e0 = normalize(vec3(b.xy - a.xy, 0.f));
     vec3 e1 = normalize(vec3(c.xy - b.xy, 0.f));
     vec3 e2 = normalize(vec3(a.xy - c.xy, 0.f));
+    // edge normals point outwards
     vec3 n0 = cross(vec3(0.f, 0.f, 1.f), e0);
     vec3 n1 = cross(vec3(0.f, 0.f, 1.f), e1);
     vec3 n2 = cross(vec3(0.f, 0.f, 1.f), e2);
+
     //dilate the triangle
-    const float pl = sqrt(dot(hPixel, hPixel));
-    a.xy += pl * ((e2.xy / dot(e2.xy, n0.xy)) + (e0.xy / dot(e0.xy, n2.xy)));
-    b.xy += pl * ((e0.xy / dot(e0.xy, n1.xy)) + (e1.xy / dot(e1.xy, n0.xy)));
-    c.xy += pl * ((e1.xy / dot(e1.xy, n2.xy)) + (e2.xy / dot(e2.xy, n1.xy)));
+    const float diag = sqrt(hPixel * hPixel);
+    a.xy += diag * (n0.xy + n2.xy);
+    b.xy += diag * (n0.xy + n1.xy);
+    c.xy += diag * (n1.xy + n2.xy);
 
     gl_Position = a;
     outData.AABB = AABB;

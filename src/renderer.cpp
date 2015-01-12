@@ -91,7 +91,7 @@ Renderer::Renderer(core::TimerArray& timer_array)
     // calculate max possible size of octree
     unsigned int totalNodes = 1;
     unsigned int tmp = 1;
-    for (unsigned int i = 0; i < m_tree_levels; ++i) {
+    for (unsigned int i = 1; i <= m_tree_levels; ++i) {
         tmp *= 8;
         totalNodes += tmp;
     }
@@ -237,7 +237,7 @@ void Renderer::reallocOctreeNodeBuffer()
     // calculate max possible size of octree
     unsigned int totalNodes = 1;
     unsigned int tmp = 1;
-    for (unsigned int i = 0; i < m_tree_levels; ++i) {
+    for (unsigned int i = 1; i <= m_tree_levels; ++i) {
         tmp *= 8;
         totalNodes += tmp;
     }
@@ -318,6 +318,25 @@ void Renderer::createVoxelList(const bool debug_output)
         LOG_INFO("");
     }
 
+    std::vector<VoxelStruct> voxelFragments(m_numVoxelFrag);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
+    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, m_numVoxelFrag * sizeof(VoxelStruct), voxelFragments.data());
+
+    glm::ivec3 min(256,256,256);
+    glm::ivec3 max(-1,-1,-1);
+    unsigned int tmp = 0;
+    for (const auto & vs : voxelFragments) {
+        glm::ivec4 pos = static_cast<glm::ivec4>(vs.position);
+        if (pos[0] < min[0]) min[0] = pos[0];
+        if (pos[1] < min[1]) min[1] = pos[1];
+        if (pos[2] < min[2]) min[2] = pos[2];
+        if (pos[0] > max[0]) max[0] = pos[0];
+        if (pos[1] > max[1]) max[1] = pos[1];
+        if (pos[2] > max[2]) max[2] = pos[2];
+        if (pos[3] == 1) ++tmp;
+    }
+    LOG_INFO("min: (", min[0], ",", min[1], ",", min[2], "), max: (", max[0], ",", max[1], ",", max[2], ")");
+LOG_INFO("count: ", tmp);
 }
 
 /****************************************************************************/
@@ -364,7 +383,7 @@ void Renderer::buildVoxelTree(const bool debug_output)
     unsigned int allocOffset = 1; // offset to first free space for new nodes
     std::vector<unsigned int> maxNodesPerLevel(1, 1); // number of nodes in each tree level; root level = 1
 
-    for (unsigned int i = 0; i < m_tree_levels; ++i) {
+    for (unsigned int i = 0; i <= m_tree_levels; ++i) {
 
         if (debug_output) {
             LOG_INFO("");
@@ -389,7 +408,7 @@ void Renderer::buildVoxelTree(const bool debug_output)
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         // break to avoid allocating with ptrs to more children
-        if (i == m_tree_levels - 1) {
+        if (i == m_tree_levels) {
 
             nodeOffset += maxNodesPerLevel[i];
             break;
@@ -480,6 +499,7 @@ void Renderer::buildVoxelTree(const bool debug_output)
     m_voxel_bboxes.reserve(nodeOffset);
     std::pair<GLuint, core::AABB> stack[128]; // >= vars.octree_tree_levels
     stack[0] = std::make_pair(0u, m_scene_bbox); // root box
+    m_voxel_bboxes.emplace_back(m_scene_bbox); // draw root box
     std::size_t top = 1;
     do {
         top--;
