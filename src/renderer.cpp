@@ -215,8 +215,6 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
     m_voxelize_cam->setOrientation(glm::dquat());
     assert(m_voxelize_cam->getViewMatrix() == glm::dmat4(1.0));
 
-    LOG_INFO("near: ", m_voxelize_cam->getZNear(), ", far: ",
-            m_voxelize_cam->getZFar());
 }
 
 /****************************************************************************/
@@ -277,6 +275,7 @@ void Renderer::createVoxelList()
     }
 
     // debug
+    /*
     std::vector<VoxelStruct> voxels(m_numVoxelFrag);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
     glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, m_numVoxelFrag * sizeof(VoxelStruct), voxels.data());
@@ -293,8 +292,9 @@ void Renderer::createVoxelList()
         bbox.pmax = bbox.pmin + dist;
         m_voxel_bboxes.emplace_back(bbox);
     }
+    */
 
-    /*
+    /* SLOW!!!
     auto order = [] (const core::AABB& b0, const core::AABB& b1) -> bool
             {
                 return glm::any(glm::lessThan(b0.pmin, b1.pmin)) ||
@@ -350,9 +350,8 @@ void Renderer::buildVoxelTree()
     unsigned int previously_allocated = 8; // only root node was allocated
     unsigned int numAllocated = 8; // we're only allocating one block of 8 nodes, so yeah, 8;
     unsigned int start_node = 0;
-    for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
+    for (unsigned int i = 0; i <= vars.voxel_octree_levels; ++i) {
 
-        LOG_INFO("");
         LOG_INFO("Starting with max level ", i);
 
         /*
@@ -387,7 +386,7 @@ void Renderer::buildVoxelTree()
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
         }
 
-        if (i + 1 == vars.voxel_octree_levels) {
+        if (i == vars.voxel_octree_levels) {
             // no more nodes required
             break;
         }
@@ -421,58 +420,21 @@ void Renderer::buildVoxelTree()
     }
     m_tree_timer->stop();
 
-    LOG_INFO("\nTotal Nodes created: ", numAllocated);
+    LOG_INFO(":: Total Nodes created: ", numAllocated);
 
     // TODO
-    /*
-     *  flag non-empty leaf nodes
-     */
-    //LOG_INFO("flagging non-empty leaf nodes...");
-    //glUseProgram(m_octreeNodeFlag_prog);
-
-    //// uniforms
-    //loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_numVoxelFrag");
-    //glUniform1ui(loc, m_numVoxelFrag);
-    //loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_treeLevels");
-    //glUniform1ui(loc, vars.voxel_octree_levels);
-    //loc = glGetUniformLocation(m_octreeNodeFlag_prog, "u_maxLevel");
-    //glUniform1ui(loc, vars.voxel_octree_levels);
-
-    //// dispatch
-    //LOG_INFO("Dispatching NodeFlag with ", groupDimX, "*", groupDimY, "*1 groups with 8*8*1 threads each");
-    //LOG_INFO("--> ", groupDimX * groupDimY * 64, " threads");
-    //glDispatchCompute(groupDimX, groupDimY, 1);
-    //glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
     ///*
     // *  write information to leafs
     // */
 
-    //LOG_INFO("\nfilling leafs...");
-    //glUseProgram(m_octreeLeafStore_prog);
-
-    //// uniforms
-    //loc = glGetUniformLocation(m_octreeLeafStore_prog, "u_numVoxelFrag");
-    //glUniform1ui(loc, m_numVoxelFrag);
-    //loc = glGetUniformLocation(m_octreeLeafStore_prog, "u_treeLevels");
-    //glUniform1ui(loc, vars.voxel_octree_levels);
-    //loc = glGetUniformLocation(m_octreeLeafStore_prog, "u_maxLevel");
-    //glUniform1ui(loc, vars.voxel_octree_levels);
-
-    //// dispatch
-    //LOG_INFO("Dispatching NodeFlag with ", groupDimX, "*", groupDimY, "*1 groups with 8*8*1 threads each");
-    //LOG_INFO("--> ", groupDimX * groupDimY * 64, " threads");
-    //glDispatchCompute(groupDimX, groupDimY, 1);
-    //glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     // DEBUG --- create bounding boxes
-    /*
     std::vector<GLuint> nodes(numAllocated);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
     glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, numAllocated * sizeof(GLuint), nodes.data());
 
-    m_voxel_bboxes.clear();
-    m_voxel_bboxes.reserve(numAllocated);
+    //m_voxel_bboxes.clear();
+    //m_voxel_bboxes.reserve(numAllocated);
     std::pair<GLuint, core::AABB> stack[128];
     stack[0] = std::make_pair(0u, m_scene_bbox);
     std::size_t top = 1;
@@ -505,7 +467,6 @@ void Renderer::buildVoxelTree()
             }
         }
     } while (top != 0);
-    */
 }
 
 /****************************************************************************/
