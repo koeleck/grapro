@@ -146,6 +146,16 @@ Renderer::Renderer(core::TimerArray& timer_array)
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
     glBufferStorage(GL_ATOMIC_COUNTER_BUFFER, 2 * sizeof(GLuint), nullptr, GL_MAP_READ_BIT);
     //glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+
+    // FBO for voxelization
+    int num_voxels = static_cast<int>(std::pow(2.0, vars.voxel_octree_levels));
+    glBindFramebuffer(GL_FRAMEBUFFER, m_voxelizationFBO);
+    glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, num_voxels);
+    glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, num_voxels);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        LOG_ERROR("Empty framebuffer is not complete (WTF?!?)");
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 /****************************************************************************/
@@ -204,29 +214,26 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
 void Renderer::createVoxelList()
 {
 
-    LOG_INFO("###########################\n"
-             "# Voxel Fragment Creation #\n"
-             "###########################");
+    LOG_INFO("\n###########################\n"
+               "# Voxel Fragment Creation #\n"
+               "###########################");
 
     m_voxelize_timer->start();
 
-    // TODO Use empty framebuffer (https://www.opengl.org/wiki/Framebuffer_Object#Empty_framebuffers)
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    const auto dim = static_cast<int>(std::pow(2, vars.voxel_octree_levels));
-    glViewport(0, 0, dim, dim);
-
     auto* old_cam = core::res::cameras->getDefaultCam();
     core::res::cameras->makeDefault(m_voxelize_cam);
+
+    int num_voxels = static_cast<int>(std::pow(2.0, vars.voxel_octree_levels));
+
+    glBindFramebuffer(GL_FRAMEBUFFER, m_voxelizationFBO);
+    glViewport(0, 0, num_voxels, num_voxels);
 
 
     GLuint voxel_prog = m_voxel_prog;
 
     GLint loc;
-    loc = glGetUniformLocation(voxel_prog, "u_width");
-    glProgramUniform1i(voxel_prog, loc, dim);
-    loc = glGetUniformLocation(voxel_prog, "u_height");
-    glProgramUniform1i(voxel_prog, loc, dim);
+    loc = glGetUniformLocation(voxel_prog, "uNumVoxels");
+    glProgramUniform1i(voxel_prog, loc, num_voxels);
 
     // reset counter
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
@@ -238,8 +245,6 @@ void Renderer::createVoxelList()
     glBindBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, m_atomicCounterBuffer, 0, sizeof(GLuint));
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::VOXEL, m_voxelBuffer);
     glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
-    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
     renderGeometry(voxel_prog);
 
@@ -250,6 +255,7 @@ void Renderer::createVoxelList()
 
     m_voxelize_timer->stop();
 
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, vars.screen_width, vars.screen_height);
     core::res::cameras->makeDefault(old_cam);
 
@@ -263,9 +269,9 @@ void Renderer::createVoxelList()
 void Renderer::buildVoxelTree()
 {
 
-    LOG_INFO("###########################\n"
-             "#     Octree Creation     #\n"
-             "###########################");
+    LOG_INFO("\n###########################\n"
+               "#     Octree Creation     #\n"
+               "###########################");
 
     m_tree_timer->start();
 
@@ -412,12 +418,6 @@ void Renderer::buildVoxelTree()
     std::vector<GLuint> nodes(numAllocated);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
     glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, numAllocated * sizeof(GLuint), nodes.data());
-
-    //for (auto idx : nodes) {
-    //    bool flag = idx & 0x80000000u;
-    //    GLuint n = idx & 0x7FFFFFFFu;
-    //    LOG_INFO(" [", flag, "] ", n);
-    //}
 
     m_voxel_bboxes.clear();
     m_voxel_bboxes.reserve(numAllocated);

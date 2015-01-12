@@ -25,8 +25,7 @@ out VertexFragmentData
     vec2 uv;
 } outData;
 
-uniform int u_width;
-uniform int u_height;
+uniform int uNumVoxels;
 
 const vec3 axis[3] = vec3[3](vec3(1.f, 0.f, 0.f), vec3(0.f, 1.f, 0.f), vec3(0.f, 0.f, 1.f));
 
@@ -76,7 +75,7 @@ void main() {
 
     //Next we enlarge the triangle to enable conservative rasterization
     vec4 AABB;
-    vec2 hPixel = vec2(1.f / u_width, 1.f / u_height);
+    vec2 hPixel = vec2(1.0 / float(uNumVoxels));
 
     //calculate AABB of this triangle
     AABB.xy = a.xy;
