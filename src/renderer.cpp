@@ -148,7 +148,7 @@ Renderer::Renderer(core::TimerArray& timer_array)
     //glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
 
     // FBO for voxelization
-    int num_voxels = static_cast<int>(std::pow(2.0, vars.voxel_octree_levels));
+    int num_voxels = static_cast<int>(std::pow(2.0, vars.voxel_octree_levels - 1));
     glBindFramebuffer(GL_FRAMEBUFFER, m_voxelizationFBO);
     glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, num_voxels);
     glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, num_voxels);
@@ -231,7 +231,7 @@ void Renderer::createVoxelList()
     auto* old_cam = core::res::cameras->getDefaultCam();
     core::res::cameras->makeDefault(m_voxelize_cam);
 
-    int num_voxels = static_cast<int>(std::pow(2.0, vars.voxel_octree_levels));
+    int num_voxels = static_cast<int>(std::pow(2.0, vars.voxel_octree_levels - 1));
 
     glBindFramebuffer(GL_FRAMEBUFFER, m_voxelizationFBO);
     glViewport(0, 0, num_voxels, num_voxels);
@@ -350,7 +350,7 @@ void Renderer::buildVoxelTree()
     unsigned int previously_allocated = 8; // only root node was allocated
     unsigned int numAllocated = 8; // we're only allocating one block of 8 nodes, so yeah, 8;
     unsigned int start_node = 0;
-    for (unsigned int i = 0; i <= vars.voxel_octree_levels; ++i) {
+    for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
 
         LOG_INFO("Starting with max level ", i);
 
@@ -386,7 +386,7 @@ void Renderer::buildVoxelTree()
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
         }
 
-        if (i == vars.voxel_octree_levels) {
+        if (i + 1 == vars.voxel_octree_levels) {
             // no more nodes required
             break;
         }
@@ -433,8 +433,8 @@ void Renderer::buildVoxelTree()
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
     glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, numAllocated * sizeof(GLuint), nodes.data());
 
-    //m_voxel_bboxes.clear();
-    //m_voxel_bboxes.reserve(numAllocated);
+    m_voxel_bboxes.clear();
+    m_voxel_bboxes.reserve(numAllocated);
     std::pair<GLuint, core::AABB> stack[128];
     stack[0] = std::make_pair(0u, m_scene_bbox);
     std::size_t top = 1;

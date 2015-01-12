@@ -35,7 +35,7 @@ void main()
     if (ID >= uNumVoxelFrag)
         return;
 
-    uint voxel_dim = uint(pow(2u, uTreeLevels));
+    uint voxel_dim = uint(pow(2u, uTreeLevels - 1));
     uvec3 umin = uvec3(0u);
     uvec3 pos  = voxel[ID].position.xyz;
 
