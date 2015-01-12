@@ -20,7 +20,8 @@ GraPro::GraPro(GLFWwindow* window)
   : framework::MainWindow(window),
     m_cam(core::res::cameras->getDefaultCam()),
     m_showgui{true},
-    m_render_bboxes{false}
+    m_render_bboxes{false},
+    m_renderer{m_timers}
 {
     const auto* instances = core::res::instances;
     m_renderer.setGeometry(instances->getInstances());
@@ -74,6 +75,11 @@ void GraPro::update_gui(const double delta_t)
         // appear here
         if (ImGui::CollapsingHeader("Time", nullptr, false, true)) {
             ImGui::Columns(2, "data", true);
+            ImGui::Text("Timer");
+            ImGui::NextColumn();
+            ImGui::Text("Milliseconds");
+            ImGui::NextColumn();
+            ImGui::Separator();
 
             for (const auto& t : m_timers.getTimers()) {
                 ImGui::Text(t.first.c_str());
@@ -81,7 +87,7 @@ void GraPro::update_gui(const double delta_t)
                 auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(
                         t.second->time()).count();
                 ImGui::Text("%d ms", static_cast<int>(msec));
-                ImGui::Separator();
+                ImGui::NextColumn();
             }
         }
     }

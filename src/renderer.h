@@ -15,7 +15,7 @@
 class Renderer
 {
 public:
-    Renderer();
+    Renderer(core::TimerArray& timer_array);
     ~Renderer();
 
     void setGeometry(std::vector<const core::Instance*> geometry);
@@ -64,8 +64,9 @@ private:
     gl::Buffer                          m_octreeNodeBuffer;
     unsigned int                        m_numVoxelFrag;
     bool                                m_rebuildTree;
-    core::TimerArray                    m_timers;
-    core::GPUTimer*                     m_render_timer;
+    core::TimerArray &                  m_timers;
+    core::GPUTimer*                     m_voxelize_timer;
+    core::GPUTimer*                     m_tree_timer;
     std::vector<core::AABB>             m_voxel_bboxes;
     core::Program                       m_voxel_bbox_prog;
 };
