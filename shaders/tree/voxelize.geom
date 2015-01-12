@@ -27,7 +27,7 @@ out VertexFragmentData
 
 uniform int uNumVoxels;
 
-const vec3 axis[3] = vec3[3](vec3(1.0, 0.0, 0.0),
+const vec3 axes[3] = vec3[3](vec3(1.0, 0.0, 0.0),
                              vec3(0.0, 1.0, 0.0),
                              vec3(0.0, 0.0, 1.0));
 
@@ -49,9 +49,9 @@ void main() {
     // swap some values. This will be reversed in the
     // fragment shader
     float axisID = 2;
-    float d0 = abs(dot(n, axis[0]));
-    float d1 = abs(dot(n, axis[1]));
-    float d2 = abs(dot(n, axis[2]));
+    float d0 = abs(dot(n, axes[0]));
+    float d1 = abs(dot(n, axes[1]));
+    float d2 = abs(dot(n, axes[2]));
     if (d1 > d0 && d1 > d2) {
         // y dominant
         axisID = 1;
@@ -99,7 +99,7 @@ void main() {
     const vec3 n2 = cross(vec3(0.0, 0.0, 1.0), e2);
 
     // dilate the triangle
-    const float diag = sqrt(hPixel * hPixel);
+    const float diag = 2.0 * sqrt(hPixel * hPixel);
     a.xy += diag * (n0.xy + n2.xy);
     b.xy += diag * (n0.xy + n1.xy);
     c.xy += diag * (n1.xy + n2.xy);

@@ -208,8 +208,8 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
     m_voxelize_cam->setRight(m_scene_bbox.pmax.x);
     m_voxelize_cam->setBottom(m_scene_bbox.pmin.y);
     m_voxelize_cam->setTop(m_scene_bbox.pmax.y);
-    m_voxelize_cam->setZNear(m_scene_bbox.pmin.z);
-    m_voxelize_cam->setZFar(m_scene_bbox.pmax.z);
+    m_voxelize_cam->setZNear(-m_scene_bbox.pmin.z);
+    m_voxelize_cam->setZFar(-m_scene_bbox.pmax.z);
     // set view matrix to identity
     m_voxelize_cam->setPosition(glm::dvec3(0.));
     m_voxelize_cam->setOrientation(glm::dquat());
