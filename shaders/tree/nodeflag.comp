@@ -45,7 +45,6 @@ void main()
     bool has_to_be_flagged = true;
 
     uvec3 umin = uvec3(0);
-    uvec3 umax = uvec3(voxel_dim);
 
     uvec4 pos  = voxel[threadId].position;
 
