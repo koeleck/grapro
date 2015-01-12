@@ -51,7 +51,7 @@ Renderer::Renderer()
   : m_numVoxelFrag{0u},
     m_rebuildTree{true}
 {
-    
+
     initBBoxStuff();
 
     // programmable vertex pulling
@@ -595,8 +595,12 @@ void Renderer::buildVoxelTree()
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         // break to avoid allocating with ptrs to more children
-        if (i == vars.voxel_octree_levels - 1)
+        if (i == vars.voxel_octree_levels - 1) {
+
+            nodeOffset += maxNodesPerLevel[i];
             break;
+
+        }
 
         /*
          *  allocate child nodes
@@ -674,7 +678,7 @@ void Renderer::buildVoxelTree()
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);*/
 
     // DEBUG --- create bounding boxes
-    
+
     // read tree buffer into nodes vector
     std::vector<GLuint> nodes(nodeOffset);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
@@ -698,9 +702,9 @@ void Renderer::buildVoxelTree()
             // flagged parent node
             const auto baseidx = uint(childidx & 0x7FFFFFFFu); // ptr to children
             const auto c = bbox.center();
-            
+
             for (unsigned int i = 0; i < 8; ++i) {
-                
+
                 int x = (i>>0) & 0x01;
                 int y = (i>>1) & 0x01;
                 int z = (i>>2) & 0x01;
@@ -917,11 +921,11 @@ void Renderer::debugRenderTree()
 {
     if (m_voxel_bboxes.empty())
         return;
-    
+
     glUseProgram(m_voxel_bbox_prog);
     glBindVertexArray(m_bbox_vao);
     glEnable(GL_DEPTH_TEST);
-    
+
     for (const auto& bbox : m_voxel_bboxes) {
         float data[6] = {bbox.pmin.x, bbox.pmin.y, bbox.pmin.z,
         bbox.pmax.x, bbox.pmax.y, bbox.pmax.z};
