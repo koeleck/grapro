@@ -8,11 +8,7 @@
 #include "core/camera_manager.h"
 #include "core/shader_manager.h"
 #include "log/log.h"
-
-// extern debug variable for selecting tree level
-int gui_tree_level = 3;
-bool gui_voxel_bboxes = true;
-bool gui_debug_output = true;
+#include "framework/vars.h"
 
 /****************************************************************************/
 
@@ -21,6 +17,8 @@ GraPro::GraPro(GLFWwindow* window)
     m_cam(core::res::cameras->getDefaultCam()),
     m_showgui{true},
     m_render_bboxes{false},
+    m_render_octree{false},
+    m_tree_levels{static_cast<int>(vars.voxel_octree_levels)},
     m_renderer{m_timers}
 {
     const auto* instances = core::res::instances;
@@ -39,7 +37,9 @@ void GraPro::render_scene()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     m_render_timer->start();
-    m_renderer.render(m_render_bboxes);
+    assert(m_tree_levels > 0);
+    m_renderer.render(static_cast<unsigned int>(m_tree_levels), m_render_bboxes,
+                      m_render_octree, m_debug_output);
     m_render_timer->stop();
 }
 
@@ -66,9 +66,9 @@ void GraPro::update_gui(const double delta_t)
             if (ImGui::Button("rebuild octree")) {
                 m_renderer.setRebuildTree();
             }
-            ImGui::SliderInt("tree levels", &gui_tree_level, 1, 8);
-            ImGui::Checkbox("show voxel bounding boxes", &gui_voxel_bboxes);
-            ImGui::Checkbox("show debug output", &gui_debug_output);
+            ImGui::SliderInt("tree levels", &m_tree_levels, 1, 8);
+            ImGui::Checkbox("show voxel bounding boxes", &m_render_octree);
+            ImGui::Checkbox("show debug output", &m_debug_output);
         }
 
         // Timers: Just create your timer via m_timers and they will

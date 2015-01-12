@@ -17,12 +17,6 @@
 #include "framework/vars.h"
 #include "voxel.h"
 
-extern int gui_tree_level;
-extern bool gui_voxel_bboxes;
-extern bool gui_debug_output;
-unsigned int tree_level = gui_tree_level;
-unsigned int old_tree_level = gui_tree_level;
-
 /****************************************************************************/
 
 struct Renderer::DrawCmd
@@ -55,6 +49,7 @@ struct Renderer::DrawCmd
 
 Renderer::Renderer(core::TimerArray& timer_array)
   : m_numVoxelFrag{0u},
+    m_tree_levels{vars.voxel_octree_levels},
     m_rebuildTree{true},
     m_timers{timer_array}
 {
@@ -82,9 +77,6 @@ Renderer::Renderer(core::TimerArray& timer_array)
     core::res::shaders->registerShader("octreeNodeAllocComp", "tree/nodealloc.comp", GL_COMPUTE_SHADER);
     m_octreeNodeAlloc_prog = core::res::shaders->registerProgram("octreeNodeAlloc_prog", {"octreeNodeAllocComp"});
 
-    core::res::shaders->registerShader("octreeNodeInitComp", "tree/nodeinit.comp", GL_COMPUTE_SHADER);
-    m_octreeNodeInit_prog = core::res::shaders->registerProgram("octreeNodeInit_prog", {"octreeNodeInitComp"});
-
     core::res::shaders->registerShader("octreeLeafStoreComp", "tree/leafstore.comp", GL_COMPUTE_SHADER);
     m_octreeLeafStore_prog = core::res::shaders->registerProgram("octreeLeafStore_prog", {"octreeLeafStoreComp"});
 
@@ -99,8 +91,7 @@ Renderer::Renderer(core::TimerArray& timer_array)
     // calculate max possible size of octree
     unsigned int totalNodes = 1;
     unsigned int tmp = 1;
-    for (unsigned int i = 0; i < tree_level; ++i) {
-    //for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
+    for (unsigned int i = 0; i < m_tree_levels; ++i) {
         tmp *= 8;
         totalNodes += tmp;
     }
@@ -231,7 +222,7 @@ void Renderer::reallocOctreeNodeBuffer()
     // calculate max possible size of octree
     unsigned int totalNodes = 1;
     unsigned int tmp = 1;
-    for (unsigned int i = 0; i < tree_level; ++i) {
+    for (unsigned int i = 0; i < m_tree_levels; ++i) {
         tmp *= 8;
         totalNodes += tmp;
     }
@@ -251,10 +242,10 @@ void Renderer::reallocOctreeNodeBuffer()
 
 /****************************************************************************/
 
-void Renderer::createVoxelList()
+void Renderer::createVoxelList(const bool debug_output)
 {
 
-    if (gui_debug_output) {
+    if (debug_output) {
         LOG_INFO("");
         LOG_INFO("###########################");
         LOG_INFO("# Voxel Fragment Creation #");
@@ -266,7 +257,7 @@ void Renderer::createVoxelList()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     //const auto dim = static_cast<int>(std::pow(2, vars.voxel_octree_levels));
-    const auto dim = static_cast<int>(std::pow(2, tree_level));
+    const auto dim = static_cast<int>(std::pow(2, m_tree_levels));
     glViewport(0, 0, dim, dim);
 
     auto* old_cam = core::res::cameras->getDefaultCam();
@@ -308,7 +299,7 @@ void Renderer::createVoxelList()
 
     m_voxelize_timer->stop();
 
-    if (gui_debug_output) {
+    if (debug_output) {
         LOG_INFO("");
         LOG_INFO("Number of Entries in Voxel Fragment List: ", m_numVoxelFrag);
         LOG_INFO("");
@@ -318,10 +309,10 @@ void Renderer::createVoxelList()
 
 /****************************************************************************/
 
-void Renderer::buildVoxelTree()
+void Renderer::buildVoxelTree(const bool debug_output)
 {
 
-    if (gui_debug_output) {
+    if (debug_output) {
         LOG_INFO("");
         LOG_INFO("###########################");
         LOG_INFO("#     Octree Creation     #");
@@ -352,8 +343,7 @@ void Renderer::buildVoxelTree()
     GLint loc_u_nodeOffset = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_nodeOffset");
     GLint loc_u_allocOffset = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_allocOffset");
 
-    const unsigned int voxelDim = static_cast<unsigned int>(std::pow(2, tree_level));
-    //const unsigned int voxelDim = static_cast<unsigned int>(std::pow(2, vars.voxel_octree_levels));
+    const unsigned int voxelDim = static_cast<unsigned int>(std::pow(2, m_tree_levels));
     glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_numVoxelFrag, m_numVoxelFrag);
     glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_voxelDim, voxelDim);
 
@@ -361,266 +351,9 @@ void Renderer::buildVoxelTree()
     unsigned int allocOffset = 1; // offset to first free space for new nodes
     std::vector<unsigned int> maxNodesPerLevel(1, 1); // number of nodes in each tree level; root level = 1
 
-    /*
-     *  case: assuming always 8 child nodes will be created, assume voxelFrags = 200000:            ////only in one half (posx = [0,127])
-     *
-     *      groupDimX = 128
-     *      groupDimY = 25
-     *
-     *      nodeOffset = 0
-     *      allocOffset = 1
-     *      maxNodesPerLevel[0] = 1
-     *
-     *      at i = 0:
-     *
-     *          flagShader:
-     *              u_numVoxelFrag = 200000
-     *              u_treeLevels = 8 (vars.voxel_octree_levels)
-     *              u_maxLevel = 0
-     *
-     *              threadId = gl_GlobalInvocationID.y
-     *                         * gl_NumWorkGroups.x * gl_WorkGroupSize.x
-     *                         + gl_GlobalInvocationID.x
-     *                       = (gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y)
-     *                         * gl_NumWorkGroups.x * gl_WorkGroupSize.x
-     *                         + gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x
-     *                       = ([0, gl_NumWorkGroups.y) * local_size_y + [0, local_size_y))
-     *                         * gl_NumWorkGroups.x * local_size_x
-     *                         + [0, gl_NumWorkGroups.x) * local_size_x + [0, local_size_x)
-     *                       = ([0, groupDimY) * local_size_y + [0, local_size_y))
-     *                         * groupDimX * local_size_x
-     *                         + [0, groupDimX) * local_size_x + [0, local_size_x)
-     *                       = ([0,24] * 8 + [0,7]) * 128 * 8 + [0,127] * 8 + [0,7]
-     *                       = [0,199] * 1024 + [0,1016] + [0,7]
-     *                       = [0,204799]
-     *              threadID = [0,199999]
-     *
-     *              no iterations through for loop
-     *              childIdx = 0
-     *              nodePtr = 0 + MSB
-     *              octree[0].id = 0 + MSB
-     *
-     *          allocwidth = 64
-     *          allocGroupDim = 1
-     *
-     *          allocShader:
-     *              u_numNodesThisLevel = 1
-     *              u_nodeOffset = 0
-     *              u_allocOffset = 1
-     *              threadID = gl_GlobalInvocationID.x
-     *                       = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x
-     *                       = [0, gl_NumWorkGroups.x) * local_size_x + [0, local_size_x)
-     *                       = [0, allocGroupDim) * 64 + [0, 64)
-     *                       = [0, 1) * 64 + [0, 64)
-     *                       = [0, 63]
-     *
-     *              threadID = 0
-     *              childIdx = octree[0].id = 0 + MSB
-     *              MSB is set! -> counter = 1
-     *              off = (0 * 8) + 1 + MSB
-     *              octree[0].id = 1 + MSB
-     *
-     *          actualNodesAllocated = 1
-     *          maxNodesToBeAllocated = 8
-     *
-     *          maxNodesPerLevel[1] = 8
-     *          nodeOffset = 1
-     *          allocOffset = 9
-     *
-     *      at i = 1:
-     *
-     *          flagShader:
-     *              u_maxLevel = 1
-     *              threadID = [0,199999]
-     *
-     *              childIdx = 0
-     *              nodePtr = octree[0].id = 1 + MSB
-     *              subNodePtr = 0
-     *              voxelDim = 256
-     *              umin = 0,0,0
-     *              umax = 256,256,256
-     *
-     *              one iteration through for loop:
-     *                  voxelDim = 128
-     *                  childIdx = 1
-     *                  subNodePtrX = clamp(1 + [0,255] - 0 - 128, 0, 1) = clamp([-127,128], 0, 1)  ////subNodePtrX = clamp(1 + [0,127] - 0 - 128, 0, 1) = 0
-     *                              = [0,1] = subNodePtrY,Z                                         ////subNodePtrYZ = clamp(1 + [0,255] - 0 - 128, 0, 1) = [0,1]
-     *                  subNodePtr = [0,1] + 4 * [0,1] + 2 * [0,1] = [0,7]                          ////subNodePtr = 0 + 4 * [0,1] + 2 * [0,1] = [0;2;4;6]
-     *                  childIdx = [1,8]                                                            ////childIdx = [1;3;5;7]
-     *
-     *                  nodePtr = octree[[1,8]].id = 0                                              ////nodePtr = octree[[1;3;5;7]].id = 0
-     *
-     *              nodePtr = 0 + MSB
-     *              octree[[1,8]] = 0 + MSB                                                         ////octree[[1;3;5;7]] = 0 + MSB
-     *
-     *          allocwidth = 64
-     *          allocGroupDim = (maxNodesPerLevel[1] + allocwidth - 1) / allocwidth = 71 / 64 = 1
-     *
-     *          allocShader:
-     *              u_numNodesThisLevel = 8
-     *              u_nodeOffset = 1
-     *              u_allocOffset = 9
-     *              gl_GlobalInvocationID.x = [0, allocGroupDim) * 64 + [0, 64) = [0,63]
-     *
-     *              threadID = [0,7]
-     *              childIdx = octree[[1,8]].id = 0 + MSB                                           ////childIdx = octree[[1,8]].id = 0 + MSB for [0;2;4;6] && 0 for [1;3;5;7]
-     *              MSBs are set! -> counter = 8                                                    ////MSBs are set for [0;2;4;6] -> counter = 4
-     *              off = [0,7] * 8 + 9 + MSB = [9;17;...;65] + MSB                                 ////off = [0,3] * 8 + 9 + MSB = [9;17;25;33] + MSB
-     *              octree[1] = 9 + MSB                                                             ////octree[1] = 9 + MSB
-     *              octree[2] = 17 + MSB                                                            ////octree[3] = 17 + MSB
-     *              ...                                                                             ////octree[5] = 25 + MSB
-     *              octree[8] = 65 + MSB                                                            ////octree[7] = 33 + MSB
-     *
-     *          actualNodesAllocated = 8                                                            ////actualNodesAllocated = 4
-     *          maxNodesToBeAllocated = 64                                                          ////maxNodesToBeAllocated = 32
-     *
-     *          maxNodesPerLevel[2] = 64                                                            ////maxNodesPerLevel[2] = 32
-     *          nodeOffset = nodeOffset + maxNodesPerLevel[1] = 1 + 8 = 9
-     *          allocOffset = allocOffset + maxNodesToBeAllocated = 9 + 64 = 73                     ////allocOffset = allocOffset + maxNodesToBeAllocated = 9 + 32 = 41
-     *
-     *      at i = 2:
-     *
-     *          flagShader:
-     *              u_maxLevel = 2
-     *              threadID = [0,199999]
-     *
-     *              childIdx = 0
-     *              nodePtr = octree[0].id = 1 + MSB
-     *              subNodePtr = 0
-     *              voxelDim = 256
-     *              umin = 0,0,0
-     *              umax = 256,256,256
-     *
-     *              two iterations through loop:
-     *                  voxelDim = 128
-     *                  childIdx = 1
-     *                  subNodePtrX = clamp(1 + [0,255] - 0 - 128, 0, 1) = [0,1] = subNodePtrY,Z    ////subNodePtrX = clamp(1 + [0,127] - 0 - 128, 0, 1) = 0
-     *                      pos.x = [0,127] -> 0                                                    ////subNodePtrYZ = clamp(1 + [0,255] - 0 - 128, 0, 1) = [0,1]
-     *                      pos.x = [128,255] -> 1
-     *                  subNodePtr = [0,7]                                                          ////subNodePtr = 0 + 4 * [0,1] + 2 * [0,1] = [0;2;4;6]
-     *                  childIdx = [1,8]                                                            ////childIdx = [1;3;5;7]
-     *
-     *                  umin.x = 128 * [0,1] = [0;128] = umin.yz                                    ////umin.x = 0 + 128 * 0 = 0
-     *                      pos = [0,127] -> 0                                                      ////umin.yz = 0 + 128 * [0,1] = [0;128]
-     *                      pos = [128,255] -> 128
-     *                  nodePtr = octree[[1,8]].id = [9;17;...;65] + MSB                            ////nodePtr = octree[[1;3;5;7]].id = [9;17;25;33] + MSB
-     *
-     *                  voxelDim = 64
-     *                  childIdx = [9;17;...;65]                                                    ////childIdx = [9;17;25;33]
-     *                  subNodePtrXYZ = clamp(1 + pos - umin - voxelDim, 0, 1) = [0,1]
-     *                  subNodePtr = [0,7]                                                          ////subNodePtr = [0,4]
-     *                  childIdx = [9,72]                                                           ////childIdx = [9,12;17,20;25,28;33,36]
-     *
-     *                  nodePtr = octree[[9,72]].id = 0                                             ////nodePtr = octree[[9,12;17,20;25,28;33,36]].id = 0
-     *
-     *              nodePtr = 0 + MSB
-     *              octree[[9,72]].id = 0 + MSB;                                                    ////octree[[9,12;17,20;25,28;33,36]].id = 0 + MSB;
-     *
-     *          allocWidth = 64
-     *          allocGroupDim = (maxNodesPerLevel[2] + allocwidth - 1) / allocwidth = (64 + 64 - 1) / 64 = 1
-     *
-     *          allocShader:
-     *              u_numNodesThisLevel = 64                                                        ////u_numNodesThisLevel = 32
-     *              u_nodeOffset = 9
-     *              u_allocOffset = 73                                                              ////u_allocOffset = 41
-     *              gl_GlobalInvocationID.x = [0, allocGroupDim) * 64 + [0, 64) = [0,63]
-     *
-     *              threadID = [0,63]                                                               ////threadID = [0,31]
-     *              childIdx = octree[[9,72]].id = 0 + MSB                                          ////childIdx = octree[[9,40]].id = 0 + MSB for [9,12;17,20;25,28;33,36] && 0 else
-     *              MSBs are set! -> counter = 64                                                   ////counter = 16
-     *              off = [0,63] * 8 + 73 + MSB = [73;81;...;577] + MSB                             ////off = [0,15] * 8 + 41 + MSB = [41;49;...;161] + MSB
-     *              octree[9].id = 73 + MSB                                                         ////octree[[9,12]].id = [41;49;57;65] + MSB
-     *              octree[10].id = 81 + MSB                                                        ////octree[[17,20]].id = [73;81;89;97] + MSB
-     *              ...                                                                             ////octree[[25,28]].id = [105;113;121;129] + MSB
-     *              octree[72].id = 577 + MSB                                                       ////octree[[33,36]].id = [137;145;153;161] + MSB
-     *
-     *          actualNodesAllocated = 64                                                           ////actualNodesAllocated = 16
-     *          maxNodesToBeAllocated = actualNodesAllocated * 8 = 512                              ////maxNodesToBeAllocated = actualNodesAllocated * 8 = 128
-     *
-     *          maxNodesPerLevel[3] = 512                                                              ////maxNodesPerLevel[3] = 128
-     *          nodeOffset = 9 + 64 = 73                                                            ////nodeOffset = 9 + 32 = 41
-     *          allocOffset = allocOffset + maxNodesToBeAllocated = 73 + 512 = 585                  ////allocOffset = 41 + 128 = 169
-     *
-     *      at i = 3:
-     *
-     *          flagShader:
-     *              u_maxLevel = 3
-     *              threadID = [0,199999]
-     *
-     *              childIdx = 0
-     *              nodePtr = octree[0].id = 1 + MSB
-     *              subNodePtr = 0
-     *              voxelDim = 256
-     *              umin = 0,0,0
-     *              umax = 256,256,256
-     *
-     *              three iterations through loop:
-     *                  voxelDim = 128
-     *                  childIdx = 1
-     *                  subNodePtrX = clamp(1 + [0,255] - 0 - 128, 0, 1) = [0,1] = subNodePtrY,Z
-     *                      pos.x = [0,127] -> 0
-     *                      pos.x = [128,255] -> 1
-     *                  subNodePtr = [0,7]
-     *                  childIdx = [1,8]                                                            ////
-     *
-     *                  umin.x = 128 * [0,1] = [0;128] = umin.yz                                    ////
-     *                      pos = [0,127] -> 0
-     *                      pos = [128,255] -> 128
-     *                  nodePtr = octree[[1,8]].id = [9;17;...;65] + MSB                            ////
-     *
-     *                  voxelDim = 64
-     *                  childIdx = [9;17;...;65]                                                    ////
-     *                  subNodePtrXYZ = clamp(1 + pos - umin - voxelDim, 0, 1) = [0,1]
-     *                  subNodePtr = [0,7]                                                          ////
-     *                  childIdx = [9,72]                                                           ////
-     *
-     *                  umin.x = [0;128] + 64 * [0,1] = [0;64;128;192] = umin.yz
-     *                  nodePtr = octree[[9,72]].id = [73;81;...;577] + MSB                         ////
-     *
-     *                  voxelDim = 32
-     *                  childIdx = [73;81;...;577]
-     *                  subNodePtrXYZ = clamp(1 + [0,255] - [0;64;128;192] - 32, 0, 1) = [0,1]
-     *                  subNodePtr = [0,7]
-     *                  childIdx = [73,584]
-     *
-     *                  nodePtr = octree[[73,584]].id = 0
-     *
-     *              nodePtr = 0 + MSB
-     *              octree[[73,584]].id = 0 + MSB;                                                  ////
-     *
-     *          allocWidth = 64
-     *          allocGroupDim = (maxNodesPerLevel[3] + allocwidth - 1) / allocwidth = (512 + 64 - 1) / 64 = 8
-     *
-     *          allocShader:
-     *              u_numNodesThisLevel = 512                                                       ////
-     *              u_nodeOffset = 73
-     *              u_allocOffset = 585                                                             ////
-     *              gl_GlobalInvocationID.x = [0, allocGroupDim) * 64 + [0, 64)
-     *                                      = [0,7] * 64 + [0,63]
-     *                                      = [0,511]
-     *
-     *              threadID = [0,511]                                                              ////
-     *              childIdx = octree[[73,584]].id = 0 + MSB                                        ////
-     *              MSBs are set! -> counter = 512                                                  ////
-     *              off = [0,511] * 8 + 585 + MSB = [585;593;...;4673] + MSB                        ////
-     *              octree[73].id = 585 + MSB                                                       ////
-     *              octree[74].id = 593 + MSB                                                       ////
-     *              ...                                                                             ////
-     *              octree[584].id = 4673 + MSB                                                     ////
-     *
-     *          actualNodesAllocated = 512                                                          ////
-     *          maxNodesToBeAllocated = actualNodesAllocated * 8 = 4096                             ////
-     *
-     *          maxNodesPerLevel[4] = 4096                                                             ////
-     *          nodeOffset = 73 + 512 = 585                                                         ////
-     *          allocOffset = allocOffset + maxNodesToBeAllocated = 585 + 4096 = 4681               ////
-     *
-     */
+    for (unsigned int i = 0; i < m_tree_levels; ++i) {
 
-    for (unsigned int i = 0; i < tree_level; ++i) {
-    //for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
-
-        if (gui_debug_output) {
+        if (debug_output) {
             LOG_INFO("");
             LOG_INFO("Starting with max level ", i);
         }
@@ -635,7 +368,7 @@ void Renderer::buildVoxelTree()
         glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_maxLevel, i);
 
         // dispatch
-        if (gui_debug_output) {
+        if (debug_output) {
             LOG_INFO("Dispatching NodeFlag with ", groupDimX, "*", groupDimY, "*1 groups with 8*8*1 threads each");
             LOG_INFO("--> ", groupDimX * groupDimY * 64, " threads");
         }
@@ -643,8 +376,7 @@ void Renderer::buildVoxelTree()
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         // break to avoid allocating with ptrs to more children
-        if (i == tree_level - 1) {
-        //if (i == vars.voxel_octree_levels - 1) {
+        if (i == m_tree_levels - 1) {
 
             nodeOffset += maxNodesPerLevel[i];
             break;
@@ -664,7 +396,7 @@ void Renderer::buildVoxelTree()
 
         // dispatch
         const unsigned int allocGroupDim = (maxNodesPerLevel[i] + allocwidth - 1) / allocwidth;
-        if (gui_debug_output) {
+        if (debug_output) {
             LOG_INFO("Dispatching NodeAlloc with ", allocGroupDim, "*1*1 groups with 64*1*1 threads each");
             LOG_INFO("--> ", allocGroupDim * 64, " threads");
         }
@@ -680,7 +412,7 @@ void Renderer::buildVoxelTree()
         glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), &actualNodesAllocated);
         glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero); //reset counter to zero
         glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
-        if (gui_debug_output) {
+        if (debug_output) {
             LOG_INFO(actualNodesAllocated, " nodes have been allocated");
         }
         const unsigned int maxNodesToBeAllocated = actualNodesAllocated * 8;
@@ -696,7 +428,7 @@ void Renderer::buildVoxelTree()
 
     }
 
-    if (gui_debug_output) {
+    if (debug_output) {
         LOG_INFO("");
         LOG_INFO("Total Nodes created: ", nodeOffset);
     }
@@ -772,7 +504,8 @@ void Renderer::buildVoxelTree()
 
 /****************************************************************************/
 
-void Renderer::render(const bool renderBBoxes)
+void Renderer::render(const unsigned int tree_levels, const bool renderBBoxes,
+                      const bool renderOctree, const bool debug_output)
 {
     if (m_geometry.empty())
         return;
@@ -785,17 +518,16 @@ void Renderer::render(const bool renderBBoxes)
      *  Octree Building
      */
 
-    tree_level = gui_tree_level;
-    if (old_tree_level != tree_level) {
+    if (m_tree_levels != tree_levels) {
         m_rebuildTree = true;
-        old_tree_level = tree_level;
+        m_tree_levels = tree_levels;
     }
 
     if (m_rebuildTree) {
 
         reallocOctreeNodeBuffer();
-        createVoxelList();
-        buildVoxelTree();
+        createVoxelList(debug_output);
+        buildVoxelTree(debug_output);
         m_rebuildTree = false;
 
     }
@@ -897,7 +629,7 @@ void Renderer::render(const bool renderBBoxes)
     if (renderBBoxes)
         renderBoundingBoxes();
 
-    if (gui_voxel_bboxes)
+    if (renderOctree)
         debugRenderTree();
 
 }

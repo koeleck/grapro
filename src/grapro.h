@@ -26,6 +26,9 @@ private:
     core::GPUTimer*     m_render_timer;
 
     bool                m_render_bboxes;
+    bool                m_render_octree;
+    bool                m_debug_output;
+    int                 m_tree_levels;
     Renderer            m_renderer;
 
 };

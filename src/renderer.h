@@ -19,7 +19,7 @@ public:
     ~Renderer();
 
     void setGeometry(std::vector<const core::Instance*> geometry);
-    void render(bool renderBBoxes = false);
+    void render(unsigned int, bool = false, bool = false, bool = false);
     void renderBoundingBoxes();
 
     void setRebuildTree() { m_rebuildTree = true; }
@@ -36,8 +36,8 @@ private:
     void reallocOctreeNodeBuffer();
     void debugRenderTree();
 
-    void createVoxelList();
-    void buildVoxelTree();
+    void createVoxelList(bool debug_output);
+    void buildVoxelTree(bool debug_output);
 
     core::AABB                          m_scene_bbox;
     std::vector<const core::Instance*>  m_geometry;
@@ -57,12 +57,12 @@ private:
     core::Program                       m_voxel_prog;
     core::Program                       m_octreeNodeFlag_prog;
     core::Program                       m_octreeNodeAlloc_prog;
-    core::Program                       m_octreeNodeInit_prog;
     core::Program                       m_octreeLeafStore_prog;
     gl::Buffer                          m_atomicCounterBuffer;
     gl::Buffer                          m_voxelBuffer;
     gl::Buffer                          m_octreeNodeBuffer;
     unsigned int                        m_numVoxelFrag;
+    unsigned int                        m_tree_levels;
     bool                                m_rebuildTree;
     core::TimerArray &                  m_timers;
     core::GPUTimer*                     m_voxelize_timer;
