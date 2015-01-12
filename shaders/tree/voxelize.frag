@@ -97,7 +97,6 @@ void main()
 	const uint idx = atomicCounterIncrement(u_voxelFragCount);
 
 	voxel[idx].position = uvec4(texcoord.xyz, 0);
-    if (texcoord.z == 13) voxel[idx].position.w = 1;
     voxel[idx].color = vec4(m_diffuse_color, 0.f);
     voxel[idx].normal = vec4(m_normal, 0.f);
 

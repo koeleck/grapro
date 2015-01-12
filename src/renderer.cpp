@@ -324,7 +324,6 @@ void Renderer::createVoxelList(const bool debug_output)
 
     glm::ivec3 min(256,256,256);
     glm::ivec3 max(-1,-1,-1);
-    unsigned int tmp = 0;
     for (const auto & vs : voxelFragments) {
         glm::ivec4 pos = static_cast<glm::ivec4>(vs.position);
         if (pos[0] < min[0]) min[0] = pos[0];
@@ -333,10 +332,9 @@ void Renderer::createVoxelList(const bool debug_output)
         if (pos[0] > max[0]) max[0] = pos[0];
         if (pos[1] > max[1]) max[1] = pos[1];
         if (pos[2] > max[2]) max[2] = pos[2];
-        if (pos[3] == 1) ++tmp;
     }
     LOG_INFO("min: (", min[0], ",", min[1], ",", min[2], "), max: (", max[0], ",", max[1], ",", max[2], ")");
-LOG_INFO("count: ", tmp);
+
 }
 
 /****************************************************************************/
