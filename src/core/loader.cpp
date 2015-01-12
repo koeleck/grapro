@@ -50,9 +50,12 @@ bool loadScenefiles(const std::string& scenefiles)
             const auto* node = scene->nodes[i];
             const auto* mesh = scene->meshes[node->mesh_index];
             const auto* mat = scene->materials[mesh->material_index];
-            const auto* inst = res::instances->addInstance(node->name,
+            auto* inst = res::instances->addInstance(node->name,
                     res::meshes->getMesh(mesh->name),
                     res::materials->getMaterial(mat->name));
+            inst->move(node->position);
+            inst->setScale(node->scale);
+            inst->setOrientation(node->rotation);
             scene_bbox.expandBy(inst->getBoundingBox());
         }
 
