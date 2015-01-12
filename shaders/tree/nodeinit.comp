@@ -13,15 +13,15 @@ layout (std430, binding = OCTREE_BINDING) buffer octreeBlock {
 	octreeBuffer octree[];
 };
 
-uniform uint u_num;
-uniform uint u_allocStart;
+uniform uint u_maxNodesToBeAllocated;
+uniform uint u_allocOffset;
 
 void main()
 {
 	// retrieve current thread id and return if out of bounds
 	uint threadId = gl_GlobalInvocationID.y * gl_NumWorkGroups.x * gl_WorkGroupSize.x + gl_GlobalInvocationID.x;
-	if (threadId >= u_num)
+	if (threadId >= u_maxNodesToBeAllocated)
 		return;
 
-	octree[u_allocStart + threadId].id = 0;
+	octree[u_allocOffset + threadId].id = 0;
 }

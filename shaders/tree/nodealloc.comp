@@ -15,25 +15,26 @@ layout (std430, binding = OCTREE_BINDING) buffer octreeBlock {
 
 layout (binding = 0, offset = 0) uniform atomic_uint u_allocCount;
 
-uniform uint u_num;
-uniform uint u_start;
-uniform uint u_allocStart;
+uniform uint u_numNodesThisLevel; 	// nodesPerLevel[i]
+uniform uint u_nodeOffset;			// offset to first node of next level
+uniform uint u_allocOffset;			// offset to first free space for new nodes
 
 void main()
 {
 	// retrieve current thread id and return if out of bounds
 	uint threadId = gl_GlobalInvocationID.x;
-	if (threadId >= u_num)
+	if (threadId >= u_numNodesThisLevel)
 		return;
 
 	// local vars
-	uint childidx = octree[u_start + threadId].id;
+	uint childidx = octree[u_nodeOffset + threadId].id;
 	if((childidx & 0x80000000) != 0) {
+		// node is flagged
 		// alloc
 		uint off = atomicCounterIncrement(u_allocCount);
 		off *= 8; // 8 nodes
-		off += u_allocStart; 
+		off += u_allocOffset;
 		off |= 0x80000000;
-		octree[u_start + threadId].id = off;
+		octree[u_nodeOffset + threadId].id = off;
 	}
 }

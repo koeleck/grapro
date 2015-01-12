@@ -67,15 +67,15 @@ void main()
         childidx = uint(nodeptr & 0x7FFFFFFF);
 
         // create subnodes
-        uint subnodeptrX = clamp(uint(1 + pos.x - umin.x - voxel_dim), 0, 1);
-        uint subnodeptrY = clamp(uint(1 + pos.y - umin.y - voxel_dim), 0, 1);
-        uint subnodeptrZ = clamp(uint(1 + pos.z - umin.z - voxel_dim), 0, 1);
+        uint subnodeptrX = clamp(int(1 + pos.x - umin.x - voxel_dim), 0, 1);
+        uint subnodeptrY = clamp(int(1 + pos.y - umin.y - voxel_dim), 0, 1);
+        uint subnodeptrZ = clamp(int(1 + pos.z - umin.z - voxel_dim), 0, 1);
 
         subnodeptr = subnodeptrX;
         subnodeptr += 4 * subnodeptrY;
         subnodeptr += 2 * subnodeptrZ;
 
-        childidx += uint(subnodeptr);
+        childidx += subnodeptr;
 
         umin.x += voxel_dim * subnodeptrX;
         umin.y += voxel_dim * subnodeptrY;
