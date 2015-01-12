@@ -196,6 +196,14 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
         m_scene_bbox.pmax[i] = center[i] + dist;
     }
 
+    LOG_INFO("Scene bounding box: [",
+            m_scene_bbox.pmin.x, ", ",
+            m_scene_bbox.pmin.y, ", ",
+            m_scene_bbox.pmin.z, "] -> [",
+            m_scene_bbox.pmax.x, ", ",
+            m_scene_bbox.pmax.y, ", ",
+            m_scene_bbox.pmax.z, "]");
+
     m_voxelize_cam->setLeft(m_scene_bbox.pmin.x);
     m_voxelize_cam->setRight(m_scene_bbox.pmax.x);
     m_voxelize_cam->setBottom(m_scene_bbox.pmin.y);
@@ -207,6 +215,8 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
     m_voxelize_cam->setOrientation(glm::dquat());
     assert(m_voxelize_cam->getViewMatrix() == glm::dmat4(1.0));
 
+    LOG_INFO("near: ", m_voxelize_cam->getZNear(), ", far: ",
+            m_voxelize_cam->getZFar());
 }
 
 /****************************************************************************/
@@ -260,8 +270,49 @@ void Renderer::createVoxelList()
     core::res::cameras->makeDefault(old_cam);
 
 
-    LOG_INFO("Number of Entries in Voxel Fragment List: ", m_numVoxelFrag);
+    LOG_INFO("Number of Entries in Voxel Fragment List: ", m_numVoxelFrag, "/", vars.max_voxel_fragments);
 
+    if (m_numVoxelFrag > vars.max_voxel_fragments) {
+        LOG_WARNING("TOO MANY VOXEL FRAGMENTS!");
+    }
+
+    // debug
+    std::vector<VoxelStruct> voxels(m_numVoxelFrag);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
+    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, m_numVoxelFrag * sizeof(VoxelStruct), voxels.data());
+
+    m_voxel_bboxes.clear();
+    m_voxel_bboxes.reserve(m_numVoxelFrag);
+    const float dist = (m_scene_bbox.pmax.x - m_scene_bbox.pmin.x) / static_cast<float>(num_voxels);
+    for (const auto& el : voxels) {
+        if (glm::any(glm::greaterThan(glm::uvec3(el.position), glm::uvec3(static_cast<unsigned int>(num_voxels - 1))))) {
+            LOG_ERROR("out of range!");
+        }
+        core::AABB bbox;
+        bbox.pmin = m_scene_bbox.pmin + glm::vec3(el.position) * dist;
+        bbox.pmax = bbox.pmin + dist;
+        m_voxel_bboxes.emplace_back(bbox);
+    }
+
+    /*
+    auto order = [] (const core::AABB& b0, const core::AABB& b1) -> bool
+            {
+                return glm::any(glm::lessThan(b0.pmin, b1.pmin)) ||
+                       glm::any(glm::lessThan(b0.pmax, b1.pmax));
+            };
+    auto compare = [] (const core::AABB& b0, const core::AABB& b1) -> bool
+            {
+                return glm::all(glm::equal(b0.pmin, b1.pmin)) &&
+                       glm::all(glm::equal(b0.pmax, b1.pmax));
+            };
+
+    LOG_INFO("sorting bboxes...");
+    std::sort(m_voxel_bboxes.begin(), m_voxel_bboxes.end(), order);
+    LOG_INFO("removing duplicate bboxes...");
+    m_voxel_bboxes.erase(std::unique(m_voxel_bboxes.begin(), m_voxel_bboxes.end(), compare),
+                m_voxel_bboxes.end());
+    LOG_INFO("done.");
+    */
 }
 
 /****************************************************************************/
@@ -415,6 +466,7 @@ void Renderer::buildVoxelTree()
     //glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     // DEBUG --- create bounding boxes
+    /*
     std::vector<GLuint> nodes(numAllocated);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
     glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, numAllocated * sizeof(GLuint), nodes.data());
@@ -453,6 +505,7 @@ void Renderer::buildVoxelTree()
             }
         }
     } while (top != 0);
+    */
 }
 
 /****************************************************************************/
@@ -625,6 +678,7 @@ void Renderer::debugRenderTree()
     glBindVertexArray(m_bbox_vao);
 
     glEnable(GL_DEPTH_TEST);
+    //glDisable(GL_DEPTH_TEST);
 
     for (const auto& bbox : m_voxel_bboxes) {
         float data[6] = {bbox.pmin.x, bbox.pmin.y, bbox.pmin.z,

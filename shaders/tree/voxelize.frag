@@ -4,8 +4,6 @@
 #include "common/bindings.glsl"
 #include "common/textures.glsl"
 
-layout(location = 0) out vec4 out_Color;
-
 in VertexFragmentData
 {
     flat vec4 AABB;
@@ -71,44 +69,33 @@ void setColor() {
 void main()
 {
 
-    if(inData.position.x < inData.AABB.x  || inData.position.y < inData.AABB.y ||
-        inData.position.x > inData.AABB.z || inData.position.y > inData.AABB.w)
+    if (any(lessThan(inData.position.xy, inData.AABB.xy)) ||
+        any(greaterThan(inData.position.xy, inData.AABB.zw)))
     {
-        discard;
+        return;
     }
 
-    /*
-    const uvec4 temp = uvec4(gl_FragCoord.xy,
-            float(uNumVoxels) * gl_FragCoord.z, 0);
-    uvec4 texcoord = temp; // default: inData.axis == 2
-    if(inData.axis == 0) {
-        texcoord.x = uNumVoxels - temp.z;
-        texcoord.z = temp.x;
-    } else if (inData.axis == 1) {
-        texcoord.z = temp.y;
-        texcoord.y = uNumVoxels - temp.z;
-    }
-    */
-    uvec3 texcoord = uvec3((inData.position * 0.5 + 0.5) * float(uNumVoxels));
+    //setNormal();
+    //setColor();
+
+    vec3 pos = inData.position.xyz;
     if (inData.axis == 0) {
-        uint tmp = texcoord.x;
-        texcoord.x = uNumVoxels - texcoord.z;
-        texcoord.z = tmp;
+        float tmp = pos.x;
+        pos.x = pos.z;
+        pos.z = tmp;
     } else if (inData.axis == 1) {
-        uint tmp = texcoord.y;
-        texcoord.y = uNumVoxels - texcoord.z;
-        texcoord.z = tmp;
+        float tmp = pos.y;
+        pos.y = pos.z;
+        pos.z = tmp;
     }
+    uvec3 texcoord = uvec3((pos * 0.5 + 0.5) * float(uNumVoxels));
 
-    setNormal();
-    setColor();
+    texcoord = clamp(texcoord, uvec3(0), uvec3(uNumVoxels - 1));
 
     const uint idx = atomicCounterIncrement(uVoxelFragCount);
 
     voxel[idx].position = uvec4(texcoord.xyz, 0);
     voxel[idx].color = vec4(m_diffuse_color, 0.f);
     voxel[idx].normal = vec4(m_normal, 0.f);
-
-    out_Color = vec4(1.f);
 
 }
