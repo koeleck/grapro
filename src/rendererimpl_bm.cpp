@@ -2,18 +2,9 @@
 
 #include <cassert>
 #include <algorithm>
-#include <vector>
-
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/glm.hpp>
 
 #include "core/shader_manager.h"
-#include "core/mesh_manager.h"
-#include "core/instance_manager.h"
 #include "core/camera_manager.h"
-#include "core/material_manager.h"
-#include "core/texture.h"
 
 #include "log/log.h"
 
@@ -143,8 +134,7 @@ void RendererImplBM::createVoxelList(const bool debug_output)
     glUseProgram(m_voxel_prog);
 
     // uniforms
-    GLint loc;
-    loc = glGetUniformLocation(m_voxel_prog, "uNumVoxels");
+    GLint loc = glGetUniformLocation(m_voxel_prog, "uNumVoxels");
     glUniform1i(loc, dim);
 
     // buffer
@@ -152,24 +142,19 @@ void RendererImplBM::createVoxelList(const bool debug_output)
     genVoxelBuffer();
 
     // render
-    glBindVertexArray(m_vertexpulling_vao);
-    for (const auto & cmd : m_drawlist) {
+    renderGeometry(m_voxel_prog);
 
-        glDrawElementsInstancedBaseVertexBaseInstance(cmd.mode, cmd.count, cmd.type,
-                cmd.indices, 1, 0, cmd.instance->getIndex());
-
-    }
-
+    // get number of voxel fragments
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
     auto count = static_cast<GLuint *>(glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), GL_MAP_READ_BIT));
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
     m_numVoxelFrag = count[0];
 
+    m_voxelize_timer->stop();
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, vars.screen_width, vars.screen_height);
     core::res::cameras->makeDefault(old_cam);
-
-    m_voxelize_timer->stop();
 
     if (debug_output) {
         LOG_INFO("");
@@ -339,98 +324,16 @@ void RendererImplBM::render(const unsigned int tree_levels, const bool renderBBo
     if (m_geometry.empty())
         return;
 
-    core::res::materials->bind();
-    core::res::instances->bind();
-    core::res::meshes->bind();
-
     if (m_rebuildTree) {
-
         createVoxelList(debug_output);
-
         buildVoxelTree(debug_output);
-
         m_rebuildTree = false;
-
     }
-
-    const auto* cam = core::res::cameras->getDefaultCam();
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glDepthFunc(GL_LEQUAL);
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-    GLuint textures[core::bindings::NUM_TEXT_UNITS] = {0,};
-
-    glUseProgram(m_vertexpulling_prog);
-    glBindVertexArray(m_vertexpulling_vao);
-    for (const auto& cmd : m_drawlist) {
-        // Frustum Culling
-        if (!cam->inFrustum(cmd.instance->getBoundingBox()))
-            continue;
-
-        // bind textures
-        const auto* mat = cmd.instance->getMaterial();
-        if (mat->hasDiffuseTexture()) {
-            int unit = core::bindings::DIFFUSE_TEX_UNIT;
-            GLuint tex = *mat->getDiffuseTexture();
-            if (textures[unit] != tex) {
-                textures[unit] = tex;
-                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
-            }
-        }
-        if (mat->hasSpecularTexture()) {
-            int unit = core::bindings::SPECULAR_TEX_UNIT;
-            GLuint tex = *mat->getSpecularTexture();
-            if (textures[unit] != tex) {
-                textures[unit] = tex;
-                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
-            }
-        }
-        if (mat->hasGlossyTexture()) {
-            int unit = core::bindings::GLOSSY_TEX_UNIT;
-            GLuint tex = *mat->getGlossyTexture();
-            if (textures[unit] != tex) {
-                textures[unit] = tex;
-                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
-            }
-        }
-        if (mat->hasNormalTexture()) {
-            int unit = core::bindings::NORMAL_TEX_UNIT;
-            GLuint tex = *mat->getNormalTexture();
-            if (textures[unit] != tex) {
-                textures[unit] = tex;
-                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
-            }
-        }
-        if (mat->hasEmissiveTexture()) {
-            int unit = core::bindings::EMISSIVE_TEX_UNIT;
-            GLuint tex = *mat->getEmissiveTexture();
-            if (textures[unit] != tex) {
-                textures[unit] = tex;
-                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
-            }
-        }
-        if (mat->hasAlphaTexture()) {
-            int unit = core::bindings::ALPHA_TEX_UNIT;
-            GLuint tex = *mat->getAlphaTexture();
-            if (textures[unit] != tex) {
-                textures[unit] = tex;
-                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
-            }
-        }
-        if (mat->hasAmbientTexture()) {
-            int unit = core::bindings::AMBIENT_TEX_UNIT;
-            GLuint tex = *mat->getAmbientTexture();
-            if (textures[unit] != tex) {
-                textures[unit] = tex;
-                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
-            }
-        }
-
-        glDrawElementsInstancedBaseVertexBaseInstance(cmd.mode, cmd.count, cmd.type,
-                cmd.indices, 1, 0, cmd.instance->getIndex());
-    }
+    renderGeometry(m_vertexpulling_prog);
 
     if (renderBBoxes)
         renderBoundingBoxes();

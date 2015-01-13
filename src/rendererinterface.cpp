@@ -7,6 +7,8 @@
 #include "core/shader_manager.h"
 #include "core/camera_manager.h"
 #include "core/instance_manager.h"
+#include "core/material_manager.h"
+#include "core/texture.h"
 
 #include "log/log.h"
 
@@ -248,6 +250,89 @@ void RendererInterface::createVoxelBBoxes(const unsigned int num)
             }
         }
     } while (top != 0);
+}
+
+/****************************************************************************/
+
+void RendererInterface::renderGeometry(const GLuint prog)
+{
+    core::res::materials->bind();
+    core::res::instances->bind();
+    core::res::meshes->bind();
+
+    const auto* cam = core::res::cameras->getDefaultCam();
+
+    GLuint textures[core::bindings::NUM_TEXT_UNITS] = {0,};
+
+    glUseProgram(prog);
+    glBindVertexArray(m_vertexpulling_vao);
+    for (const auto& cmd : m_drawlist) {
+        // Frustum Culling
+        if (!cam->inFrustum(cmd.instance->getBoundingBox()))
+            continue;
+
+        // bind textures
+        const auto* mat = cmd.instance->getMaterial();
+        if (mat->hasDiffuseTexture()) {
+            unsigned int unit = core::bindings::DIFFUSE_TEX_UNIT;
+            GLuint tex = *mat->getDiffuseTexture();
+            if (textures[unit] != tex) {
+                textures[unit] = tex;
+                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
+            }
+        }
+        if (mat->hasSpecularTexture()) {
+            unsigned int unit = core::bindings::SPECULAR_TEX_UNIT;
+            GLuint tex = *mat->getSpecularTexture();
+            if (textures[unit] != tex) {
+                textures[unit] = tex;
+                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
+            }
+        }
+        if (mat->hasGlossyTexture()) {
+            unsigned int unit = core::bindings::GLOSSY_TEX_UNIT;
+            GLuint tex = *mat->getGlossyTexture();
+            if (textures[unit] != tex) {
+                textures[unit] = tex;
+                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
+            }
+        }
+        if (mat->hasNormalTexture()) {
+            unsigned int unit = core::bindings::NORMAL_TEX_UNIT;
+            GLuint tex = *mat->getNormalTexture();
+            if (textures[unit] != tex) {
+                textures[unit] = tex;
+                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
+            }
+        }
+        if (mat->hasEmissiveTexture()) {
+            unsigned int unit = core::bindings::EMISSIVE_TEX_UNIT;
+            GLuint tex = *mat->getEmissiveTexture();
+            if (textures[unit] != tex) {
+                textures[unit] = tex;
+                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
+            }
+        }
+        if (mat->hasAlphaTexture()) {
+            unsigned int unit = core::bindings::ALPHA_TEX_UNIT;
+            GLuint tex = *mat->getAlphaTexture();
+            if (textures[unit] != tex) {
+                textures[unit] = tex;
+                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
+            }
+        }
+        if (mat->hasAmbientTexture()) {
+            unsigned int unit = core::bindings::AMBIENT_TEX_UNIT;
+            GLuint tex = *mat->getAmbientTexture();
+            if (textures[unit] != tex) {
+                textures[unit] = tex;
+                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
+            }
+        }
+
+        glDrawElementsInstancedBaseVertexBaseInstance(cmd.mode, cmd.count, cmd.type,
+                cmd.indices, 1, 0, cmd.instance->getIndex());
+    }
 }
 
 /****************************************************************************/

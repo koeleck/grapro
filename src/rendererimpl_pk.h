@@ -13,8 +13,6 @@ public:
 
 private:
 
-    void renderGeometry(GLuint prog);
-
     virtual void createVoxelList(bool);
     virtual void buildVoxelTree(bool);
 
