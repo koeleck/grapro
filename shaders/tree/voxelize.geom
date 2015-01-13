@@ -25,21 +25,23 @@ out VertexFragmentData
     vec2 uv;
 } outData;
 
-uniform int u_numVoxels;
+uniform int uNumVoxels;
 
-const vec3 axes[3] = vec3[3](vec3(1.f, 0.f, 0.f),
-                             vec3(0.f, 1.f, 0.f),
-                             vec3(0.f, 0.f, 1.f));
+const vec3 axes[3] = vec3[3](vec3(1.0, 0.0, 0.0),
+                             vec3(0.0, 1.0, 0.0),
+                             vec3(0.0, 0.0, 1.0));
+
 void main() {
 
     vec4 a = gl_in[0].gl_Position;
     vec4 b = gl_in[1].gl_Position;
     vec4 c = gl_in[2].gl_Position;
 
+
     // calculate normal
     vec3 AC = (c - a).xyz;
     vec3 AB = (b - a).xyz;
-    vec3 n = cross(AC, AB);
+    vec3 n = normalize(cross(AC, AB));
 
     // triangles are already in clip space [-1, 1]
     // and the local axis correspond to the world axis.
@@ -75,32 +77,33 @@ void main() {
     }
 
     //Next we enlarge the triangle to enable conservative rasterization
-    const float hPixel = 1.f / float(u_numVoxels);
+    const float hPixel = 1.0 / float(uNumVoxels);
 
     //calculate AABB of this triangle
     vec4 AABB = vec4(a.xy, a.xy);
     AABB.xy = min(b.xy, AABB.xy);
-    AABB.zw = max(b.xy, AABB.zw);
     AABB.xy = min(c.xy, AABB.xy);
+    AABB.zw = max(b.xy, AABB.zw);
     AABB.zw = max(c.xy, AABB.zw);
-    //Enlarge by half-pixel
+    //Enlarge AABB by half-pixel
     AABB.xy -= hPixel;
     AABB.zw += hPixel;
 
     //find 3 triangle edge plane
-    vec3 e0 = normalize(vec3(b.xy - a.xy, 0.f));
-    vec3 e1 = normalize(vec3(c.xy - b.xy, 0.f));
-    vec3 e2 = normalize(vec3(a.xy - c.xy, 0.f));
+    const vec3 e0 = normalize(vec3(b.xy - a.xy, 0.0));
+    const vec3 e1 = normalize(vec3(c.xy - b.xy, 0.0));
+    const vec3 e2 = normalize(vec3(a.xy - c.xy, 0.0));
     // edge normals point outwards
-    vec3 n0 = cross(vec3(0.f, 0.f, 1.f), e0);
-    vec3 n1 = cross(vec3(0.f, 0.f, 1.f), e1);
-    vec3 n2 = cross(vec3(0.f, 0.f, 1.f), e2);
+    const vec3 n0 = cross(vec3(0.0, 0.0, 1.0), e0);
+    const vec3 n1 = cross(vec3(0.0, 0.0, 1.0), e1);
+    const vec3 n2 = cross(vec3(0.0, 0.0, 1.0), e2);
 
-    //dilate the triangle
-    const float diag = sqrt(hPixel * hPixel);
+    // dilate the triangle
+    const float diag = 2.0 * sqrt(hPixel * hPixel);
     a.xy += diag * (n0.xy + n2.xy);
     b.xy += diag * (n0.xy + n1.xy);
     c.xy += diag * (n1.xy + n2.xy);
+
 
     gl_Position = a;
     outData.AABB = AABB;

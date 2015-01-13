@@ -18,6 +18,7 @@ GraPro::GraPro(GLFWwindow* window)
     m_showgui{true},
     m_render_bboxes{false},
     m_render_octree{false},
+    m_debug_output{false},
     m_tree_levels{static_cast<int>(vars.voxel_octree_levels)},
     m_renderer{m_timers}
 {
@@ -37,9 +38,8 @@ void GraPro::render_scene()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     m_render_timer->start();
-    assert(m_tree_levels >= 0);
-    m_renderer.render(static_cast<unsigned int>(m_tree_levels), m_render_bboxes,
-                      m_render_octree, m_debug_output);
+    m_renderer.render(static_cast<unsigned int>(m_tree_levels),
+                      m_render_bboxes, m_render_octree, m_debug_output);
     m_render_timer->stop();
 }
 

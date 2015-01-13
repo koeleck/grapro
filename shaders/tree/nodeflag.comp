@@ -11,7 +11,7 @@ struct voxelStruct {
     vec4 normal;
 };
 
-layout (std430, binding = VOXEL_BINDING) buffer voxelBlock {
+layout (std430, binding = VOXEL_BINDING) restrict readonly buffer voxelBlock {
     voxelStruct voxel[];
 };
 
@@ -20,7 +20,7 @@ struct octreeBuffer {
     uint id;
 };
 
-layout (std430, binding = OCTREE_BINDING) buffer octreeBlock {
+layout (std430, binding = OCTREE_BINDING) restrict buffer octreeBlock {
     octreeBuffer octree[];
 };
 
@@ -40,7 +40,7 @@ void main()
 
     uint nodeptr = octree[childidx].id; // root address
 
-    int voxel_dim = int(u_voxelDim);
+    int voxel_dim = int(u_voxelDim / 2);
     bool has_to_be_flagged = true;
 
     ivec3 umin = ivec3(0);
@@ -82,12 +82,12 @@ void main()
     }
 
     // first iteration will skip the for-loop above!
-	// check if current node has to be set "flagged"
-	if (has_to_be_flagged) {
+    // check if current node has to be set "flagged"
+    if (has_to_be_flagged) {
         // set the flag. if the flag is set the node is marked that it has to be checked for
         // further subdivisions (it has no childs so far)
-		nodeptr |= 0x80000000;
-		octree[childidx].id = nodeptr;
-	}
+        nodeptr |= 0x80000000;
+        octree[childidx].id = nodeptr;
+    }
 
 }

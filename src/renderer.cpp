@@ -49,7 +49,6 @@ struct Renderer::DrawCmd
 
 Renderer::Renderer(core::TimerArray& timer_array)
   : m_numVoxelFrag{0u},
-    m_tree_levels{vars.voxel_octree_levels},
     m_rebuildTree{true},
     m_timers{timer_array}
 {
@@ -91,7 +90,7 @@ Renderer::Renderer(core::TimerArray& timer_array)
     // calculate max possible size of octree
     unsigned int totalNodes = 1;
     unsigned int tmp = 1;
-    for (unsigned int i = 1; i <= m_tree_levels; ++i) {
+    for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
         tmp *= 8;
         totalNodes += tmp;
     }
@@ -99,9 +98,6 @@ Renderer::Renderer(core::TimerArray& timer_array)
     glBufferStorage(GL_SHADER_STORAGE_BUFFER, totalNodes * sizeof(OctreeNodeStruct), nullptr, GL_MAP_READ_BIT);
 
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-    // FBO for voxelization
-    resizeVoxelizeFBO();
 
     // debug render
     core::res::shaders->registerShader("octreeDebugBBox_vert", "tree/bbox.vert", GL_VERTEX_SHADER);
@@ -116,6 +112,16 @@ Renderer::Renderer(core::TimerArray& timer_array)
     m_voxelize_cam = core::res::cameras->createOrthogonalCam("voxelization_cam",
             glm::dvec3(0.0), glm::dvec3(0.0), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     assert(m_voxelize_cam->getViewMatrix() == glm::dmat4(1.0));
+
+    // FBO for voxelization
+    int num_voxels = static_cast<int>(std::pow(2.0, vars.voxel_octree_levels - 1));
+    glBindFramebuffer(GL_FRAMEBUFFER, m_voxelizationFBO);
+    glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, num_voxels);
+    glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, num_voxels);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        LOG_ERROR("Empty framebuffer is not complete (WTF?!?)");
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 /****************************************************************************/
@@ -156,6 +162,14 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
         m_scene_bbox.pmax[i] = center[i] + dist;
     }
 
+    LOG_INFO("Scene bounding box: [",
+            m_scene_bbox.pmin.x, ", ",
+            m_scene_bbox.pmin.y, ", ",
+            m_scene_bbox.pmin.z, "] -> [",
+            m_scene_bbox.pmax.x, ", ",
+            m_scene_bbox.pmax.y, ", ",
+            m_scene_bbox.pmax.z, "]");
+
     m_voxelize_cam->setLeft(m_scene_bbox.pmin.x);
     m_voxelize_cam->setRight(m_scene_bbox.pmax.x);
     m_voxelize_cam->setBottom(m_scene_bbox.pmin.y);
@@ -167,18 +181,6 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
     m_voxelize_cam->setOrientation(glm::dquat());
     assert(m_voxelize_cam->getViewMatrix() == glm::dmat4(1.0));
 
-}
-
-void Renderer::resizeVoxelizeFBO()
-{
-    const auto dim = static_cast<int>(std::pow(2, m_tree_levels));
-    glBindFramebuffer(GL_FRAMEBUFFER, m_voxelizationFBO);
-    glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, dim);
-    glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, dim);
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        LOG_ERROR("Empty framebuffer is not complete");
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 /****************************************************************************/
@@ -226,37 +228,6 @@ void Renderer::genOctreeNodeBuffer()
 
 /****************************************************************************/
 
-void Renderer::reallocOctreeNodeBuffer()
-{
-
-    if(m_octreeNodeBuffer) {
-        gl::Buffer newBuffer;
-        m_octreeNodeBuffer.swap(newBuffer);
-    }
-
-    // calculate max possible size of octree
-    unsigned int totalNodes = 1;
-    unsigned int tmp = 1;
-    for (unsigned int i = 1; i <= m_tree_levels; ++i) {
-        tmp *= 8;
-        totalNodes += tmp;
-    }
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
-    glBufferStorage(GL_SHADER_STORAGE_BUFFER, totalNodes * sizeof(OctreeNodeStruct), nullptr, GL_MAP_READ_BIT);
-
-    // fill with zeroes
-    const GLuint zero = 0;
-    glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
-
-    // bind to binding point
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::OCTREE, m_octreeNodeBuffer);
-
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-}
-
-/****************************************************************************/
-
 void Renderer::createVoxelList(const bool debug_output)
 {
 
@@ -272,20 +243,16 @@ void Renderer::createVoxelList(const bool debug_output)
     auto* old_cam = core::res::cameras->getDefaultCam();
     core::res::cameras->makeDefault(m_voxelize_cam);
 
-    const auto dim = static_cast<int>(std::pow(2, m_tree_levels));
+    const auto dim = static_cast<int>(std::pow(2.0, vars.voxel_octree_levels - 1));
 
     glBindFramebuffer(GL_FRAMEBUFFER, m_voxelizationFBO);
     glViewport(0, 0, dim, dim);
-
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
-    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
     glUseProgram(m_voxel_prog);
 
     // uniforms
     GLint loc;
-    loc = glGetUniformLocation(m_voxel_prog, "u_numVoxels");
+    loc = glGetUniformLocation(m_voxel_prog, "uNumVoxels");
     glUniform1i(loc, dim);
 
     // buffer
@@ -317,23 +284,6 @@ void Renderer::createVoxelList(const bool debug_output)
         LOG_INFO("Number of Entries in Voxel Fragment List: ", m_numVoxelFrag);
         LOG_INFO("");
     }
-
-    std::vector<VoxelStruct> voxelFragments(m_numVoxelFrag);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
-    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, m_numVoxelFrag * sizeof(VoxelStruct), voxelFragments.data());
-
-    glm::ivec3 min(256,256,256);
-    glm::ivec3 max(-1,-1,-1);
-    for (const auto & vs : voxelFragments) {
-        glm::ivec4 pos = static_cast<glm::ivec4>(vs.position);
-        if (pos[0] < min[0]) min[0] = pos[0];
-        if (pos[1] < min[1]) min[1] = pos[1];
-        if (pos[2] < min[2]) min[2] = pos[2];
-        if (pos[0] > max[0]) max[0] = pos[0];
-        if (pos[1] > max[1]) max[1] = pos[1];
-        if (pos[2] > max[2]) max[2] = pos[2];
-    }
-    LOG_INFO("min: (", min[0], ",", min[1], ",", min[2], "), max: (", max[0], ",", max[1], ",", max[2], ")");
 
 }
 
@@ -373,7 +323,7 @@ void Renderer::buildVoxelTree(const bool debug_output)
     GLint loc_u_nodeOffset = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_nodeOffset");
     GLint loc_u_allocOffset = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_allocOffset");
 
-    const unsigned int voxelDim = static_cast<unsigned int>(std::pow(2, m_tree_levels));
+    const unsigned int voxelDim = static_cast<unsigned int>(std::pow(2, vars.voxel_octree_levels));
     glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_numVoxelFrag, m_numVoxelFrag);
     glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_voxelDim, voxelDim);
 
@@ -381,7 +331,7 @@ void Renderer::buildVoxelTree(const bool debug_output)
     unsigned int allocOffset = 1; // offset to first free space for new nodes
     std::vector<unsigned int> maxNodesPerLevel(1, 1); // number of nodes in each tree level; root level = 1
 
-    for (unsigned int i = 0; i <= m_tree_levels; ++i) {
+    for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
 
         if (debug_output) {
             LOG_INFO("");
@@ -406,7 +356,7 @@ void Renderer::buildVoxelTree(const bool debug_output)
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         // break to avoid allocating with ptrs to more children
-        if (i == m_tree_levels) {
+        if (i == vars.voxel_octree_levels - 1) {
 
             nodeOffset += maxNodesPerLevel[i];
             break;
@@ -442,9 +392,7 @@ void Renderer::buildVoxelTree(const bool debug_output)
         glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), &actualNodesAllocated);
         glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero); //reset counter to zero
         glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
-        if (debug_output) {
-            LOG_INFO(actualNodesAllocated, " nodes have been allocated");
-        }
+        if (debug_output) { LOG_INFO(actualNodesAllocated, " nodes have been allocated"); }
         const unsigned int maxNodesToBeAllocated = actualNodesAllocated * 8;
 
         /*
@@ -461,6 +409,7 @@ void Renderer::buildVoxelTree(const bool debug_output)
     if (debug_output) {
         LOG_INFO("");
         LOG_INFO("Total Nodes created: ", nodeOffset);
+        LOG_INFO("");
     }
 
     m_tree_timer->stop();
@@ -497,12 +446,12 @@ void Renderer::buildVoxelTree(const bool debug_output)
     m_voxel_bboxes.reserve(nodeOffset);
     std::pair<GLuint, core::AABB> stack[128]; // >= vars.octree_tree_levels
     stack[0] = std::make_pair(0u, m_scene_bbox); // root box
-    m_voxel_bboxes.emplace_back(m_scene_bbox); // draw root box
     std::size_t top = 1;
     do {
         top--;
         const auto idx = stack[top].first;
         const auto bbox = stack[top].second;
+
         const auto childidx = nodes[idx];
         if (childidx == 0x80000000) {
             // flagged as non empty leaf
@@ -518,13 +467,16 @@ void Renderer::buildVoxelTree(const bool debug_output)
                 int x = (i>>0) & 0x01;
                 int y = (i>>1) & 0x01;
                 int z = (i>>2) & 0x01;
+
                 core::AABB newBBox;
                 newBBox.pmin.x = (x == 0) ? bbox.pmin.x : c.x;
                 newBBox.pmin.y = (y == 0) ? bbox.pmin.y : c.y;
                 newBBox.pmin.z = (z == 0) ? bbox.pmin.z : c.z;
+
                 newBBox.pmax.x = (x == 0) ? c.x : bbox.pmax.x;
                 newBBox.pmax.y = (y == 0) ? c.y : bbox.pmax.y;
                 newBBox.pmax.z = (z == 0) ? c.z : bbox.pmax.z;
+
                 stack[top++] = std::make_pair(baseidx + i, newBBox);
 
             }
@@ -545,27 +497,15 @@ void Renderer::render(const unsigned int tree_levels, const bool renderBBoxes,
     core::res::instances->bind();
     core::res::meshes->bind();
 
-    /*
-     *  Octree Building
-     */
-
-    if (m_tree_levels != tree_levels) {
-        m_rebuildTree = true;
-        m_tree_levels = tree_levels;
-    }
-
     if (m_rebuildTree) {
 
-        reallocOctreeNodeBuffer();
         createVoxelList(debug_output);
+
         buildVoxelTree(debug_output);
+
         m_rebuildTree = false;
 
     }
-
-    /*
-     *  Geometry Rendering
-     */
 
     const auto* cam = core::res::cameras->getDefaultCam();
 
@@ -574,6 +514,8 @@ void Renderer::render(const unsigned int tree_levels, const bool renderBBoxes,
     glDepthFunc(GL_LEQUAL);
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
+    //GLuint prog = m_earlyz_prog;
+    //GLuint vao = 0;
     GLuint textures[core::bindings::NUM_TEXT_UNITS] = {0,};
 
     glUseProgram(m_vertexpulling_prog);
@@ -583,19 +525,10 @@ void Renderer::render(const unsigned int tree_levels, const bool renderBBoxes,
         if (!cam->inFrustum(cmd.instance->getBoundingBox()))
             continue;
 
-        //if (prog != cmd.prog) {
-        //    prog = cmd.prog;
-        //    glUseProgram(prog);
-        //}
-        //if (vao != cmd.vao) {
-        //    vao = cmd.vao;
-        //    glBindVertexArray(vao);
-        //}
-
         // bind textures
         const auto* mat = cmd.instance->getMaterial();
         if (mat->hasDiffuseTexture()) {
-            unsigned int unit = core::bindings::DIFFUSE_TEX_UNIT;
+            int unit = core::bindings::DIFFUSE_TEX_UNIT;
             GLuint tex = *mat->getDiffuseTexture();
             if (textures[unit] != tex) {
                 textures[unit] = tex;
@@ -603,7 +536,7 @@ void Renderer::render(const unsigned int tree_levels, const bool renderBBoxes,
             }
         }
         if (mat->hasSpecularTexture()) {
-            unsigned int unit = core::bindings::SPECULAR_TEX_UNIT;
+            int unit = core::bindings::SPECULAR_TEX_UNIT;
             GLuint tex = *mat->getSpecularTexture();
             if (textures[unit] != tex) {
                 textures[unit] = tex;
@@ -611,7 +544,7 @@ void Renderer::render(const unsigned int tree_levels, const bool renderBBoxes,
             }
         }
         if (mat->hasGlossyTexture()) {
-            unsigned int unit = core::bindings::GLOSSY_TEX_UNIT;
+            int unit = core::bindings::GLOSSY_TEX_UNIT;
             GLuint tex = *mat->getGlossyTexture();
             if (textures[unit] != tex) {
                 textures[unit] = tex;
@@ -619,7 +552,7 @@ void Renderer::render(const unsigned int tree_levels, const bool renderBBoxes,
             }
         }
         if (mat->hasNormalTexture()) {
-            unsigned int unit = core::bindings::NORMAL_TEX_UNIT;
+            int unit = core::bindings::NORMAL_TEX_UNIT;
             GLuint tex = *mat->getNormalTexture();
             if (textures[unit] != tex) {
                 textures[unit] = tex;
@@ -627,7 +560,7 @@ void Renderer::render(const unsigned int tree_levels, const bool renderBBoxes,
             }
         }
         if (mat->hasEmissiveTexture()) {
-            unsigned int unit = core::bindings::EMISSIVE_TEX_UNIT;
+            int unit = core::bindings::EMISSIVE_TEX_UNIT;
             GLuint tex = *mat->getEmissiveTexture();
             if (textures[unit] != tex) {
                 textures[unit] = tex;
@@ -635,7 +568,7 @@ void Renderer::render(const unsigned int tree_levels, const bool renderBBoxes,
             }
         }
         if (mat->hasAlphaTexture()) {
-            unsigned int unit = core::bindings::ALPHA_TEX_UNIT;
+            int unit = core::bindings::ALPHA_TEX_UNIT;
             GLuint tex = *mat->getAlphaTexture();
             if (textures[unit] != tex) {
                 textures[unit] = tex;
@@ -643,7 +576,7 @@ void Renderer::render(const unsigned int tree_levels, const bool renderBBoxes,
             }
         }
         if (mat->hasAmbientTexture()) {
-            unsigned int unit = core::bindings::AMBIENT_TEX_UNIT;
+            int unit = core::bindings::AMBIENT_TEX_UNIT;
             GLuint tex = *mat->getAmbientTexture();
             if (textures[unit] != tex) {
                 textures[unit] = tex;
@@ -662,7 +595,6 @@ void Renderer::render(const unsigned int tree_levels, const bool renderBBoxes,
 
     if (renderOctree)
         debugRenderTree();
-
 }
 
 /****************************************************************************/
@@ -724,11 +656,12 @@ void Renderer::debugRenderTree()
 
     glUseProgram(m_voxel_bbox_prog);
     glBindVertexArray(m_bbox_vao);
+
     glEnable(GL_DEPTH_TEST);
 
     for (const auto& bbox : m_voxel_bboxes) {
         float data[6] = {bbox.pmin.x, bbox.pmin.y, bbox.pmin.z,
-        bbox.pmax.x, bbox.pmax.y, bbox.pmax.z};
+                         bbox.pmax.x, bbox.pmax.y, bbox.pmax.z};
         glUniform3fv(0, 2, data);
         glDrawElements(GL_LINES, 24, GL_UNSIGNED_BYTE, nullptr);
     }

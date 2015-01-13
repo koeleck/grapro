@@ -19,18 +19,15 @@ public:
     virtual void resize(int width, int height) override;
 
 private:
-
     core::Camera*       m_cam;
     bool                m_showgui;
     core::TimerArray    m_timers;
     core::GPUTimer*     m_render_timer;
-
     bool                m_render_bboxes;
     bool                m_render_octree;
     bool                m_debug_output;
     int                 m_tree_levels;
     Renderer            m_renderer;
-
 };
 
 #endif // GRAPRO_H

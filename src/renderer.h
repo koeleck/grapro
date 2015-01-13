@@ -33,12 +33,10 @@ private:
     void genAtomicBuffer();
     void genVoxelBuffer();
     void genOctreeNodeBuffer();
-    void reallocOctreeNodeBuffer();
     void debugRenderTree();
-    void resizeVoxelizeFBO();
 
-    void createVoxelList(bool debug_output);
-    void buildVoxelTree(bool debug_output);
+    void createVoxelList(bool);
+    void buildVoxelTree(bool);
 
     core::AABB                          m_scene_bbox;
     std::vector<const core::Instance*>  m_geometry;
@@ -64,11 +62,10 @@ private:
     gl::Buffer                          m_octreeNodeBuffer;
     gl::Framebuffer                     m_voxelizationFBO;
     unsigned int                        m_numVoxelFrag;
-    unsigned int                        m_tree_levels;
     bool                                m_rebuildTree;
-    core::TimerArray &                  m_timers;
-    core::GPUTimer*                     m_voxelize_timer;
+    core::TimerArray&                   m_timers;
     core::GPUTimer*                     m_tree_timer;
+    core::GPUTimer*                     m_voxelize_timer;
     std::vector<core::AABB>             m_voxel_bboxes;
     core::Program                       m_voxel_bbox_prog;
 };
