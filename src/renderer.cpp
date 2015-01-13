@@ -116,7 +116,7 @@ Renderer::Renderer(core::TimerArray& timer_array)
     // node buffer
     unsigned int max_num_nodes = 1;
     unsigned int tmp = 1;
-    for (int i = 0; i < vars.voxel_octree_levels; ++i) {
+    for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
         tmp *= 8;
         max_num_nodes += tmp;
     }
@@ -352,7 +352,7 @@ void Renderer::buildVoxelTree()
     unsigned int previously_allocated = 8; // only root node was allocated
     unsigned int numAllocated = 8; // we're only allocating one block of 8 nodes, so yeah, 8;
     unsigned int start_node = 0;
-    for (int i = 0; i < vars.voxel_octree_levels; ++i) {
+    for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
 
         LOG_INFO("Starting with max level ", i);
 
