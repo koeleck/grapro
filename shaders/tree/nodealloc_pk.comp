@@ -1,0 +1,42 @@
+#version 440 core
+
+#include "common/bindings.glsl"
+
+layout (local_size_x = LOCAL_SIZE, local_size_y = 1, local_size_z = 1) in;
+
+// octree buffer
+struct octreeBuffer {
+    uint id;
+};
+
+layout (std430, binding = OCTREE_BINDING) restrict buffer octreeBlock {
+    octreeBuffer octree[];
+};
+
+layout (binding = 0) uniform atomic_uint uAllocCount;
+
+uniform uint uCount;
+uniform uint uStartNode;
+
+void main()
+{
+    // retrieve current thread id and return if out of bounds
+    const uint threadId = gl_GlobalInvocationID.x;
+    if (threadId >= uCount)
+        return;
+
+    const uint idx = uStartNode + threadId;
+    uint childidx = octree[idx].id;
+    if ((childidx & 0x80000000u) != 0u) {
+        // alloc
+        uint off = atomicCounterIncrement(uAllocCount);
+        off *= 8u; // 8 nodes
+        // keep current node flagged!
+        octree[idx].id = off | 0x80000000u;
+
+        // init
+        for (uint i = 0; i < 8; ++i) {
+            octree[off + i].id = 0u;
+        }
+    }
+}

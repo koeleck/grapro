@@ -30,10 +30,10 @@ RendererImplBM::RendererImplBM(core::TimerArray& timer_array)
 {
 
     // octree building
-    core::res::shaders->registerShader("octreeNodeFlagComp", "tree/nodeflag.comp", GL_COMPUTE_SHADER);
+    core::res::shaders->registerShader("octreeNodeFlagComp", "tree/nodeflag_bm.comp", GL_COMPUTE_SHADER);
     m_octreeNodeFlag_prog = core::res::shaders->registerProgram("octreeNodeFlag_prog", {"octreeNodeFlagComp"});
 
-    core::res::shaders->registerShader("octreeNodeAllocComp", "tree/nodealloc.comp", GL_COMPUTE_SHADER);
+    core::res::shaders->registerShader("octreeNodeAllocComp", "tree/nodealloc_bm.comp", GL_COMPUTE_SHADER);
     m_octreeNodeAlloc_prog = core::res::shaders->registerProgram("octreeNodeAlloc_prog", {"octreeNodeAllocComp"});
 
     core::res::shaders->registerShader("octreeLeafStoreComp", "tree/leafstore.comp", GL_COMPUTE_SHADER);

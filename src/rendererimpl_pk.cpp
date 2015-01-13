@@ -80,11 +80,11 @@ RendererImplPK::RendererImplPK(core::TimerArray& timer_array)
             {"vertexpulling_vert", "voxelGeom", "voxelFrag"});
 
     // octree building
-    core::res::shaders->registerShader("octreeNodeFlagComp", "tree/nodeflag.comp", GL_COMPUTE_SHADER,
+    core::res::shaders->registerShader("octreeNodeFlagComp", "tree/nodeflag_pk.comp", GL_COMPUTE_SHADER,
             "LOCAL_SIZE " + std::to_string(FLAG_PROG_LOCAL_SIZE));
     m_octreeNodeFlag_prog = core::res::shaders->registerProgram("octreeNodeFlag_prog", {"octreeNodeFlagComp"});
 
-    core::res::shaders->registerShader("octreeNodeAllocComp", "tree/nodealloc.comp", GL_COMPUTE_SHADER,
+    core::res::shaders->registerShader("octreeNodeAllocComp", "tree/nodealloc_pk.comp", GL_COMPUTE_SHADER,
             "LOCAL_SIZE " + std::to_string(ALLOC_PROG_LOCAL_SIZE));
     m_octreeNodeAlloc_prog = core::res::shaders->registerProgram("octreeNodeAlloc_prog", {"octreeNodeAllocComp"});
 

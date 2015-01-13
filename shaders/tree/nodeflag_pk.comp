@@ -1,0 +1,66 @@
+#version 440 core
+
+#include "common/bindings.glsl"
+
+layout (local_size_x = LOCAL_SIZE, local_size_y = 1, local_size_z = 1) in;
+
+// voxel buffer
+struct voxelStruct {
+    uvec4 position;
+    vec4 color;
+    vec4 normal;
+};
+
+layout (std430, binding = VOXEL_BINDING) restrict readonly buffer voxelBlock {
+    voxelStruct voxel[];
+};
+
+// octree buffer
+struct octreeBuffer {
+    uint id;
+};
+
+layout (std430, binding = OCTREE_BINDING) restrict buffer octreeBlock {
+    octreeBuffer octree[];
+};
+
+uniform uint uNumVoxelFrag;
+uniform uint uTreeLevels;
+uniform uint uMaxLevel;
+
+void main()
+{
+    // retrieve current thread id and return if out of bounds
+    const uint ID = gl_GlobalInvocationID.x;
+    if (ID >= uNumVoxelFrag)
+        return;
+
+    uint voxel_dim = uint(pow(2u, uTreeLevels - 1));
+    uvec3 umin = uvec3(0u);
+    uvec3 pos  = voxel[ID].position.xyz;
+
+    // index of first child
+    uint childidx = 0u;
+    uint nodeptr = octree[childidx].id;
+
+    // iterate through all tree levels
+    for (uint i = 0u; i < uMaxLevel; ++i) {
+        voxel_dim /= 2u;
+
+        // find subnode
+        uvec3 subnode = clamp((pos - umin) / voxel_dim, uvec3(0u), uvec3(1u));
+
+        // get child pointer by ignoring the node's ptr MSB
+        childidx = uint(nodeptr & 0x7FFFFFFFu);
+        // determine index of subnode
+        childidx += subnode.z * 4u + subnode.y * 2u + subnode.x;
+
+        umin += voxel_dim * subnode;
+
+        nodeptr = octree[childidx].id;
+    }
+
+    // flag node
+    octree[childidx].id = 0x80000000u;
+
+}
