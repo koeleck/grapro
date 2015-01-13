@@ -277,6 +277,7 @@ void Renderer::createVoxelList()
     }
 
     // debug
+    /*
     std::vector<VoxelStruct> voxels(m_numVoxelFrag);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
     glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, m_numVoxelFrag * sizeof(VoxelStruct), voxels.data());
@@ -293,6 +294,7 @@ void Renderer::createVoxelList()
         bbox.pmax = bbox.pmin + dist;
         m_voxel_bboxes.emplace_back(bbox);
     }
+    */
 
     /* SLOW!!!
     auto order = [] (const core::AABB& b0, const core::AABB& b1) -> bool
@@ -429,7 +431,6 @@ void Renderer::buildVoxelTree()
 
 
     // DEBUG --- create bounding boxes
-    /*
     std::vector<GLuint> nodes(numAllocated);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
     glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, numAllocated * sizeof(GLuint), nodes.data());
@@ -468,7 +469,6 @@ void Renderer::buildVoxelTree()
             }
         }
     } while (top != 0);
-    */
 }
 
 /****************************************************************************/

@@ -63,6 +63,12 @@ void main() {
         b.z = tmp.y;
         c.x = c.z;
         c.z = tmp.z;
+
+        // fix normal
+        n = -n;
+        tmp.x = n.x;
+        n.x = n.z;
+        n.z = tmp.x;
     } else if (d1 > d0 && d1 > d2) {
         // y dominant
         axisID = 1;
@@ -74,6 +80,12 @@ void main() {
         b.z = tmp.y;
         c.y = c.z;
         c.z = tmp.z;
+
+        // fix normal
+        n = -n;
+        tmp.x = n.y;
+        n.y = n.z;
+        n.z = tmp.x;
     }
 
     //Next we enlarge the triangle to enable conservative rasterization
@@ -94,22 +106,17 @@ void main() {
     const vec3 e1 = normalize(vec3(c.xy - b.xy, 0.0));
     const vec3 e2 = normalize(vec3(a.xy - c.xy, 0.0));
     // edge normals point outwards
-    //const vec3 n0 = cross(vec3(0.0, 0.0, 1.0), e0);
-    //const vec3 n1 = cross(vec3(0.0, 0.0, 1.0), e1);
-    //const vec3 n2 = cross(vec3(0.0, 0.0, 1.0), e2);
-    const vec3 n0 = cross(e0, vec3(0.0, 0.0, 1.0));
-    const vec3 n1 = cross(e1, vec3(0.0, 0.0, 1.0));
-    const vec3 n2 = cross(e2, vec3(0.0, 0.0, 1.0));
+    const float dir = sign(dot(n, axes[2]));
+    const vec3 n0 = dir * cross(axes[2], e0);
+    const vec3 n1 = dir * cross(axes[2], e1);
+    const vec3 n2 = dir * cross(axes[2], e2);
 
     // dilate the triangle
-    const float pl = 2.0 * sqrt(hPixel * hPixel);
+    //const float pl = 1.414 * hPixel;
+    const float pl = hPixel;
     a.xy += pl * ((e2.xy / dot(e2.xy, n0.xy)) + (e0.xy / dot(e0.xy, n2.xy)));
     b.xy += pl * ((e0.xy / dot(e0.xy, n1.xy)) + (e1.xy / dot(e1.xy, n0.xy)));
     c.xy += pl * ((e1.xy / dot(e1.xy, n2.xy)) + (e2.xy / dot(e2.xy, n1.xy)));
-    //const float diag = 2.0 * sqrt(hPixel * hPixel);
-    //a.xy += diag * (n0.xy + n2.xy);
-    //b.xy += diag * (n0.xy + n1.xy);
-    //c.xy += diag * (n1.xy + n2.xy);
 
 
     gl_Position = a;
