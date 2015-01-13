@@ -60,7 +60,7 @@ struct Renderer::DrawCmd
 Renderer::Renderer(core::TimerArray& timer_array)
   : m_numVoxelFrag{0u},
     m_rebuildTree{true},
-    m_timers{timer_array}
+    m_timers(timer_array)
 {
 
     initBBoxStuff();
