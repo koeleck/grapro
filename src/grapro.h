@@ -2,9 +2,12 @@
 #define GRAPRO_H
 
 #include "framework/mainwindow.h"
-#include "renderer.h"
+#include "rendererimpl_bm.h"
+#include "rendererinterface.h"
 #include "core/camera.h"
 #include "core/timer_array.h"
+
+#include <memory>
 
 class GraPro
   : public framework::MainWindow
@@ -19,15 +22,15 @@ public:
     virtual void resize(int width, int height) override;
 
 private:
-    core::Camera*       m_cam;
-    bool                m_showgui;
-    core::TimerArray    m_timers;
-    core::GPUTimer*     m_render_timer;
-    bool                m_render_bboxes;
-    bool                m_render_octree;
-    bool                m_debug_output;
-    int                 m_tree_levels;
-    Renderer            m_renderer;
+    core::Camera*                       m_cam;
+    bool                                m_showgui;
+    core::TimerArray                    m_timers;
+    core::GPUTimer*                     m_render_timer;
+    bool                                m_render_bboxes;
+    bool                                m_render_octree;
+    bool                                m_debug_output;
+    int                                 m_tree_levels;
+    std::unique_ptr<RendererInterface>  m_renderer;
 };
 
 #endif // GRAPRO_H

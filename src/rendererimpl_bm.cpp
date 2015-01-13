@@ -1,10 +1,13 @@
+#include "rendererimpl_bm.h"
+
 #include <cassert>
 #include <algorithm>
-
-#include <glm/gtc/type_ptr.hpp>
 #include <vector>
 
-#include "renderer.h"
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/glm.hpp>
+
 #include "core/mesh.h"
 #include "core/shader_manager.h"
 #include "core/mesh_manager.h"
@@ -13,13 +16,16 @@
 #include "core/material_manager.h"
 #include "core/shader_interface.h"
 #include "core/texture.h"
+
 #include "log/log.h"
+
 #include "framework/vars.h"
+
 #include "voxel.h"
 
 /****************************************************************************/
 
-Renderer::Renderer(core::TimerArray& timer_array)
+RendererImplBM::RendererImplBM(core::TimerArray& timer_array)
   : RendererInterface{timer_array}
 {
 
@@ -47,17 +53,17 @@ Renderer::Renderer(core::TimerArray& timer_array)
     }
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
     glBufferStorage(GL_SHADER_STORAGE_BUFFER, totalNodes * sizeof(OctreeNodeStruct), nullptr, GL_MAP_READ_BIT);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);    
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 }
 
 /****************************************************************************/
 
-Renderer::~Renderer() = default;
+RendererImplBM::~RendererImplBM() = default;
 
 /****************************************************************************/
 
-void Renderer::genAtomicBuffer()
+void RendererImplBM::genAtomicBuffer()
 {
     GLuint initVal = 0;
 
@@ -70,7 +76,7 @@ void Renderer::genAtomicBuffer()
 
 /****************************************************************************/
 
-void Renderer::genVoxelBuffer()
+void RendererImplBM::genVoxelBuffer()
 {
 
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
@@ -83,7 +89,7 @@ void Renderer::genVoxelBuffer()
 
 /****************************************************************************/
 
-void Renderer::genOctreeNodeBuffer()
+void RendererImplBM::genOctreeNodeBuffer()
 {
 
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
@@ -100,7 +106,7 @@ void Renderer::genOctreeNodeBuffer()
 
 /****************************************************************************/
 
-void Renderer::createVoxelList(const bool debug_output)
+void RendererImplBM::createVoxelList(const bool debug_output)
 {
 
     if (debug_output) {
@@ -161,7 +167,7 @@ void Renderer::createVoxelList(const bool debug_output)
 
 /****************************************************************************/
 
-void Renderer::buildVoxelTree(const bool debug_output)
+void RendererImplBM::buildVoxelTree(const bool debug_output)
 {
 
     if (debug_output) {
@@ -359,7 +365,7 @@ void Renderer::buildVoxelTree(const bool debug_output)
 
 /****************************************************************************/
 
-void Renderer::render(const unsigned int tree_levels, const bool renderBBoxes,
+void RendererImplBM::render(const unsigned int tree_levels, const bool renderBBoxes,
                       const bool renderOctree, const bool debug_output)
 {
     if (m_geometry.empty())

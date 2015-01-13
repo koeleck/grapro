@@ -1,16 +1,13 @@
-#ifndef RENDERER_H
-#define RENDERER_H
+#ifndef RENDERERIMPLBM_H
+#define RENDERERIMPLBM_H
 
 #include "rendererinterface.h"
 
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/glm.hpp>
-
-class Renderer : public RendererInterface
+class RendererImplBM : public RendererInterface
 {
 public:
-    Renderer(core::TimerArray& timer_array);
-    ~Renderer();
+    RendererImplBM(core::TimerArray& timer_array);
+    ~RendererImplBM();
 
     virtual void render(unsigned int, bool = false, bool = false, bool = false);
 
