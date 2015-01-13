@@ -100,9 +100,9 @@ void main() {
 
     // dilate the triangle
     const float diag = 2.0 * sqrt(hPixel * hPixel);
-    a.xy += diag * (n0.xy + n2.xy);
-    b.xy += diag * (n0.xy + n1.xy);
-    c.xy += diag * (n1.xy + n2.xy);
+    a.xy = a.xy + diag * ((e2.xy / dot(e2.xy, n0.xy)) + (e0.xy / dot(e0.xy, n2.xy)));
+    b.xy = b.xy + diag * ((e0.xy / dot(e0.xy, n1.xy)) + (e1.xy / dot(e1.xy, n0.xy)));
+    c.xy = c.xy + diag * ((e1.xy / dot(e1.xy, n2.xy)) + (e2.xy / dot(e2.xy, n1.xy)));
 
 
     gl_Position = a;
