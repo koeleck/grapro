@@ -52,18 +52,7 @@ void main() {
     float d0 = abs(dot(n, axes[0]));
     float d1 = abs(dot(n, axes[1]));
     float d2 = abs(dot(n, axes[2]));
-    if (d1 > d0 && d1 > d2) {
-        // y dominant
-        axisID = 1;
-        // swap y & z
-        vec3 tmp = vec3(a.y, b.y, c.y);
-        a.y = a.z;
-        a.z = tmp.x;
-        b.y = b.z;
-        b.z = tmp.y;
-        c.y = c.z;
-        c.z = tmp.z;
-    } else if (d0 > d1 && d0 > d2) {
+    if (d0 > d1 && d0 > d2) {
         // x dominant
         axisID = 0;
         // swap x & z
@@ -73,6 +62,17 @@ void main() {
         b.x = b.z;
         b.z = tmp.y;
         c.x = c.z;
+        c.z = tmp.z;
+    } else if (d1 > d0 && d1 > d2) {
+        // y dominant
+        axisID = 1;
+        // swap y & z
+        vec3 tmp = vec3(a.y, b.y, c.y);
+        a.y = a.z;
+        a.z = tmp.x;
+        b.y = b.z;
+        b.z = tmp.y;
+        c.y = c.z;
         c.z = tmp.z;
     }
 
@@ -137,5 +137,4 @@ void main() {
     outData.materialID = inData[2].materialID;
     outData.uv = inData[2].uv;
     EmitVertex();
-
 }

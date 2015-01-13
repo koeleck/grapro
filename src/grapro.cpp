@@ -4,6 +4,7 @@
 
 #include "gl/opengl.h"
 #include "framework/imgui.h"
+#include "framework/vars.h"
 #include "core/instance_manager.h"
 #include "core/camera_manager.h"
 #include "core/shader_manager.h"
@@ -46,7 +47,7 @@ void GraPro::update_gui(const double delta_t)
     if (!m_showgui)
         return;
     if (ImGui::Begin("DEBUG", &m_showgui)) {
-        ImGui::PushItemWidth(.65f * static_cast<float>(getWidth()));
+        ImGui::PushItemWidth(.1f * static_cast<float>(getWidth()));
 
         if (ImGui::Button("recompile shaders")) {
             core::res::shaders->recompile();
@@ -57,6 +58,13 @@ void GraPro::update_gui(const double delta_t)
 
         ImGui::Checkbox("bounding boxes", &m_render_bboxes);
         ImGui::Checkbox("debug octree", &m_render_octree);
+
+        const auto prev_tree_levels = vars.voxel_octree_levels;
+        static const auto max_levels = vars.voxel_octree_levels;
+        ImGui::SliderInt("Tree levels", &vars.voxel_octree_levels,
+                1, max_levels);
+        if (vars.voxel_octree_levels != prev_tree_levels)
+            m_renderer.markTreeInvalid();
 
         // Timers: Just create your timer via m_timers and they will
         // appear here

@@ -32,7 +32,7 @@ DEF_VAR(shader_dir, std::string, "shaders/")
 
 // Voxel
 DEF_VAR(max_voxel_fragments, unsigned int, 2097152)
-DEF_VAR(voxel_octree_levels, unsigned int, 8)
+DEF_VAR(voxel_octree_levels, int, 8)
 
 /***************************************************************
  *

@@ -20,7 +20,8 @@ public:
 
     void setGeometry(std::vector<const core::Instance*> geometry);
     void render(bool renderBBoxes = false, bool render_octree = false);
-    void renderBoundingBoxes();
+
+    void markTreeInvalid();
 
 private:
     struct DrawCmd;
@@ -30,6 +31,7 @@ private:
 
     void renderGeometry(GLuint prog);
     void debugRenderTree();
+    void renderBoundingBoxes();
 
     void createVoxelList();
     void buildVoxelTree();

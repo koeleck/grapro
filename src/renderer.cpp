@@ -112,16 +112,16 @@ Renderer::Renderer(core::TimerArray& timer_array)
     // voxel buffer
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
     glBufferStorage(GL_SHADER_STORAGE_BUFFER, vars.max_voxel_fragments * sizeof(VoxelStruct), nullptr, GL_MAP_READ_BIT);
-    //glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
 
     // node buffer
     unsigned int max_num_nodes = 1;
     unsigned int tmp = 1;
-    for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
+    for (int i = 0; i < vars.voxel_octree_levels; ++i) {
         tmp *= 8;
         max_num_nodes += tmp;
     }
-    unsigned int mem = max_num_nodes * 4;
+    unsigned int mem = max_num_nodes * 4 +
+        static_cast<unsigned int>(vars.max_voxel_fragments * sizeof(VoxelStruct));
     std::string unit = "B";
     if (mem > 1024) {
         unit = "kiB";
@@ -135,7 +135,7 @@ Renderer::Renderer(core::TimerArray& timer_array)
         unit = "GiB";
         mem /= 1024;
     }
-    LOG_INFO("max nodes: ", max_num_nodes, " (", mem, unit, ")");
+    LOG_INFO("max nodes: ", max_num_nodes, ", max fragments: ", vars.max_voxel_fragments, " (", mem, unit, ")");
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
     glBufferStorage(GL_SHADER_STORAGE_BUFFER, max_num_nodes * sizeof(GLuint), nullptr, GL_MAP_READ_BIT);
     //glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
@@ -252,7 +252,9 @@ void Renderer::createVoxelList()
     // setup
     glBindBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, m_atomicCounterBuffer, 0, sizeof(GLuint));
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::VOXEL, m_voxelBuffer);
+
     glDisable(GL_CULL_FACE);
+    glDepthFunc(GL_ALWAYS);
 
     renderGeometry(voxel_prog);
 
@@ -275,7 +277,6 @@ void Renderer::createVoxelList()
     }
 
     // debug
-    /*
     std::vector<VoxelStruct> voxels(m_numVoxelFrag);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
     glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, m_numVoxelFrag * sizeof(VoxelStruct), voxels.data());
@@ -292,7 +293,6 @@ void Renderer::createVoxelList()
         bbox.pmax = bbox.pmin + dist;
         m_voxel_bboxes.emplace_back(bbox);
     }
-    */
 
     /* SLOW!!!
     auto order = [] (const core::AABB& b0, const core::AABB& b1) -> bool
@@ -350,7 +350,7 @@ void Renderer::buildVoxelTree()
     unsigned int previously_allocated = 8; // only root node was allocated
     unsigned int numAllocated = 8; // we're only allocating one block of 8 nodes, so yeah, 8;
     unsigned int start_node = 0;
-    for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
+    for (int i = 0; i < vars.voxel_octree_levels; ++i) {
 
         LOG_INFO("Starting with max level ", i);
 
@@ -429,6 +429,7 @@ void Renderer::buildVoxelTree()
 
 
     // DEBUG --- create bounding boxes
+    /*
     std::vector<GLuint> nodes(numAllocated);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
     glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, numAllocated * sizeof(GLuint), nodes.data());
@@ -467,6 +468,7 @@ void Renderer::buildVoxelTree()
             }
         }
     } while (top != 0);
+    */
 }
 
 /****************************************************************************/
@@ -485,7 +487,6 @@ void Renderer::render(const bool renderBBoxes, const bool renderOctree)
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glDepthFunc(GL_LEQUAL);
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     renderGeometry(m_vertexpulling_prog);
 
     if (renderBBoxes)
@@ -653,3 +654,11 @@ void Renderer::debugRenderTree()
 }
 
 /****************************************************************************/
+
+void Renderer::markTreeInvalid()
+{
+    m_rebuildTree = true;
+}
+
+/****************************************************************************/
+
