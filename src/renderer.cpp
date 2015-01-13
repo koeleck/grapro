@@ -243,7 +243,7 @@ void Renderer::render(const bool renderBBoxes, bool hiz, int level)
 
     auto* cam = reinterpret_cast<core::PerspectiveCamera*>(core::res::cameras->getDefaultCam());
     cam->setNear(1.0);
-    cam->setFar(500.0);
+    cam->setFar(5000.0);
     const auto aspect_ratio_orig = cam->getAspectRatio();
     cam->setAspectRatio(1.0);
 
@@ -470,10 +470,10 @@ void Renderer::downsampleDepthBuffer(const OffscreenBuffer& buffer)
     unsigned int height = static_cast<unsigned int>(buffer.m_height);
     for (int i = 0; i < levels; ++i) {
         //LOG_INFO("Level ", i, ": ", width, "x", height);
+        glBindImageTexture(2, m_hiz_tex, i, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);
         if (i != 0) {
             glBindImageTexture(1, m_hiz_tex, i - 1, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
         }
-        glBindImageTexture(2, m_hiz_tex, i, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);
 
         glDispatchCompute((width + 15) / 16, (height + 15) / 16, 1);
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);

@@ -12,8 +12,9 @@ void main()
     ivec2 pos = ivec2(vs_uv * vec2(textureSize(uTexture, uLevel)));;
     //out_FragColor = texelFetch(uTexture, pos, uLevel);
     float val = texelFetch(uTexture, pos, uLevel).r;
-    float zn = 1.0;
-    float zf = 5000.0;
-    float lin_dist = - (zn*zf) / (val * (zf - zn) - zf);
-    out_FragColor = vec4(vec3((lin_dist - zn) / (zf - zn)), 1.0);
+    out_FragColor = vec4(vec3(val), 1.0);
+    //float zn = 1.0;
+    //float zf = 5000.0;
+    //float lin_dist = - (zn*zf) / (val * (zf - zn) - zf);
+    //out_FragColor = vec4(vec3((lin_dist - zn) / (zf - zn)), 1.0);
 }

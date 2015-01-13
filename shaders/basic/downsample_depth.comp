@@ -16,7 +16,8 @@ void main()
 
     if (x < size.x && y < size.y) {
         if (all(equal(size, textureSize(uDepthTex, 0)))) {
-            imageStore(uDepthOut, ivec2(x, y), texelFetch(uDepthTex, ivec2(x, y), 0).rrrr);
+            //imageStore(uDepthOut, ivec2(x, y), texelFetch(uDepthTex, ivec2(x, y), 0).rrrr);
+            imageStore(uDepthOut, ivec2(x, y), vec4(0.8));
         } else {
             const ivec2 prev_size = imageSize(uDepthIn).xy;
             ivec2 origin = 2 * ivec2(x, y);
