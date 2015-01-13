@@ -89,7 +89,7 @@ void main() {
     }
 
     //Next we enlarge the triangle to enable conservative rasterization
-    const float hPixel = 1.0 / float(uNumVoxels);
+    const float hPixel = 0.5 / float(uNumVoxels);
 
     //calculate AABB of this triangle
     vec4 AABB = vec4(a.xy, a.xy);
@@ -105,15 +105,14 @@ void main() {
     const vec3 e0 = normalize(vec3(b.xy - a.xy, 0.0));
     const vec3 e1 = normalize(vec3(c.xy - b.xy, 0.0));
     const vec3 e2 = normalize(vec3(a.xy - c.xy, 0.0));
-    // edge normals point outwards
+    // make edge normals point outwards
     const float dir = sign(dot(n, axes[2]));
     const vec3 n0 = dir * cross(axes[2], e0);
     const vec3 n1 = dir * cross(axes[2], e1);
     const vec3 n2 = dir * cross(axes[2], e2);
 
     // dilate the triangle
-    //const float pl = 1.414 * hPixel;
-    const float pl = hPixel;
+    const float pl = 1.414 * hPixel;
     a.xy += pl * ((e2.xy / dot(e2.xy, n0.xy)) + (e0.xy / dot(e0.xy, n2.xy)));
     b.xy += pl * ((e0.xy / dot(e0.xy, n1.xy)) + (e1.xy / dot(e1.xy, n0.xy)));
     c.xy += pl * ((e1.xy / dot(e1.xy, n2.xy)) + (e2.xy / dot(e2.xy, n1.xy)));
