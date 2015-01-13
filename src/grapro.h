@@ -2,10 +2,13 @@
 #define GRAPRO_H
 
 #include "framework/mainwindow.h"
-#include "rendererimpl_bm.h"
-#include "rendererinterface.h"
+
 #include "core/camera.h"
 #include "core/timer_array.h"
+
+#include "rendererimpl_bm.h"
+#include "rendererimpl_pk.h"
+#include "rendererinterface.h"
 
 #include <memory>
 
@@ -30,7 +33,8 @@ private:
     bool                                m_render_octree;
     bool                                m_debug_output;
     int                                 m_tree_levels;
-    std::unique_ptr<RendererInterface>  m_renderer;
+    std::unique_ptr<RendererInterface>  m_renderer_bm;
+    std::unique_ptr<RendererImplPK>     m_renderer_pk;
 };
 
 #endif // GRAPRO_H

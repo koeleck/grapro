@@ -20,12 +20,12 @@ public:
     RendererInterface(core::TimerArray& timer_array);
     virtual ~RendererInterface();
 
-    virtual void render(unsigned int tree_levels, bool renderBBoxes,
-                        bool renderOctree, bool debug_output) = 0;
+    virtual void render(unsigned int tree_levels, bool renderBBoxes = false,
+                        bool renderOctree = false, bool debug_output = false) = 0;
 
     virtual void setGeometry(std::vector<const core::Instance*> geometry) final;
 
-    void setRebuildTree() { m_rebuildTree = true; }
+    void markTreeInvalid() { m_rebuildTree = true; }
 
 protected:
     struct DrawCmd;
