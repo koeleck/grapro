@@ -52,18 +52,7 @@ void main() {
     float d0 = abs(dot(n, axes[0]));
     float d1 = abs(dot(n, axes[1]));
     float d2 = abs(dot(n, axes[2]));
-    if (d1 > d0 && d1 > d2) {
-        // y dominant
-        axisID = 1;
-        // swap y & z
-        vec3 tmp = vec3(a.y, b.y, c.y);
-        a.y = a.z;
-        a.z = tmp.x;
-        b.y = b.z;
-        b.z = tmp.y;
-        c.y = c.z;
-        c.z = tmp.z;
-    } else if (d0 > d1 && d0 > d2) {
+    if (d0 > d1 && d0 > d2) {
         // x dominant
         axisID = 0;
         // swap x & z
@@ -74,10 +63,33 @@ void main() {
         b.z = tmp.y;
         c.x = c.z;
         c.z = tmp.z;
+
+        // fix normal
+        n = -n;
+        tmp.x = n.x;
+        n.x = n.z;
+        n.z = tmp.x;
+    } else if (d1 > d0 && d1 > d2) {
+        // y dominant
+        axisID = 1;
+        // swap y & z
+        vec3 tmp = vec3(a.y, b.y, c.y);
+        a.y = a.z;
+        a.z = tmp.x;
+        b.y = b.z;
+        b.z = tmp.y;
+        c.y = c.z;
+        c.z = tmp.z;
+
+        // fix normal
+        n = -n;
+        tmp.x = n.y;
+        n.y = n.z;
+        n.z = tmp.x;
     }
 
     //Next we enlarge the triangle to enable conservative rasterization
-    const float hPixel = 1.0 / float(uNumVoxels);
+    const float hPixel = 0.5f / float(uNumVoxels);
 
     //calculate AABB of this triangle
     vec4 AABB = vec4(a.xy, a.xy);
@@ -93,16 +105,17 @@ void main() {
     const vec3 e0 = normalize(vec3(b.xy - a.xy, 0.0));
     const vec3 e1 = normalize(vec3(c.xy - b.xy, 0.0));
     const vec3 e2 = normalize(vec3(a.xy - c.xy, 0.0));
-    // edge normals point outwards
-    const vec3 n0 = cross(vec3(0.0, 0.0, 1.0), e0);
-    const vec3 n1 = cross(vec3(0.0, 0.0, 1.0), e1);
-    const vec3 n2 = cross(vec3(0.0, 0.0, 1.0), e2);
+    // make edge normals point outwards
+    const float dir = sign(dot(n, axes[2]));
+    const vec3 n0 = dir * cross(axes[2], e0);
+    const vec3 n1 = dir * cross(axes[2], e1);
+    const vec3 n2 = dir * cross(axes[2], e2);
 
     // dilate the triangle
-    const float diag = 2.0 * sqrt(hPixel * hPixel);
-    a.xy = a.xy + diag * ((e2.xy / dot(e2.xy, n0.xy)) + (e0.xy / dot(e0.xy, n2.xy)));
-    b.xy = b.xy + diag * ((e0.xy / dot(e0.xy, n1.xy)) + (e1.xy / dot(e1.xy, n0.xy)));
-    c.xy = c.xy + diag * ((e1.xy / dot(e1.xy, n2.xy)) + (e2.xy / dot(e2.xy, n1.xy)));
+    const float pl = sqrt(2.0) * hPixel;
+    a.xy += pl * ((e2.xy / dot(e2.xy, n0.xy)) + (e0.xy / dot(e0.xy, n2.xy)));
+    b.xy += pl * ((e0.xy / dot(e0.xy, n1.xy)) + (e1.xy / dot(e1.xy, n0.xy)));
+    c.xy += pl * ((e1.xy / dot(e1.xy, n2.xy)) + (e2.xy / dot(e2.xy, n1.xy)));
 
 
     gl_Position = a;
@@ -137,5 +150,4 @@ void main() {
     outData.materialID = inData[2].materialID;
     outData.uv = inData[2].uv;
     EmitVertex();
-
 }
