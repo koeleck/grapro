@@ -33,8 +33,9 @@ private:
     bool                                m_render_octree;
     bool                                m_debug_output;
     int                                 m_tree_levels;
-    std::unique_ptr<RendererInterface>  m_renderer_bm;
-    std::unique_ptr<RendererImplPK>     m_renderer_pk;
+
+    std::unique_ptr<RendererInterface>  m_renderer;
+
 };
 
 #endif // GRAPRO_H

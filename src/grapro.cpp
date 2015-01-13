@@ -20,12 +20,11 @@ GraPro::GraPro(GLFWwindow* window)
     m_render_octree{false},
     m_debug_output{false},
     m_tree_levels{static_cast<int>(vars.voxel_octree_levels)},
-    //m_renderer_bm{new RendererImplBM(m_timers)}
-    m_renderer_pk{new RendererImplPK(m_timers)}
+    m_renderer{new RendererImplBM(m_timers)}
+    //m_renderer{new RendererImplPK(m_timers)}
 {
     const auto* instances = core::res::instances;
-    //m_renderer_bm->setGeometry(instances->getInstances());
-    m_renderer_pk->setGeometry(instances->getInstances());
+    m_renderer->setGeometry(instances->getInstances());
 
     glm::dvec3 up(0.0, 1.0, 0.0);
     m_cam->setFixedYawAxis(true, up);
@@ -40,8 +39,8 @@ void GraPro::render_scene()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     m_render_timer->start();
-    m_renderer_pk->render(static_cast<unsigned int>(m_tree_levels),
-                      m_render_bboxes, m_render_octree, m_debug_output); // switch pk/bm here
+    m_renderer->render(static_cast<unsigned int>(m_tree_levels),
+                      m_render_bboxes, m_render_octree, m_debug_output);
     m_render_timer->stop();
 }
 
@@ -66,8 +65,7 @@ void GraPro::update_gui(const double delta_t)
         // octree
         if (ImGui::CollapsingHeader("Octree", nullptr, false, true)) {
             if (ImGui::Button("rebuild octree")) {
-                //m_renderer_bm->markTreeInvalid();
-                m_renderer_pk->markTreeInvalid();
+                m_renderer->markTreeInvalid();
             }
             ImGui::SliderInt("tree levels", &m_tree_levels, 0, 8);
             ImGui::Checkbox("show voxel bounding boxes", &m_render_octree);

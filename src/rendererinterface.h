@@ -25,7 +25,7 @@ public:
 
     virtual void setGeometry(std::vector<const core::Instance*> geometry) final;
 
-    void markTreeInvalid() { m_rebuildTree = true; }
+    virtual void markTreeInvalid() final { m_rebuildTree = true; }
 
 protected:
     struct DrawCmd;
@@ -35,6 +35,7 @@ protected:
 
     virtual void renderBoundingBoxes() final;
     virtual void renderVoxelBoundingBoxes() final;
+    virtual void createVoxelBBoxes(unsigned int num) final;
 
     using ProgramMap = std::unordered_map<unsigned char, core::Program>;
     ProgramMap                          m_programs;
@@ -55,9 +56,11 @@ protected:
     std::vector<core::AABB>             m_voxel_bboxes;
     core::Program                       m_voxel_bbox_prog;
 
-    // voxelization
+    // voxelization & octree
     core::OrthogonalCamera*             m_voxelize_cam;
     core::Program                       m_voxel_prog;
+    gl::Buffer                          m_voxelBuffer;
+    gl::Buffer                          m_octreeNodeBuffer;
     gl::Framebuffer                     m_voxelizationFBO;
     unsigned int                        m_numVoxelFrag;
 

@@ -8,13 +8,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/glm.hpp>
 
-#include "core/mesh.h"
 #include "core/shader_manager.h"
 #include "core/mesh_manager.h"
 #include "core/instance_manager.h"
 #include "core/camera_manager.h"
 #include "core/material_manager.h"
-#include "core/shader_interface.h"
 #include "core/texture.h"
 
 #include "log/log.h"
@@ -51,6 +49,22 @@ RendererImplBM::RendererImplBM(core::TimerArray& timer_array)
         tmp *= 8;
         totalNodes += tmp;
     }
+    unsigned int mem = totalNodes * 4 +
+        static_cast<unsigned int>(vars.max_voxel_fragments * sizeof(VoxelStruct));
+    std::string unit = "B";
+    if (mem > 1024) {
+        unit = "kiB";
+        mem /= 1024;
+    }
+    if (mem > 1024) {
+        unit = "MiB";
+        mem /= 1024;
+    }
+    if (mem > 1024) {
+        unit = "GiB";
+        mem /= 1024;
+    }
+    LOG_INFO("max nodes: ", totalNodes, ", max fragments: ", vars.max_voxel_fragments, " (", mem, unit, ")");
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
     glBufferStorage(GL_SHADER_STORAGE_BUFFER, totalNodes * sizeof(OctreeNodeStruct), nullptr, GL_MAP_READ_BIT);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
@@ -313,53 +327,7 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
     glDispatchCompute(groupDimX, groupDimY, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);*/
 
-    // DEBUG --- create bounding boxes
-
-    // read tree buffer into nodes vector
-    std::vector<GLuint> nodes(nodeOffset);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
-    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, nodeOffset * sizeof(GLuint), nodes.data());
-
-    m_voxel_bboxes.clear();
-    m_voxel_bboxes.reserve(nodeOffset);
-    std::pair<GLuint, core::AABB> stack[128]; // >= vars.octree_tree_levels
-    stack[0] = std::make_pair(0u, m_scene_bbox); // root box
-    std::size_t top = 1;
-    do {
-        top--;
-        const auto idx = stack[top].first;
-        const auto bbox = stack[top].second;
-
-        const auto childidx = nodes[idx];
-        if (childidx == 0x80000000) {
-            // flagged as non empty leaf
-            m_voxel_bboxes.emplace_back(bbox);
-
-        } else if ((childidx & 0x80000000) != 0) {
-            // flagged parent node
-            const auto baseidx = uint(childidx & 0x7FFFFFFFu); // ptr to children
-            const auto c = bbox.center();
-
-            for (unsigned int i = 0; i < 8; ++i) {
-
-                int x = (i>>0) & 0x01;
-                int y = (i>>1) & 0x01;
-                int z = (i>>2) & 0x01;
-
-                core::AABB newBBox;
-                newBBox.pmin.x = (x == 0) ? bbox.pmin.x : c.x;
-                newBBox.pmin.y = (y == 0) ? bbox.pmin.y : c.y;
-                newBBox.pmin.z = (z == 0) ? bbox.pmin.z : c.z;
-
-                newBBox.pmax.x = (x == 0) ? c.x : bbox.pmax.x;
-                newBBox.pmax.y = (y == 0) ? c.y : bbox.pmax.y;
-                newBBox.pmax.z = (z == 0) ? c.z : bbox.pmax.z;
-
-                stack[top++] = std::make_pair(baseidx + i, newBBox);
-
-            }
-        }
-    } while (top != 0);
+    createVoxelBBoxes(nodeOffset);
 
 }
 

@@ -19,7 +19,7 @@ RendererInterface::RendererInterface(core::TimerArray& timer_array)
   	m_tree_timer{m_timers.addGPUTimer("Octree")},
     m_rebuildTree{true}
 {
-	
+
 	initBBoxes();
 	initVertexPulling();
 	initVoxelization();
@@ -174,8 +174,7 @@ void RendererInterface::renderBoundingBoxes()
 
     core::res::instances->bind();
 
-    GLuint prog = m_bbox_prog;
-    glUseProgram(prog);
+    glUseProgram(m_bbox_prog);
     glBindVertexArray(m_bbox_vao);
 
     glDisable(GL_DEPTH_TEST);
@@ -205,6 +204,50 @@ void RendererInterface::renderVoxelBoundingBoxes()
         glDrawElements(GL_LINES, 24, GL_UNSIGNED_BYTE, nullptr);
     }
 
+}
+
+/****************************************************************************/
+
+void RendererInterface::createVoxelBBoxes(const unsigned int num)
+{
+    std::vector<GLuint> nodes(num);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
+    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num * sizeof(GLuint), nodes.data());
+
+    m_voxel_bboxes.clear();
+    m_voxel_bboxes.reserve(num);
+    std::pair<GLuint, core::AABB> stack[128];
+    stack[0] = std::make_pair(0u, m_scene_bbox);
+    std::size_t top = 1;
+    do {
+        top--;
+        const auto idx = stack[top].first;
+        const auto bbox = stack[top].second;
+
+        const auto childidx = nodes[idx];
+        if (childidx == 0x80000000) {
+            m_voxel_bboxes.emplace_back(bbox);
+        } else if ((childidx & 0x80000000) != 0) {
+            const auto baseidx = uint(childidx & 0x7FFFFFFFu);
+            const auto c = bbox.center();
+            for (unsigned int i = 0; i < 8; ++i) {
+                int x = (i>>0) & 0x01;
+                int y = (i>>1) & 0x01;
+                int z = (i>>2) & 0x01;
+
+                core::AABB newBBox;
+                newBBox.pmin.x = (x == 0) ? bbox.pmin.x : c.x;
+                newBBox.pmin.y = (y == 0) ? bbox.pmin.y : c.y;
+                newBBox.pmin.z = (z == 0) ? bbox.pmin.z : c.z;
+
+                newBBox.pmax.x = (x == 0) ? c.x : bbox.pmax.x;
+                newBBox.pmax.y = (y == 0) ? c.y : bbox.pmax.y;
+                newBBox.pmax.z = (z == 0) ? c.z : bbox.pmax.z;
+
+                stack[top++] = std::make_pair(baseidx + i, newBBox);
+            }
+        }
+    } while (top != 0);
 }
 
 /****************************************************************************/

@@ -1,20 +1,24 @@
+#include "rendererimpl_pk.h"
+
 #include <cassert>
 #include <algorithm>
-
-#include <glm/gtc/type_ptr.hpp>
 #include <vector>
 
-#include "rendererimpl_pk.h"
-#include "core/mesh.h"
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/glm.hpp>
+
 #include "core/shader_manager.h"
 #include "core/mesh_manager.h"
 #include "core/instance_manager.h"
 #include "core/camera_manager.h"
 #include "core/material_manager.h"
-#include "core/shader_interface.h"
 #include "core/texture.h"
+
 #include "log/log.h"
+
 #include "framework/vars.h"
+
 #include "voxel.h"
 
 /****************************************************************************/
@@ -29,55 +33,9 @@ constexpr int ALLOC_PROG_LOCAL_SIZE = 256;
 
 /****************************************************************************/
 
-struct RendererImplPK::DrawCmd
-{
-    DrawCmd(const core::Instance* instance_, core::Program prog_,
-            GLuint vao_, GLenum mode_, GLsizei count_, GLenum type_,
-            GLvoid* indices_, GLint basevertex_)
-      : instance{instance_},
-        prog{prog_},
-        vao{vao_},
-        mode{mode_},
-        count{count_},
-        type{type_},
-        indices{indices_},
-        basevertex{basevertex_}
-    {
-    }
-
-    const core::Instance*   instance;
-    core::Program           prog;
-    GLuint                  vao;
-    GLenum                  mode;
-    GLsizei                 count;
-    GLenum                  type;
-    GLvoid*                 indices;
-    GLint                   basevertex;
-};
-
-/****************************************************************************/
-
 RendererImplPK::RendererImplPK(core::TimerArray& timer_array)
-  : m_numVoxelFrag{0u},
-    m_rebuildTree{true},
-    m_timers(timer_array)
+  : RendererInterface{timer_array}
 {
-
-    initBBoxStuff();
-
-    // programmable vertex pulling
-    core::res::shaders->registerShader("vertexpulling_vert", "basic/vertexpulling.vert",
-            GL_VERTEX_SHADER);
-    core::res::shaders->registerShader("vertexpulling_frag", "basic/vertexpulling.frag",
-            GL_FRAGMENT_SHADER);
-    m_vertexpulling_prog = core::res::shaders->registerProgram("vertexpulling_prog",
-            {"vertexpulling_vert", "vertexpulling_frag"});
-
-    // voxel creation
-    core::res::shaders->registerShader("voxelGeom", "tree/voxelize.geom", GL_GEOMETRY_SHADER);
-    core::res::shaders->registerShader("voxelFrag", "tree/voxelize.frag", GL_FRAGMENT_SHADER);
-    m_voxel_prog = core::res::shaders->registerProgram("voxel_prog",
-            {"vertexpulling_vert", "voxelGeom", "voxelFrag"});
 
     // octree building
     core::res::shaders->registerShader("octreeNodeFlagComp", "tree/nodeflag_pk.comp", GL_COMPUTE_SHADER,
@@ -90,24 +48,6 @@ RendererImplPK::RendererImplPK(core::TimerArray& timer_array)
 
     core::res::shaders->registerShader("octreeLeafStoreComp", "tree/leafstore.comp", GL_COMPUTE_SHADER);
     m_octreeLeafStore_prog = core::res::shaders->registerProgram("octreeLeafStore_prog", {"octreeLeafStoreComp"});
-
-    // debug render
-    core::res::shaders->registerShader("octreeDebugBBox_vert", "tree/bbox.vert", GL_VERTEX_SHADER);
-    core::res::shaders->registerShader("octreeDebugBBox_frag", "tree/bbox.frag", GL_FRAGMENT_SHADER);
-    m_voxel_bbox_prog = core::res::shaders->registerProgram("octreeDebugBBox_prog",
-            {"octreeDebugBBox_vert", "octreeDebugBBox_frag"});
-
-    m_voxelize_timer = m_timers.addGPUTimer("Voxelize");
-    m_tree_timer = m_timers.addGPUTimer("Octree");
-
-    glBindVertexArray(m_vertexpulling_vao);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, core::res::meshes->getElementArrayBuffer());
-    glBindVertexArray(0);
-
-    m_voxelize_cam = core::res::cameras->createOrthogonalCam("voxelization_cam",
-            glm::dvec3(0.0), glm::dvec3(0.0), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-    assert(m_voxelize_cam->getViewMatrix() == glm::dmat4(1.0));
-
 
     // voxel buffer
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
@@ -146,16 +86,6 @@ RendererImplPK::RendererImplPK(core::TimerArray& timer_array)
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
     glBufferStorage(GL_ATOMIC_COUNTER_BUFFER, 2 * sizeof(GLuint), nullptr, GL_MAP_READ_BIT);
     //glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
-
-    // FBO for voxelization
-    int num_voxels = static_cast<int>(std::pow(2.0, vars.voxel_octree_levels - 1));
-    glBindFramebuffer(GL_FRAMEBUFFER, m_voxelizationFBO);
-    glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, num_voxels);
-    glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, num_voxels);
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        LOG_ERROR("Empty framebuffer is not complete (WTF?!?)");
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 /****************************************************************************/
@@ -164,67 +94,14 @@ RendererImplPK::~RendererImplPK() = default;
 
 /****************************************************************************/
 
-void RendererImplPK::setGeometry(std::vector<const core::Instance*> geometry)
-{
-    m_geometry = std::move(geometry);
-
-    std::sort(m_geometry.begin(), m_geometry.end(),
-            [] (const core::Instance* g0, const core::Instance* g1) -> bool
-            {
-                return g0->getMesh()->components() < g1->getMesh()->components();
-            });
-
-    m_scene_bbox = core::AABB();
-    m_drawlist.clear();
-    m_drawlist.reserve(m_geometry.size());
-    for (const auto* g : m_geometry) {
-        const auto* mesh = g->getMesh();
-        const auto prog = m_programs[mesh->components()()];
-        GLuint vao = core::res::meshes->getVAO(mesh);
-        m_drawlist.emplace_back(g, prog, vao, mesh->mode(),
-                mesh->count(), mesh->type(),
-                mesh->indices(), mesh->basevertex());
-        m_scene_bbox.expandBy(g->getBoundingBox());
-    }
-
-    // make every side of the bounding box equally long
-    const auto maxExtend = m_scene_bbox.maxExtend();
-    const auto dist = (m_scene_bbox.pmax[maxExtend] - m_scene_bbox.pmin[maxExtend]) * .5f;
-    const auto center = m_scene_bbox.center();
-    for (int i = 0; i < 3; ++i) {
-        m_scene_bbox.pmin[i] = center[i] - dist;
-        m_scene_bbox.pmax[i] = center[i] + dist;
-    }
-
-    LOG_INFO("Scene bounding box: [",
-            m_scene_bbox.pmin.x, ", ",
-            m_scene_bbox.pmin.y, ", ",
-            m_scene_bbox.pmin.z, "] -> [",
-            m_scene_bbox.pmax.x, ", ",
-            m_scene_bbox.pmax.y, ", ",
-            m_scene_bbox.pmax.z, "]");
-
-    m_voxelize_cam->setLeft(m_scene_bbox.pmin.x);
-    m_voxelize_cam->setRight(m_scene_bbox.pmax.x);
-    m_voxelize_cam->setBottom(m_scene_bbox.pmin.y);
-    m_voxelize_cam->setTop(m_scene_bbox.pmax.y);
-    m_voxelize_cam->setZNear(-m_scene_bbox.pmin.z);
-    m_voxelize_cam->setZFar(-m_scene_bbox.pmax.z);
-    // set view matrix to identity
-    m_voxelize_cam->setPosition(glm::dvec3(0.));
-    m_voxelize_cam->setOrientation(glm::dquat());
-    assert(m_voxelize_cam->getViewMatrix() == glm::dmat4(1.0));
-
-}
-
-/****************************************************************************/
-
-void RendererImplPK::createVoxelList()
+void RendererImplPK::createVoxelList(const bool debug_output)
 {
 
-    LOG_INFO("\n###########################\n"
-               "# Voxel Fragment Creation #\n"
-               "###########################");
+    if (debug_output) {
+        LOG_INFO("\n###########################\n"
+                   "# Voxel Fragment Creation #\n"
+                   "###########################");
+    }
 
     m_voxelize_timer->start();
 
@@ -269,62 +146,26 @@ void RendererImplPK::createVoxelList()
     glViewport(0, 0, vars.screen_width, vars.screen_height);
     core::res::cameras->makeDefault(old_cam);
 
+    if (debug_output) {
+        LOG_INFO("Number of Entries in Voxel Fragment List: ", m_numVoxelFrag, "/", vars.max_voxel_fragments);
 
-    LOG_INFO("Number of Entries in Voxel Fragment List: ", m_numVoxelFrag, "/", vars.max_voxel_fragments);
-
-    if (m_numVoxelFrag > vars.max_voxel_fragments) {
-        LOG_WARNING("TOO MANY VOXEL FRAGMENTS!");
-    }
-
-    // debug
-    /*
-    std::vector<VoxelStruct> voxels(m_numVoxelFrag);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
-    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, m_numVoxelFrag * sizeof(VoxelStruct), voxels.data());
-
-    m_voxel_bboxes.clear();
-    m_voxel_bboxes.reserve(m_numVoxelFrag);
-    const float dist = (m_scene_bbox.pmax.x - m_scene_bbox.pmin.x) / static_cast<float>(num_voxels);
-    for (const auto& el : voxels) {
-        if (glm::any(glm::greaterThan(glm::uvec3(el.position), glm::uvec3(static_cast<unsigned int>(num_voxels - 1))))) {
-            LOG_ERROR("out of range!");
+        if (m_numVoxelFrag > vars.max_voxel_fragments) {
+            LOG_WARNING("TOO MANY VOXEL FRAGMENTS!");
         }
-        core::AABB bbox;
-        bbox.pmin = m_scene_bbox.pmin + glm::vec3(el.position) * dist;
-        bbox.pmax = bbox.pmin + dist;
-        m_voxel_bboxes.emplace_back(bbox);
     }
-    */
 
-    /* SLOW!!!
-    auto order = [] (const core::AABB& b0, const core::AABB& b1) -> bool
-            {
-                return glm::any(glm::lessThan(b0.pmin, b1.pmin)) ||
-                       glm::any(glm::lessThan(b0.pmax, b1.pmax));
-            };
-    auto compare = [] (const core::AABB& b0, const core::AABB& b1) -> bool
-            {
-                return glm::all(glm::equal(b0.pmin, b1.pmin)) &&
-                       glm::all(glm::equal(b0.pmax, b1.pmax));
-            };
-
-    LOG_INFO("sorting bboxes...");
-    std::sort(m_voxel_bboxes.begin(), m_voxel_bboxes.end(), order);
-    LOG_INFO("removing duplicate bboxes...");
-    m_voxel_bboxes.erase(std::unique(m_voxel_bboxes.begin(), m_voxel_bboxes.end(), compare),
-                m_voxel_bboxes.end());
-    LOG_INFO("done.");
-    */
 }
 
 /****************************************************************************/
 
-void RendererImplPK::buildVoxelTree()
+void RendererImplPK::buildVoxelTree(const bool debug_output)
 {
 
-    LOG_INFO("\n###########################\n"
-               "#     Octree Creation     #\n"
-               "###########################");
+    if (debug_output) {
+        LOG_INFO("\n###########################\n"
+                   "#     Octree Creation     #\n"
+                   "###########################");
+    }
 
     m_tree_timer->start();
 
@@ -354,7 +195,7 @@ void RendererImplPK::buildVoxelTree()
     unsigned int start_node = 0;
     for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
 
-        LOG_INFO("Starting with max level ", i);
+        if (debug_output) { LOG_INFO("Starting with max level ", i); }
 
         /*
          *  flag nodes
@@ -418,57 +259,19 @@ void RendererImplPK::buildVoxelTree()
         previously_allocated = counter_value - numAllocated;
         numAllocated = counter_value;
 
-        LOG_INFO(" num allocated this iterator: ", previously_allocated);
+        if (debug_output) { LOG_INFO(" num allocated this iterator: ", previously_allocated); }
     }
     m_tree_timer->stop();
 
-    LOG_INFO(":: Total Nodes created: ", numAllocated);
+    if (debug_output) { LOG_INFO(":: Total Nodes created: ", numAllocated); }
 
     // TODO
     ///*
     // *  write information to leafs
     // */
 
+    createVoxelBBoxes(numAllocated);
 
-    // DEBUG --- create bounding boxes
-    std::vector<GLuint> nodes(numAllocated);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
-    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, numAllocated * sizeof(GLuint), nodes.data());
-
-    m_voxel_bboxes.clear();
-    m_voxel_bboxes.reserve(numAllocated);
-    std::pair<GLuint, core::AABB> stack[128];
-    stack[0] = std::make_pair(0u, m_scene_bbox);
-    std::size_t top = 1;
-    do {
-        top--;
-        const auto idx = stack[top].first;
-        const auto bbox = stack[top].second;
-
-        const auto childidx = nodes[idx];
-        if (childidx == 0x80000000) {
-            m_voxel_bboxes.emplace_back(bbox);
-        } else if ((childidx & 0x80000000) != 0) {
-            const auto baseidx = uint(childidx & 0x7FFFFFFFu);
-            const auto c = bbox.center();
-            for (unsigned int i = 0; i < 8; ++i) {
-                int x = (i>>0) & 0x01;
-                int y = (i>>1) & 0x01;
-                int z = (i>>2) & 0x01;
-
-                core::AABB newBBox;
-                newBBox.pmin.x = (x == 0) ? bbox.pmin.x : c.x;
-                newBBox.pmin.y = (y == 0) ? bbox.pmin.y : c.y;
-                newBBox.pmin.z = (z == 0) ? bbox.pmin.z : c.z;
-
-                newBBox.pmax.x = (x == 0) ? c.x : bbox.pmax.x;
-                newBBox.pmax.y = (y == 0) ? c.y : bbox.pmax.y;
-                newBBox.pmax.z = (z == 0) ? c.z : bbox.pmax.z;
-
-                stack[top++] = std::make_pair(baseidx + i, newBBox);
-            }
-        }
-    } while (top != 0);
 }
 
 /****************************************************************************/
@@ -480,8 +283,8 @@ void RendererImplPK::render(const unsigned int tree_levels, const bool renderBBo
         return;
 
     if (m_rebuildTree) {
-        createVoxelList();
-        buildVoxelTree();
+        createVoxelList(debug_output);
+        buildVoxelTree(debug_output);
         m_rebuildTree = false;
     }
 
@@ -493,7 +296,7 @@ void RendererImplPK::render(const unsigned int tree_levels, const bool renderBBo
     if (renderBBoxes)
         renderBoundingBoxes();
     if (renderOctree)
-        debugRenderTree();
+        renderVoxelBoundingBoxes();
 }
 
 /****************************************************************************/
@@ -577,88 +380,6 @@ void RendererImplPK::renderGeometry(const GLuint prog)
         glDrawElementsInstancedBaseVertexBaseInstance(cmd.mode, cmd.count, cmd.type,
                 cmd.indices, 1, 0, cmd.instance->getIndex());
     }
-}
-
-/****************************************************************************/
-
-void RendererImplPK::renderBoundingBoxes()
-{
-    if (m_geometry.empty())
-        return;
-
-    core::res::instances->bind();
-
-    GLuint prog = m_bbox_prog;
-    glUseProgram(prog);
-    glBindVertexArray(m_bbox_vao);
-
-    glDisable(GL_DEPTH_TEST);
-
-    for (const auto* g : m_geometry) {
-        glDrawElementsInstancedBaseVertexBaseInstance(GL_LINES, 24, GL_UNSIGNED_BYTE,
-                nullptr, 1, g->getMesh()->basevertex(), g->getIndex());
-    }
-}
-
-/****************************************************************************/
-
-void RendererImplPK::initBBoxStuff()
-{
-    // indices
-    GLubyte indices[] = {0, 1,
-                         0, 2,
-                         0, 4,
-                         1, 3,
-                         1, 5,
-                         2, 3,
-                         2, 6,
-                         3, 7,
-                         4, 5,
-                         4, 6,
-                         5, 7,
-                         6, 7};
-
-    glBindVertexArray(m_bbox_vao);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_bbox_buffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    glBindVertexArray(0);
-
-    core::res::shaders->registerShader("bbox_vert", "basic/bbox.vert", GL_VERTEX_SHADER);
-    core::res::shaders->registerShader("bbox_frag", "basic/bbox.frag", GL_FRAGMENT_SHADER);
-    m_bbox_prog = core::res::shaders->registerProgram("bbox_prog", {"bbox_vert", "bbox_frag"});
-}
-
-/****************************************************************************/
-
-void RendererImplPK::debugRenderTree()
-{
-    if (m_voxel_bboxes.empty())
-        return;
-
-    GLuint prog = m_voxel_bbox_prog;
-    glUseProgram(prog);
-    glBindVertexArray(m_bbox_vao);
-
-    glEnable(GL_DEPTH_TEST);
-    //glDisable(GL_DEPTH_TEST);
-
-    for (const auto& bbox : m_voxel_bboxes) {
-        float data[6] = {bbox.pmin.x, bbox.pmin.y, bbox.pmin.z,
-                         bbox.pmax.x, bbox.pmax.y, bbox.pmax.z};
-        glUniform3fv(0, 2, data);
-        glDrawElements(GL_LINES, 24, GL_UNSIGNED_BYTE, nullptr);
-
-        //glDrawElementsInstancedBaseVertexBaseInstance(GL_LINES, 24, GL_UNSIGNED_BYTE,
-        //        nullptr, 1, g->getMesh()->basevertex(), g->getIndex());
-    }
-}
-
-/****************************************************************************/
-
-void RendererImplPK::markTreeInvalid()
-{
-    m_rebuildTree = true;
 }
 
 /****************************************************************************/

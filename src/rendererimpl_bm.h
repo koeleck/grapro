@@ -24,8 +24,6 @@ private:
     core::Program                       m_octreeNodeAlloc_prog;
     core::Program                       m_octreeLeafStore_prog;
     gl::Buffer                          m_atomicCounterBuffer;
-    gl::Buffer                          m_voxelBuffer;
-    gl::Buffer                          m_octreeNodeBuffer;
 
 };
 
