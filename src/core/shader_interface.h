@@ -28,6 +28,7 @@ constexpr int INSTANCE  = 4;
 constexpr int VERTEX    = 5;
 constexpr int VOXEL     = 6;
 constexpr int OCTREE    = 7;
+constexpr int LIGHT     = 8;
 
 // Vertex Attrib Arrays
 constexpr int POSITIONS = 0;
@@ -36,14 +37,17 @@ constexpr int NORMALS   = 2;
 constexpr int TANGENTS  = 3;
 
 // Texture Units
-constexpr int DIFFUSE_TEX_UNIT  = 0;
-constexpr int SPECULAR_TEX_UNIT = 1;
-constexpr int GLOSSY_TEX_UNIT   = 2;
-constexpr int NORMAL_TEX_UNIT   = 3;
-constexpr int EMISSIVE_TEX_UNIT = 4;
-constexpr int ALPHA_TEX_UNIT    = 5;
-constexpr int AMBIENT_TEX_UNIT  = 6;
-constexpr int NUM_TEXT_UNITS    = 7; // <- keep up to date
+constexpr int DIFFUSE_TEX_UNIT    = 0;
+constexpr int SPECULAR_TEX_UNIT   = 1;
+constexpr int GLOSSY_TEX_UNIT     = 2;
+constexpr int NORMAL_TEX_UNIT     = 3;
+constexpr int EMISSIVE_TEX_UNIT   = 4;
+constexpr int ALPHA_TEX_UNIT      = 5;
+constexpr int AMBIENT_TEX_UNIT    = 6;
+constexpr int NUM_TEXT_UNITS      = 7; // <- keep up to date
+
+constexpr int DIR_LIGHT_TEX_UNIT  = 7;
+constexpr int OMNI_LIGHT_TEX_UNIT = 8;
 
 } // namespace bindings
 
@@ -103,6 +107,26 @@ struct MeshStruct
     GLuint                          first;
 };
 static_assert(sizeof(MeshStruct) == 12 && sizeof(MeshStruct) % 4 == 0, "");
+
+struct LightStruct
+{
+    glm::vec3                       position;
+    GLfloat                         angleInnerCone;
+
+    glm::vec3                       direction;
+    GLfloat                         angleOuterCone;
+
+    glm::vec3                       intensity;
+    GLfloat                         maxDistance;
+
+    GLfloat                         constantAttenuation;
+    GLfloat                         linearAttenuation;
+    GLfloat                         quadraticAttenuation;
+    GLint                           type_texid; // highest bit: is shadowcasting,
+                                                // second highest: is omnidirectional
+                                                // rest: depth texture index
+};
+static_assert(sizeof(LightStruct) == 64 && sizeof(LightStruct) % 16 == 0, "");
 
 } // namespace shader
 
