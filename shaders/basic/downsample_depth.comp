@@ -16,8 +16,7 @@ void main()
 
     if (x < size.x && y < size.y) {
         if (all(equal(size, textureSize(uDepthTex, 0)))) {
-            //imageStore(uDepthOut, ivec2(x, y), texelFetch(uDepthTex, ivec2(x, y), 0).rrrr);
-            imageStore(uDepthOut, ivec2(x, y), vec4(0.8));
+            imageStore(uDepthOut, ivec2(x, y), texelFetch(uDepthTex, ivec2(x, y), 0).rrrr);
         } else {
             const ivec2 prev_size = imageSize(uDepthIn).xy;
             ivec2 origin = 2 * ivec2(x, y);
@@ -45,6 +44,9 @@ void main()
                 }
                 if (extend[1] == true) {
                     maxdepth = max(maxdepth, imageLoad(uDepthIn, ivec2(origin.x + 1, origin.y + 2)).r);
+                }
+                if (all(extend) == true) {
+                    maxdepth = max(maxdepth, imageLoad(uDepthIn, ivec2(origin.x + 2, origin.y + 2)).r);
                 }
             }
 

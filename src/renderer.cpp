@@ -243,7 +243,7 @@ void Renderer::render(const bool renderBBoxes, bool hiz, int level)
 
     auto* cam = reinterpret_cast<core::PerspectiveCamera*>(core::res::cameras->getDefaultCam());
     cam->setNear(1.0);
-    cam->setFar(5000.0);
+    cam->setFar(20000.0);
     const auto aspect_ratio_orig = cam->getAspectRatio();
     cam->setAspectRatio(1.0);
 
@@ -440,8 +440,13 @@ void Renderer::generateDrawcalls(const OffscreenBuffer& buffer)
     glBindTexture(GL_TEXTURE_2D, m_hiz_tex);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, m_indirect_buffer);
+    const GLuint zero = 0;
+    glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER,
+            GL_UNSIGNED_INT, &zero);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, m_instanceIDs);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 10, m_bbox_indirect_buffer);
+    glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER,
+            GL_UNSIGNED_INT, &zero);
 
     GLuint num_x = static_cast<GLuint>((m_geometry.size() + 255) / 256);
     glDispatchCompute(num_x, 1, 1);
@@ -481,6 +486,7 @@ void Renderer::downsampleDepthBuffer(const OffscreenBuffer& buffer)
         width = std::max(1u, width / 2);
         height = std::max(1u, height / 2);
     }
+    glBindTexture(GL_TEXTURE_2D, 0);
     glBindImageTexture(1, 0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
     glBindImageTexture(2, 0, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
 }
