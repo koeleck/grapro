@@ -17,7 +17,7 @@ private:
 
     void genAtomicBuffer();
     void genVoxelBuffer();
-    void genOctreeNodeBuffer();
+    void genOctreeBuffer(const gl::Buffer &, int);
 
     virtual void createVoxelList(bool);
     virtual void buildVoxelTree(bool);
@@ -26,6 +26,7 @@ private:
     core::Program                       m_octreeNodeAlloc_prog;
     core::Program                       m_octreeLeafStore_prog;
     gl::Buffer                          m_atomicCounterBuffer;
+    gl::Buffer                          m_octreeNodeColorBuffer;
 
 };
 

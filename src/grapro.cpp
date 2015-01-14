@@ -26,8 +26,8 @@ GraPro::GraPro(GLFWwindow* window)
     m_render_octree{false},
     m_debug_output{false},
     m_tree_levels{static_cast<int>(vars.voxel_octree_levels)},
-    //m_renderer{new RendererImplBM(m_timers)}
-    m_renderer{new RendererImplPK(m_timers)}
+    m_renderer{new RendererImplBM(m_timers)}
+    //m_renderer{new RendererImplPK(m_timers)}
 {
     const auto* instances = core::res::instances;
     m_renderer->setGeometry(instances->getInstances());

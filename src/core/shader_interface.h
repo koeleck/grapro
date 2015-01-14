@@ -20,14 +20,15 @@ namespace bindings
 {
 
 // Shader storage buffers:
-constexpr int CAMERA    = 0;
-constexpr int TEXTURE   = 1;
-constexpr int MESH      = 2;
-constexpr int MATERIAL  = 3;
-constexpr int INSTANCE  = 4;
-constexpr int VERTEX    = 5;
-constexpr int VOXEL     = 6;
-constexpr int OCTREE    = 7;
+constexpr int CAMERA        = 0;
+constexpr int TEXTURE       = 1;
+constexpr int MESH          = 2;
+constexpr int MATERIAL      = 3;
+constexpr int INSTANCE      = 4;
+constexpr int VERTEX        = 5;
+constexpr int VOXEL         = 6;
+constexpr int OCTREE        = 7;
+constexpr int OCTREE_COLOR  = 8;
 
 // Vertex Attrib Arrays
 constexpr int POSITIONS = 0;

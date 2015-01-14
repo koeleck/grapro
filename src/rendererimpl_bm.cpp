@@ -59,6 +59,8 @@ RendererImplBM::RendererImplBM(core::TimerArray& timer_array)
     LOG_INFO("max nodes: ", totalNodes, ", max fragments: ", vars.max_voxel_fragments, " (", mem, unit, ")");
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
     glBufferStorage(GL_SHADER_STORAGE_BUFFER, totalNodes * sizeof(OctreeNodeStruct), nullptr, GL_MAP_READ_BIT);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeColorBuffer);
+    glBufferStorage(GL_SHADER_STORAGE_BUFFER, totalNodes * sizeof(OctreeNodeColorStruct), nullptr, GL_MAP_READ_BIT);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 }
@@ -90,24 +92,24 @@ void RendererImplBM::genVoxelBuffer()
     // bind to binding point
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::VOXEL, m_voxelBuffer);
 
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
 /****************************************************************************/
 
-void RendererImplBM::genOctreeNodeBuffer()
+void RendererImplBM::genOctreeBuffer(const gl::Buffer & buf, const int binding)
 {
 
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, buf);
 
     // fill with zeroes
     const auto zero = GLuint{};
     glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
 
     // bind to binding point
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::OCTREE, m_octreeNodeBuffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, buf);
 
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
 /****************************************************************************/
@@ -187,7 +189,8 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
     const auto allocwidth = 64u;
 
     // octree buffer
-    genOctreeNodeBuffer();
+    genOctreeBuffer(m_octreeNodeBuffer, core::bindings::OCTREE);
+    genOctreeBuffer(m_octreeNodeColorBuffer, core::bindings::OCTREE_COLOR);
 
     // atomic counter (counts how many child node have to be allocated)
     genAtomicBuffer();
@@ -195,15 +198,21 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
 
     // uniforms
     const auto loc_u_numVoxelFrag = glGetUniformLocation(m_octreeNodeFlag_prog, "u_numVoxelFrag");
+    const auto loc_u_numVoxelFrag_Store = glGetUniformLocation(m_octreeLeafStore_prog, "u_numVoxelFrag");
     const auto loc_u_voxelDim = glGetUniformLocation(m_octreeNodeFlag_prog, "u_voxelDim");
+    const auto loc_u_voxelDim_Store = glGetUniformLocation(m_octreeLeafStore_prog, "u_voxelDim");
     const auto loc_u_maxLevel = glGetUniformLocation(m_octreeNodeFlag_prog, "u_maxLevel");
+    const auto loc_u_treeLevels = glGetUniformLocation(m_octreeLeafStore_prog, "u_treeLevels");
     const auto loc_u_numNodesThisLevel = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_numNodesThisLevel");
     const auto loc_u_nodeOffset = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_nodeOffset");
     const auto loc_u_allocOffset = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_allocOffset");
 
     const auto voxelDim = static_cast<unsigned int>(std::pow(2, vars.voxel_octree_levels));
     glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_numVoxelFrag, m_numVoxelFrag);
+    glProgramUniform1ui(m_octreeLeafStore_prog, loc_u_numVoxelFrag_Store, m_numVoxelFrag);
     glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_voxelDim, voxelDim);
+    glProgramUniform1ui(m_octreeLeafStore_prog, loc_u_voxelDim_Store, voxelDim);
+    glProgramUniform1ui(m_octreeLeafStore_prog, loc_u_treeLevels, vars.voxel_octree_levels);
 
     auto nodeOffset = 0u; // offset to first node of next level
     auto allocOffset = 1u; // offset to first free space for new nodes
@@ -296,22 +305,15 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
      *  write information to leafs
      */
 
-    /*LOG_INFO("\nfilling leafs...");
     glUseProgram(m_octreeLeafStore_prog);
 
-    // uniforms
-    loc = glGetUniformLocation(m_octreeLeafStore_prog, "u_numVoxelFrag");
-    glUniform1ui(loc, m_numVoxelFrag);
-    loc = glGetUniformLocation(m_octreeLeafStore_prog, "u_treeLevels");
-    glUniform1ui(loc, vars.voxel_octree_levels);
-    loc = glGetUniformLocation(m_octreeLeafStore_prog, "u_maxLevel");
-    glUniform1ui(loc, vars.voxel_octree_levels);
-
     // dispatch
-    LOG_INFO("Dispatching NodeFlag with ", groupDimX, "*", groupDimY, "*1 groups with 8*8*1 threads each");
-    LOG_INFO("--> ", groupDimX * groupDimY * 64, " threads");
+    if (debug_output) {
+        LOG_INFO("Dispatching LeafStore with ", groupDimX, "*", groupDimY, "*1 groups with 8*8*1 threads each");
+        LOG_INFO("--> ", groupDimX * groupDimY * 64, " threads");
+    }
     glDispatchCompute(groupDimX, groupDimY, 1);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);*/
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     createVoxelBBoxes(nodeOffset);
 

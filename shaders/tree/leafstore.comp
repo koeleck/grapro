@@ -1,6 +1,7 @@
 #version 440 core
 
 #include "common/bindings.glsl"
+#include "common/voxel.glsl"
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
@@ -15,18 +16,59 @@ layout (std430, binding = VOXEL_BINDING) buffer voxelBlock {
     voxelStruct voxel[];
 };
 
-// octree buffer
-struct octreeBuffer {
-    uint id;
+struct octreeColorBuffer
+{
+    uint    color;
 };
 
-layout (std430, binding = OCTREE_BINDING) buffer octreeBlock {
-    octreeBuffer octree[];
+layout(std430, binding = OCTREE_COLOR_BINDING) restrict buffer octreeColorBlock
+{
+    octreeColorBuffer octreeColor[];
 };
 
 uniform uint u_numVoxelFrag;
 uniform uint u_treeLevels;
-uniform uint u_maxLevel;
+uniform uint u_voxelDim;
+
+// atomic running average method
+// from open insights chapter 22
+
+vec4 convRGBA8ToVec4(in uint val)
+{
+    return vec4(float((val&0x000000FF)), float((val&0x0000FF00) >> 8U),
+                float((val&0x00FF0000) >> 16U), float((val&0xFF000000) >> 24U));
+}
+
+uint convVec4ToRGBA8(in vec4 val)
+{
+    return (uint(val.w) & 0x000000FF) << 24U | (uint(val.z) & 0x000000FF) << 16U
+            | (uint(val.y) & 0x000000FF) << 8U | (uint(val.x) & 0x000000FF);
+}
+
+void atomicAvg(vec4 color, uint idx)
+{
+    color.rgb *= 255.0;
+    color.a = 1;
+
+    uint newVal = convVec4ToRGBA8(color);
+    uint prev = 0;
+    uint cur;
+
+    while((cur = atomicCompSwap(octreeColor[idx].color, prev, newVal)) != prev) {
+
+        prev = cur;
+
+        vec4 rval = convRGBA8ToVec4(cur);
+        rval.xyz = rval.xyz*rval.w;
+
+        vec4 curVal = rval + color;
+        curVal.xyz /= curVal.w;
+
+        newVal = convVec4ToRGBA8(curVal);
+
+    }
+
+}
 
 void main()
 {
@@ -36,26 +78,44 @@ void main()
     if (threadId >= u_numVoxelFrag)
         return;
 
-    // local vars
-    uint childidx = 0;
-    uint nodeptr = octree[childidx].id;
+    ivec3 pos = ivec3(voxel[threadId].position.xyz);
+    vec4 col = voxel[threadId].color;
 
-    uint voxel_dim = uint(pow(2, u_treeLevels));
+    // local vars
+    uint childIdx = 0;
+    uint nodePtr = octree[childIdx].id;
+
+    uint voxelDim = u_voxelDim;
     bool has_to_be_flagged = true;
 
     uvec3 umin = uvec3(0);
 
     // iterate through all tree levels
-    for (uint i = 0; i < u_maxLevel; ++i) {
+    for (uint i = 0; i < u_treeLevels; ++i) {
 
         // go to next dimension
-        voxel_dim /= 2;
+        voxelDim /= 2;
 
-        // check if the current node is flagged
-        if ((nodeptr & 0x80000000) == 0) {
-            // node is not flagged
-            has_to_be_flagged = false;
-            break;
-        }
+        // mask out flag bit to get child idx
+        childIdx = int(nodePtr & 0x7FFFFFFF);
+
+        // create subnodes
+        ivec3 subnodeptrXYZ = clamp(ivec3(1 + pos - umin - voxelDim), 0, 1);
+
+        int subnodeptr = subnodeptrXYZ.x;
+        subnodeptr += 2 * subnodeptrXYZ.y;
+        subnodeptr += 4 * subnodeptrXYZ.z;
+
+        childIdx += subnodeptr;
+
+        umin.x += voxelDim * subnodeptrXYZ.x;
+        umin.y += voxelDim * subnodeptrXYZ.y;
+        umin.z += voxelDim * subnodeptrXYZ.z;
+
+        // update node
+        nodePtr = octree[childIdx].id;
     }
+
+    atomicAvg(col, childIdx);
+
 }

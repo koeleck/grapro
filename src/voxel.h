@@ -15,4 +15,9 @@ struct OctreeNodeStruct
     unsigned int id;
 };
 
+struct OctreeNodeColorStruct
+{
+    unsigned int color;
+};
+
 #endif // VOXEL_H

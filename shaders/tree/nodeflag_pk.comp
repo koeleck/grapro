@@ -1,6 +1,7 @@
 #version 440 core
 
 #include "common/bindings.glsl"
+#include "common/voxel.glsl"
 
 layout (local_size_x = LOCAL_SIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -13,15 +14,6 @@ struct voxelStruct {
 
 layout (std430, binding = VOXEL_BINDING) restrict readonly buffer voxelBlock {
     voxelStruct voxel[];
-};
-
-// octree buffer
-struct octreeBuffer {
-    uint id;
-};
-
-layout (std430, binding = OCTREE_BINDING) restrict buffer octreeBlock {
-    octreeBuffer octree[];
 };
 
 uniform uint uNumVoxelFrag;
