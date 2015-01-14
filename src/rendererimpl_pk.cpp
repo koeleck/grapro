@@ -18,8 +18,8 @@
 namespace
 {
 
-constexpr int FLAG_PROG_LOCAL_SIZE = 64;
-constexpr int ALLOC_PROG_LOCAL_SIZE = 256;
+constexpr int FLAG_PROG_LOCAL_SIZE {64};
+constexpr int ALLOC_PROG_LOCAL_SIZE {256};
 
 } // anonymous namespace
 
@@ -46,15 +46,15 @@ RendererImplPK::RendererImplPK(core::TimerArray& timer_array)
     glBufferStorage(GL_SHADER_STORAGE_BUFFER, vars.max_voxel_fragments * sizeof(VoxelStruct), nullptr, GL_MAP_READ_BIT);
 
     // node buffer
-    unsigned int max_num_nodes = 1;
-    unsigned int tmp = 1;
-    for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
+    auto max_num_nodes = 1u;
+    auto tmp = 1u;
+    for (auto i = 0u; i < vars.voxel_octree_levels; ++i) {
         tmp *= 8;
         max_num_nodes += tmp;
     }
-    unsigned int mem = max_num_nodes * 4 +
+    auto mem = max_num_nodes * 4 +
         static_cast<unsigned int>(vars.max_voxel_fragments * sizeof(VoxelStruct));
-    std::string unit = "B";
+    std::string unit {"B"};
     if (mem > 1024) {
         unit = "kiB";
         mem /= 1024;
@@ -100,21 +100,17 @@ void RendererImplPK::createVoxelList(const bool debug_output)
     auto* old_cam = core::res::cameras->getDefaultCam();
     core::res::cameras->makeDefault(m_voxelize_cam);
 
-    int num_voxels = static_cast<int>(std::pow(2.0, vars.voxel_octree_levels - 1));
+    const auto num_voxels = static_cast<int>(std::pow(2.0, vars.voxel_octree_levels - 1));
 
     glBindFramebuffer(GL_FRAMEBUFFER, m_voxelizationFBO);
     glViewport(0, 0, num_voxels, num_voxels);
 
-
-    GLuint voxel_prog = m_voxel_prog;
-
-    GLint loc;
-    loc = glGetUniformLocation(voxel_prog, "uNumVoxels");
-    glProgramUniform1i(voxel_prog, loc, num_voxels);
+    const auto loc = glGetUniformLocation(m_voxel_prog, "uNumVoxels");
+    glProgramUniform1i(m_voxel_prog, loc, num_voxels);
 
     // reset counter
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
-    const GLuint zero = 0;
+    const auto zero = GLuint{};
     glClearBufferSubData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, 0, sizeof(GLuint),
             GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
 
@@ -125,7 +121,7 @@ void RendererImplPK::createVoxelList(const bool debug_output)
     glDisable(GL_CULL_FACE);
     glDepthFunc(GL_ALWAYS);
 
-    renderGeometry(voxel_prog);
+    renderGeometry(m_voxel_prog);
 
     // TODO move to shader
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
@@ -162,11 +158,12 @@ void RendererImplPK::buildVoxelTree(const bool debug_output)
     m_tree_timer->start();
 
     // calculate max invocations for compute shader to get all the voxel fragments
-    const unsigned int flag_num_workgroups = (m_numVoxelFrag + FLAG_PROG_LOCAL_SIZE - 1) / FLAG_PROG_LOCAL_SIZE;
+    const auto flag_num_workgroups = static_cast<unsigned int>((m_numVoxelFrag + FLAG_PROG_LOCAL_SIZE - 1)
+                                                                / FLAG_PROG_LOCAL_SIZE);
 
-    GLint loc;
-    const GLuint flag_prog = m_octreeNodeFlag_prog;
-    const GLuint alloc_prog = m_octreeNodeAlloc_prog;
+    auto loc = GLint{};
+    const auto flag_prog = m_octreeNodeFlag_prog;
+    const auto alloc_prog = m_octreeNodeAlloc_prog;
 
     // uniforms
     loc = glGetUniformLocation(flag_prog, "uNumVoxelFrag");
@@ -174,18 +171,18 @@ void RendererImplPK::buildVoxelTree(const bool debug_output)
     loc = glGetUniformLocation(m_octreeNodeFlag_prog, "uTreeLevels");
     glProgramUniform1ui(flag_prog, loc, vars.voxel_octree_levels);
 
-    GLint uMaxLevel = glGetUniformLocation(flag_prog, "uMaxLevel");
-    GLint uStartNode = glGetUniformLocation(alloc_prog, "uStartNode");
-    GLint uCount = glGetUniformLocation(alloc_prog, "uCount");
+    const auto uMaxLevel = glGetUniformLocation(flag_prog, "uMaxLevel");
+    const auto uStartNode = glGetUniformLocation(alloc_prog, "uStartNode");
+    const auto uCount = glGetUniformLocation(alloc_prog, "uCount");
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::OCTREE, m_octreeNodeBuffer);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::VOXEL, m_voxelBuffer);
     glBindBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, m_atomicCounterBuffer, sizeof(GLuint), sizeof(GLuint));
 
-    unsigned int previously_allocated = 8; // only root node was allocated
-    unsigned int numAllocated = 8; // we're only allocating one block of 8 nodes, so yeah, 8;
-    unsigned int start_node = 0;
-    for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
+    auto previously_allocated = 8u; // only root node was allocated
+    auto numAllocated = 8u; // we're only allocating one block of 8 nodes, so yeah, 8;
+    auto start_node = 0u;
+    for (auto i = 0u; i < vars.voxel_octree_levels; ++i) {
 
         if (debug_output) { LOG_INFO("Starting with max level ", i); }
 
@@ -196,19 +193,19 @@ void RendererImplPK::buildVoxelTree(const bool debug_output)
             // rootnode will always be subdivided, so don't run
             // the compute shader, but flag the first node
             // with glClearBufferSubData
-            const GLuint flag = 0x80000000;
+            const auto flag = GLuint{0x80000000};
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
             glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, 0, sizeof(GLuint),
                 GL_RED_INTEGER, GL_UNSIGNED_INT, &flag);
 
             // clear the remaining 7 nodes
-            const GLuint zero = 0;
+            const auto zero = GLuint{};
             glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, sizeof(GLuint),
                 7 * sizeof(GLuint), GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
 
             // set the allocation counter to 1, so we don't overwrite the root node
             glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
-            const GLuint one = 1;
+            const auto one = zero + 1;
             glClearBufferSubData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, sizeof(GLuint), sizeof(GLuint),
                 GL_RED_INTEGER, GL_UNSIGNED_INT, &one);
 
@@ -234,7 +231,8 @@ void RendererImplPK::buildVoxelTree(const bool debug_output)
         glProgramUniform1ui(alloc_prog, uCount, previously_allocated);
         glProgramUniform1ui(alloc_prog, uStartNode, start_node);
 
-        GLuint alloc_workgroups = (previously_allocated + ALLOC_PROG_LOCAL_SIZE - 1) / ALLOC_PROG_LOCAL_SIZE;
+        const auto alloc_workgroups = static_cast<GLuint>((previously_allocated + ALLOC_PROG_LOCAL_SIZE - 1)
+                                                          / ALLOC_PROG_LOCAL_SIZE);
         glDispatchCompute(alloc_workgroups, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_ATOMIC_COUNTER_BARRIER_BIT);
 
@@ -244,7 +242,7 @@ void RendererImplPK::buildVoxelTree(const bool debug_output)
         /*
          *  How many child node were allocated?
          */
-        GLuint counter_value;
+        auto counter_value = GLuint{};
         glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
         glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER, sizeof(GLuint), sizeof(GLuint), &counter_value);
         counter_value *= 8;

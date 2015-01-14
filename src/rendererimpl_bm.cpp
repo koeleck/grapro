@@ -35,15 +35,15 @@ RendererImplBM::RendererImplBM(core::TimerArray& timer_array)
 
     // allocate octreeBuffer
     // calculate max possible size of octree
-    unsigned int totalNodes = 1;
-    unsigned int tmp = 1;
-    for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
+    auto totalNodes = 1u;
+    auto tmp = 1u;
+    for (auto i = 0u; i < vars.voxel_octree_levels; ++i) {
         tmp *= 8;
         totalNodes += tmp;
     }
-    unsigned int mem = totalNodes * 4 +
+    auto mem = totalNodes * 4 +
         static_cast<unsigned int>(vars.max_voxel_fragments * sizeof(VoxelStruct));
-    std::string unit = "B";
+    auto unit = "B";
     if (mem > 1024) {
         unit = "kiB";
         mem /= 1024;
@@ -71,7 +71,7 @@ RendererImplBM::~RendererImplBM() = default;
 
 void RendererImplBM::genAtomicBuffer()
 {
-    GLuint initVal = 0;
+    GLuint initVal{};
 
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
     glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(GLuint), &initVal, GL_STATIC_DRAW);
@@ -101,7 +101,7 @@ void RendererImplBM::genOctreeNodeBuffer()
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
 
     // fill with zeroes
-    const GLuint zero = 0;
+    const auto zero = GLuint{};
     glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
 
     // bind to binding point
@@ -135,7 +135,7 @@ void RendererImplBM::createVoxelList(const bool debug_output)
     glUseProgram(m_voxel_prog);
 
     // uniforms
-    GLint loc = glGetUniformLocation(m_voxel_prog, "uNumVoxels");
+    const auto loc = glGetUniformLocation(m_voxel_prog, "uNumVoxels");
     glUniform1i(loc, dim);
 
     // buffer
@@ -147,7 +147,7 @@ void RendererImplBM::createVoxelList(const bool debug_output)
 
     // get number of voxel fragments
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
-    auto count = static_cast<GLuint *>(glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), GL_MAP_READ_BIT));
+    const auto count = static_cast<GLuint *>(glMapBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), GL_MAP_READ_BIT));
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
     m_numVoxelFrag = count[0];
 
@@ -191,25 +191,25 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
 
     // atomic counter (counts how many child node have to be allocated)
     genAtomicBuffer();
-    const GLuint zero = 0; // for resetting the atomic counter
+    const auto zero = GLuint{}; // for resetting the atomic counter
 
     // uniforms
-    GLint loc_u_numVoxelFrag = glGetUniformLocation(m_octreeNodeFlag_prog, "u_numVoxelFrag");
-    GLint loc_u_voxelDim = glGetUniformLocation(m_octreeNodeFlag_prog, "u_voxelDim");
-    GLint loc_u_maxLevel = glGetUniformLocation(m_octreeNodeFlag_prog, "u_maxLevel");
-    GLint loc_u_numNodesThisLevel = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_numNodesThisLevel");
-    GLint loc_u_nodeOffset = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_nodeOffset");
-    GLint loc_u_allocOffset = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_allocOffset");
+    const auto loc_u_numVoxelFrag = glGetUniformLocation(m_octreeNodeFlag_prog, "u_numVoxelFrag");
+    const auto loc_u_voxelDim = glGetUniformLocation(m_octreeNodeFlag_prog, "u_voxelDim");
+    const auto loc_u_maxLevel = glGetUniformLocation(m_octreeNodeFlag_prog, "u_maxLevel");
+    const auto loc_u_numNodesThisLevel = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_numNodesThisLevel");
+    const auto loc_u_nodeOffset = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_nodeOffset");
+    const auto loc_u_allocOffset = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_allocOffset");
 
-    const unsigned int voxelDim = static_cast<unsigned int>(std::pow(2, vars.voxel_octree_levels));
+    const auto voxelDim = static_cast<unsigned int>(std::pow(2, vars.voxel_octree_levels));
     glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_numVoxelFrag, m_numVoxelFrag);
     glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_voxelDim, voxelDim);
 
-    unsigned int nodeOffset = 0; // offset to first node of next level
-    unsigned int allocOffset = 1; // offset to first free space for new nodes
-    std::vector<unsigned int> maxNodesPerLevel(1, 1); // number of nodes in each tree level; root level = 1
+    auto nodeOffset = 0u; // offset to first node of next level
+    auto allocOffset = 1u; // offset to first free space for new nodes
+    auto maxNodesPerLevel = std::vector<unsigned int>{1}; // number of nodes in each tree level; root level = 1
 
-    for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
+    for (unsigned int i{}; i < vars.voxel_octree_levels; ++i) {
 
         if (debug_output) {
             LOG_INFO("");
@@ -253,7 +253,7 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
         glProgramUniform1ui(m_octreeNodeAlloc_prog, loc_u_allocOffset, allocOffset);
 
         // dispatch
-        const unsigned int allocGroupDim = (maxNodesPerLevel[i] + allocwidth - 1) / allocwidth;
+        const auto allocGroupDim = (maxNodesPerLevel[i] + allocwidth - 1) / allocwidth;
         if (debug_output) {
             LOG_INFO("Dispatching NodeAlloc with ", allocGroupDim, "*1*1 groups with 64*1*1 threads each");
             LOG_INFO("--> ", allocGroupDim * 64, " threads");
@@ -265,13 +265,13 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
          *  get how many nodes have to be allocated at most
          */
 
-        GLuint actualNodesAllocated;
+        GLuint actualNodesAllocated{};
         glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
         glGetBufferSubData(GL_ATOMIC_COUNTER_BUFFER, 0, sizeof(GLuint), &actualNodesAllocated);
         glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero); //reset counter to zero
         glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
         if (debug_output) { LOG_INFO(actualNodesAllocated, " nodes have been allocated"); }
-        const unsigned int maxNodesToBeAllocated = actualNodesAllocated * 8;
+        const auto maxNodesToBeAllocated = actualNodesAllocated * 8;
 
         /*
          *  update offsets

@@ -3,7 +3,8 @@
 
 #include "rendererinterface.h"
 
-class RendererImplBM : public RendererInterface
+class RendererImplBM
+  : public RendererInterface
 {
 public:
 

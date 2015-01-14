@@ -1,16 +1,17 @@
 #ifndef GRAPRO_H
 #define GRAPRO_H
 
+#include <memory>
+
 #include "framework/mainwindow.h"
 
-#include "core/camera.h"
 #include "core/timer_array.h"
 
-#include "rendererimpl_bm.h"
-#include "rendererimpl_pk.h"
 #include "rendererinterface.h"
 
-#include <memory>
+namespace core {
+    class Camera;
+}
 
 class GraPro
   : public framework::MainWindow
