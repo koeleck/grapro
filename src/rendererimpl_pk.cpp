@@ -5,6 +5,7 @@
 
 #include "core/shader_manager.h"
 #include "core/camera_manager.h"
+#include "core/timer_array.h"
 
 #include "log/log.h"
 

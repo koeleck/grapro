@@ -6,7 +6,8 @@
 class RendererImplBM : public RendererInterface
 {
 public:
-    RendererImplBM(core::TimerArray& timer_array);
+
+    explicit RendererImplBM(core::TimerArray&);
     ~RendererImplBM();
 
     virtual void render(unsigned int, bool = false, bool = false, bool = false);

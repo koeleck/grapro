@@ -8,16 +8,20 @@
 
 #include "gl/opengl.h"
 
-#include "core/timer_array.h"
 #include "core/aabb.h"
-#include "core/instance.h"
-#include "core/camera.h"
 #include "core/program.h"
+
+namespace core {
+    class TimerArray;
+    class GPUTimer;
+    class Instance;
+    class OrthogonalCamera;
+}
 
 class RendererInterface
 {
 public:
-    RendererInterface(core::TimerArray& timer_array);
+    explicit RendererInterface(core::TimerArray& timer_array);
     virtual ~RendererInterface();
 
     virtual void render(unsigned int tree_levels, bool renderBBoxes = false,

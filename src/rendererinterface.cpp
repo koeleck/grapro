@@ -5,10 +5,13 @@
 #include "core/mesh.h"
 #include "core/mesh_manager.h"
 #include "core/shader_manager.h"
+#include "core/camera.h"
 #include "core/camera_manager.h"
+#include "core/instance.h"
 #include "core/instance_manager.h"
 #include "core/material_manager.h"
 #include "core/texture.h"
+#include "core/timer_array.h"
 
 #include "log/log.h"
 
