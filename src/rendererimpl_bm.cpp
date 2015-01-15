@@ -382,6 +382,7 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
 
         recreateBuffer(m_octreeNodeBuffer, totalNodes * sizeof(OctreeNodeStruct));
         recreateBuffer(m_octreeNodeColorBuffer, totalNodes * sizeof(OctreeNodeColorStruct));
+        resizeFBO();
     }
 
     if (m_rebuildTree) {

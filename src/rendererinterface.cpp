@@ -16,7 +16,7 @@
 
 RendererInterface::RendererInterface(core::TimerArray& timer_array, unsigned int treeLevels)
   : m_numVoxelFrag{0u},
-  	m_timers{timer_array},
+  	m_timers(timer_array), // bug in gcc
   	m_voxelize_timer{m_timers.addGPUTimer("Voxelize")},
   	m_tree_timer{m_timers.addGPUTimer("Octree")},
     m_rebuildTree{true},
@@ -147,15 +147,7 @@ void RendererInterface::initVoxelization()
             glm::dvec3(0.0), glm::dvec3(0.0), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     assert(m_voxelize_cam->getViewMatrix() == glm::dmat4(1.0));
 
-    // FBO
-    const auto num_voxels = static_cast<int>(std::pow(2, vars.voxel_octree_levels - 1));
-    glBindFramebuffer(GL_FRAMEBUFFER, m_voxelizationFBO);
-    glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, num_voxels);
-    glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, num_voxels);
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        LOG_ERROR("Empty framebuffer is not complete (WTF?!?)");
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    resizeFBO();
 }
 
 /****************************************************************************/
@@ -334,6 +326,20 @@ void RendererInterface::renderGeometry(const GLuint prog)
         glDrawElementsInstancedBaseVertexBaseInstance(cmd.mode, cmd.count, cmd.type,
                 cmd.indices, 1, 0, cmd.instance->getIndex());
     }
+}
+
+/****************************************************************************/
+
+void RendererInterface::resizeFBO()
+{
+    const auto num_voxels = static_cast<int>(std::pow(2, m_treeLevels - 1));
+    glBindFramebuffer(GL_FRAMEBUFFER, m_voxelizationFBO);
+    glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, num_voxels);
+    glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, num_voxels);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        LOG_ERROR("Empty framebuffer is not complete (WTF?!?)");
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 /****************************************************************************/

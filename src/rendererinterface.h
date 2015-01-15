@@ -41,6 +41,7 @@ protected:
     virtual void renderVoxelBoundingBoxes() final;
     virtual void createVoxelBBoxes(unsigned int num) final;
     virtual void renderGeometry(GLuint prog) final;
+    virtual void resizeFBO() final;
 
     using ProgramMap = std::unordered_map<unsigned char, core::Program>;
     ProgramMap                          m_programs;
