@@ -1,13 +1,107 @@
 #version 440 core
+#extension GL_NV_shader_atomic_float : require
 
 #include "common/bindings.glsl"
 #include "common/voxel.glsl"
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
+// voxel buffer
+struct voxelStruct {
+    uvec4 position;
+    vec4 color;
+    vec4 normal;
+};
+
+layout (std430, binding = VOXEL_BINDING) restrict readonly buffer voxelBlock {
+    voxelStruct voxel[];
+};
+
+struct octreeColorBuffer
+{
+    vec4    color;
+};
+
+layout(std430, binding = OCTREE_COLOR_BINDING) restrict buffer octreeColorBlock
+{
+    octreeColorBuffer octreeColor[];
+};
+
 uniform uint u_level;
+uniform uint u_numVoxelFrag;
+uniform uint u_voxelDim;
 
 void main()
 {
+    // retrieve current thread id and return if out of bounds
+    uint threadId = gl_GlobalInvocationID.y * 1024 + gl_GlobalInvocationID.x;
+    if (threadId >= u_numVoxelFrag)
+        return;
+
+    ivec3 pos = ivec3(voxel[threadId].position.xyz);
+
+    // local vars
+    uint childIdx = 0;
+    uint nodePtr = octree[childIdx].id;
+
+    uint voxelDim = u_voxelDim;
+
+    uvec3 umin = uvec3(0);
+
+    // iterate through all tree levels
+    for (uint i = 0; i < u_level; ++i) {
+
+        // go to next dimension
+        voxelDim /= 2;
+
+        // mask out flag bit to get child idx
+        childIdx = int(nodePtr & 0x7FFFFFFF);
+
+        // create subnodes
+        ivec3 subnodeptrXYZ = clamp(ivec3(1 + pos - umin - voxelDim), 0, 1);
+
+        int subnodeptr = subnodeptrXYZ.x;
+        subnodeptr += 2 * subnodeptrXYZ.y;
+        subnodeptr += 4 * subnodeptrXYZ.z;
+
+        childIdx += subnodeptr;
+
+        umin.x += voxelDim * subnodeptrXYZ.x;
+        umin.y += voxelDim * subnodeptrXYZ.y;
+        umin.z += voxelDim * subnodeptrXYZ.z;
+
+        // update node
+        nodePtr = octree[childIdx].id;
+
+    }
+
+    uint parent = childIdx;
+    uint count = 0;
+    vec4 colorSum = vec4(0.0);
+
+    // check each child for flag
+    for (uint i = 0; i < 8; ++i) {
+
+        childIdx = octree[nodePtr + i].id;
+        if ((childIdx & 0x80000000) != 0) {
+            // has flag -> has color
+            ++count;
+            colorSum += octreeColor[childIdx].color;
+        }
+
+    }
+
+    if (count != 0) {
+
+        // write average into parent
+        colorSum /= colorSum.w; // see leafstore shader
+        colorSum /= count;
+
+        atomicExchange(octreeColor[parent].color.x, colorSum.x);
+        atomicExchange(octreeColor[parent].color.y, colorSum.y);
+        atomicExchange(octreeColor[parent].color.z, colorSum.z);
+        atomicExchange(octreeColor[parent].color.w, colorSum.w);
+
+    }
 
 }

@@ -99,7 +99,6 @@ void main()
     uint nodePtr = octree[childIdx].id;
 
     uint voxelDim = u_voxelDim;
-    bool has_to_be_flagged = true;
 
     uvec3 umin = uvec3(0);
 

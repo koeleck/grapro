@@ -29,6 +29,9 @@ RendererImplBM::RendererImplBM(core::TimerArray& timer_array)
     core::res::shaders->registerShader("octreeLeafStoreComp", "tree/leafstore.comp", GL_COMPUTE_SHADER);
     m_octreeLeafStore_prog = core::res::shaders->registerProgram("octreeLeafStore_prog", {"octreeLeafStoreComp"});
 
+    core::res::shaders->registerShader("octreeMipMapComp", "tree/mipmap.comp", GL_COMPUTE_SHADER);
+    m_octreeMipMap_prog = core::res::shaders->registerProgram("octreeMipMap_prog", {"octreeMipMapComp"});
+
     // allocate voxelBuffer
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
     glBufferStorage(GL_SHADER_STORAGE_BUFFER, vars.max_voxel_fragments * sizeof(VoxelStruct), nullptr, GL_MAP_READ_BIT);
@@ -198,27 +201,38 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
 
     // uniforms
     const auto loc_u_numVoxelFrag = glGetUniformLocation(m_octreeNodeFlag_prog, "u_numVoxelFrag");
-    const auto loc_u_numVoxelFrag_Store = glGetUniformLocation(m_octreeLeafStore_prog, "u_numVoxelFrag");
     const auto loc_u_voxelDim = glGetUniformLocation(m_octreeNodeFlag_prog, "u_voxelDim");
-    const auto loc_u_voxelDim_Store = glGetUniformLocation(m_octreeLeafStore_prog, "u_voxelDim");
     const auto loc_u_maxLevel = glGetUniformLocation(m_octreeNodeFlag_prog, "u_maxLevel");
-    const auto loc_u_treeLevels = glGetUniformLocation(m_octreeLeafStore_prog, "u_treeLevels");
+
     const auto loc_u_numNodesThisLevel = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_numNodesThisLevel");
     const auto loc_u_nodeOffset = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_nodeOffset");
     const auto loc_u_allocOffset = glGetUniformLocation(m_octreeNodeAlloc_prog, "u_allocOffset");
 
+    const auto loc_u_numVoxelFrag_Store = glGetUniformLocation(m_octreeLeafStore_prog, "u_numVoxelFrag");
+    const auto loc_u_voxelDim_Store = glGetUniformLocation(m_octreeLeafStore_prog, "u_voxelDim");
+    const auto loc_u_treeLevels = glGetUniformLocation(m_octreeLeafStore_prog, "u_treeLevels");
+
+    const auto loc_u_numVoxelFrag_MipMap = glGetUniformLocation(m_octreeMipMap_prog, "u_numVoxelFrag");
+    const auto loc_u_level = glGetUniformLocation(m_octreeMipMap_prog, "u_level");
+    const auto loc_u_voxelDim_MipMap = glGetUniformLocation(m_octreeMipMap_prog, "u_voxelDim");
+
     const auto voxelDim = static_cast<unsigned int>(std::pow(2, vars.voxel_octree_levels));
+
     glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_numVoxelFrag, m_numVoxelFrag);
-    glProgramUniform1ui(m_octreeLeafStore_prog, loc_u_numVoxelFrag_Store, m_numVoxelFrag);
     glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_voxelDim, voxelDim);
+
+    glProgramUniform1ui(m_octreeLeafStore_prog, loc_u_numVoxelFrag_Store, m_numVoxelFrag);
     glProgramUniform1ui(m_octreeLeafStore_prog, loc_u_voxelDim_Store, voxelDim);
     glProgramUniform1ui(m_octreeLeafStore_prog, loc_u_treeLevels, vars.voxel_octree_levels);
+
+    glProgramUniform1ui(m_octreeMipMap_prog, loc_u_numVoxelFrag_MipMap, m_numVoxelFrag);
+    glProgramUniform1ui(m_octreeMipMap_prog, loc_u_voxelDim_MipMap, voxelDim);
 
     auto nodeOffset = 0u; // offset to first node of next level
     auto allocOffset = 1u; // offset to first free space for new nodes
     auto maxNodesPerLevel = std::vector<unsigned int>{1}; // number of nodes in each tree level; root level = 1
 
-    for (unsigned int i{}; i < vars.voxel_octree_levels; ++i) {
+    for (auto i = 0u; i < vars.voxel_octree_levels; ++i) {
 
         if (debug_output) {
             LOG_INFO("");
@@ -314,6 +328,33 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
     }
     glDispatchCompute(groupDimX, groupDimY, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+    /*
+     *  mip map higher levels
+     */
+
+    auto i = vars.voxel_octree_levels - 1;
+    assert(i != 0 && vars.voxel_octree_levels != 0);
+    while (true) {
+
+        glUseProgram(m_octreeMipMap_prog);
+
+        // uniforms
+        glProgramUniform1ui(m_octreeMipMap_prog, loc_u_level, i);
+
+        // dispatch
+        if (debug_output) {
+            LOG_INFO("Dispatching MipMap with ", groupDimX, "*", groupDimY, "*1 groups with 8*8*1 threads each");
+            LOG_INFO("--> ", groupDimX * groupDimY * 64, " threads");
+        }
+        glDispatchCompute(groupDimX, groupDimY, 1);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+        if (--i == 0u) {
+            break;
+        }
+
+    }
 
     createVoxelBBoxes(nodeOffset);
 

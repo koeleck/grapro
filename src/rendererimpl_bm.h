@@ -25,6 +25,7 @@ private:
     core::Program                       m_octreeNodeFlag_prog;
     core::Program                       m_octreeNodeAlloc_prog;
     core::Program                       m_octreeLeafStore_prog;
+    core::Program                       m_octreeMipMap_prog;
     gl::Buffer                          m_atomicCounterBuffer;
     gl::Buffer                          m_octreeNodeColorBuffer;
 
