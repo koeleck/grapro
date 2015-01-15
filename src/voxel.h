@@ -17,7 +17,7 @@ struct OctreeNodeStruct
 
 struct OctreeNodeColorStruct
 {
-    unsigned int color;
+    glm::vec4 color;
 };
 
 #endif // VOXEL_H
