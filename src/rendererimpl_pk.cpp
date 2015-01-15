@@ -25,8 +25,8 @@ constexpr int ALLOC_PROG_LOCAL_SIZE {256};
 
 /****************************************************************************/
 
-RendererImplPK::RendererImplPK(core::TimerArray& timer_array)
-  : RendererInterface{timer_array}
+RendererImplPK::RendererImplPK(core::TimerArray& timer_array, unsigned int treeLevels)
+  : RendererInterface{timer_array, treeLevels}
 {
 
     // octree building
@@ -266,11 +266,16 @@ void RendererImplPK::buildVoxelTree(const bool debug_output)
 
 /****************************************************************************/
 
-void RendererImplPK::render(const unsigned int tree_levels, const bool renderBBoxes,
+void RendererImplPK::render(const unsigned int treeLevels, const bool renderBBoxes,
                         const bool renderOctree, const bool debug_output)
 {
     if (m_geometry.empty())
         return;
+
+    if (treeLevels != m_treeLevels) {
+        m_treeLevels = treeLevels;
+        m_rebuildTree = true;
+    }
 
     if (m_rebuildTree) {
         createVoxelList(debug_output);

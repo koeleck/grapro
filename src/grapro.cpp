@@ -26,8 +26,8 @@ GraPro::GraPro(GLFWwindow* window)
     m_render_octree{false},
     m_debug_output{false},
     m_tree_levels{static_cast<int>(vars.voxel_octree_levels)},
-    m_renderer{new RendererImplBM(m_timers)}
-    //m_renderer{new RendererImplPK(m_timers)}
+    m_renderer{new RendererImplBM(m_timers, m_tree_levels)}
+    //m_renderer{new RendererImplPK(m_timers, m_tree_levels)}
 {
     const auto* instances = core::res::instances;
     m_renderer->setGeometry(instances->getInstances());
@@ -73,7 +73,7 @@ void GraPro::update_gui(const double delta_t)
             if (ImGui::Button("rebuild octree")) {
                 m_renderer->markTreeInvalid();
             }
-            ImGui::SliderInt("tree levels", &m_tree_levels, 0, 8);
+            ImGui::SliderInt("tree levels", &m_tree_levels, 1, 8);
             ImGui::Checkbox("show voxel bounding boxes", &m_render_octree);
             ImGui::Checkbox("show debug output", &m_debug_output);
         }

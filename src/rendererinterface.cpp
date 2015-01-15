@@ -14,12 +14,13 @@
 
 #include "framework/vars.h"
 
-RendererInterface::RendererInterface(core::TimerArray& timer_array)
+RendererInterface::RendererInterface(core::TimerArray& timer_array, unsigned int treeLevels)
   : m_numVoxelFrag{0u},
   	m_timers{timer_array},
   	m_voxelize_timer{m_timers.addGPUTimer("Voxelize")},
   	m_tree_timer{m_timers.addGPUTimer("Octree")},
-    m_rebuildTree{true}
+    m_rebuildTree{true},
+    m_treeLevels{treeLevels}
 {
 
 	initBBoxes();

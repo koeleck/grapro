@@ -8,16 +8,17 @@ class RendererImplBM
 {
 public:
 
-    explicit RendererImplBM(core::TimerArray&);
+    explicit RendererImplBM(core::TimerArray&, unsigned int);
     ~RendererImplBM();
 
     virtual void render(unsigned int, bool = false, bool = false, bool = false);
 
 private:
 
-    void genAtomicBuffer();
-    void genVoxelBuffer();
-    void genOctreeBuffer(const gl::Buffer &, int);
+    void initShaders();
+    void recreateBuffer(gl::Buffer &, size_t);
+    void resetBuffer(const gl::Buffer &, int);
+    void resetAtomicBuffer();
 
     virtual void createVoxelList(bool);
     virtual void buildVoxelTree(bool);

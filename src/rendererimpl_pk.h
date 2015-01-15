@@ -8,7 +8,7 @@ class RendererImplPK
 {
 public:
 
-    explicit RendererImplPK(core::TimerArray&);
+    explicit RendererImplPK(core::TimerArray&, unsigned int);
     ~RendererImplPK();
 
     virtual void render(unsigned int, bool = false, bool = false, bool = false);

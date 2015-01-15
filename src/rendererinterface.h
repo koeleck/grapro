@@ -21,10 +21,10 @@ namespace core {
 class RendererInterface
 {
 public:
-    explicit RendererInterface(core::TimerArray& timer_array);
+    explicit RendererInterface(core::TimerArray& timer_array, unsigned int treeLevels);
     virtual ~RendererInterface();
 
-    virtual void render(unsigned int tree_levels, bool renderBBoxes = false,
+    virtual void render(unsigned int treeLevels, bool renderBBoxes = false,
                         bool renderOctree = false, bool debug_output = false) = 0;
 
     virtual void setGeometry(std::vector<const core::Instance*> geometry) final;
@@ -75,6 +75,7 @@ protected:
     core::GPUTimer*                     m_tree_timer;
 
     bool                                m_rebuildTree;
+    unsigned int                        m_treeLevels;
 
 private:
 
