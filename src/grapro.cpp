@@ -59,12 +59,14 @@ void GraPro::update_gui(const double delta_t)
         ImGui::Checkbox("bounding boxes", &m_render_bboxes);
         ImGui::Checkbox("debug octree", &m_render_octree);
 
-        const auto prev_tree_levels = vars.voxel_octree_levels;
-        static const auto max_levels = vars.voxel_octree_levels;
-        ImGui::SliderInt("Tree levels", &vars.voxel_octree_levels,
+        static const int max_levels = static_cast<int>(vars.voxel_octree_levels);
+        int next_levels = static_cast<int>(vars.voxel_octree_levels);
+        ImGui::SliderInt("Tree levels", &next_levels,
                 1, max_levels);
-        if (vars.voxel_octree_levels != prev_tree_levels)
+        if (vars.voxel_octree_levels != static_cast<unsigned int>(next_levels)) {
+            vars.voxel_octree_levels = static_cast<unsigned int>(next_levels);
             m_renderer.markTreeInvalid();
+        }
 
         // Timers: Just create your timer via m_timers and they will
         // appear here

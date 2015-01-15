@@ -56,17 +56,20 @@ namespace shader
 
 struct CameraStruct
 {
+    static constexpr int alignment() {return 64;}
     glm::mat4                       ViewMatrix;
     glm::mat4                       ProjMatrix;
     glm::mat4                       ProjViewMatrix;
     glm::vec4                       CameraPosition;
     glm::vec4                       padding[3];
 };
-static_assert(sizeof(CameraStruct) == 256 && sizeof(CameraStruct) % 16 == 0, "");
+static_assert(sizeof(CameraStruct) == 256 &&
+        sizeof(CameraStruct) % CameraStruct::alignment() == 0, "");
 
 
 struct MaterialStruct
 {
+    static constexpr int alignment() {return 16;}
     GLfloat                         diffuseColor[3];
     GLint                           hasDiffuseTex;
 
@@ -88,28 +91,34 @@ struct MaterialStruct
     GLfloat                         glossiness;
     GLfloat                         opacity;
 };
-static_assert(sizeof(MaterialStruct) == 96 && sizeof(MaterialStruct) % 4 == 0, "");
+static_assert(sizeof(MaterialStruct) == 96 &&
+        sizeof(MaterialStruct) % MaterialStruct::alignment() == 0, "");
 
 struct InstanceStruct
 {
+    static constexpr int alignment() {return  16;}
     glm::mat4                       ModelMatrix;
     GLfloat                         BBox_min[3];
     GLuint                          MeshID;
     GLfloat                         BBox_max[3];
     GLuint                          MaterialID;
 };
-static_assert(sizeof(InstanceStruct) == 96 && sizeof(InstanceStruct) % 4 == 0, "");
+static_assert(sizeof(InstanceStruct) == 96 &&
+        sizeof(InstanceStruct) % InstanceStruct::alignment() == 0, "");
 
 struct MeshStruct
 {
+    static constexpr int alignment() {return 4;}
     GLuint                          stride;
     GLuint                          components; // see mesh.h
     GLuint                          first;
 };
-static_assert(sizeof(MeshStruct) == 12 && sizeof(MeshStruct) % 4 == 0, "");
+static_assert(sizeof(MeshStruct) == 12 &&
+        sizeof(MeshStruct) % MeshStruct::alignment() == 0, "");
 
 struct LightStruct
 {
+    static constexpr int alignment() {return 16;}
     glm::vec3                       position;
     GLfloat                         angleInnerCone;
 
@@ -126,7 +135,8 @@ struct LightStruct
                                                 // second highest: is omnidirectional
                                                 // rest: depth texture index
 };
-static_assert(sizeof(LightStruct) == 64 && sizeof(LightStruct) % 16 == 0, "");
+static_assert(sizeof(LightStruct) == 64 &&
+        sizeof(LightStruct) % LightStruct::alignment() == 0, "");
 
 } // namespace shader
 

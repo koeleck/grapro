@@ -48,7 +48,7 @@ public:
 private:
     using CameraMap = std::unordered_map<std::string, std::size_t>;
     using CameraVector = std::vector<std::unique_ptr<Camera>>;
-    using Pool = BufferStoragePool<sizeof(shader::CameraStruct)>;
+    using Pool = BufferStoragePool<shader::CameraStruct>;
     CameraMap                   m_camera_names;
     CameraVector                m_cameras;
     Pool                        m_camera_buffer;

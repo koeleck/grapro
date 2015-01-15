@@ -9,6 +9,11 @@ namespace core
 
 class AABB;
 
+namespace shader
+{
+struct CameraStruct;
+} // namespace shader
+
 enum class CameraType : unsigned char
 {
     PERSPECTIVE = 0x01,
@@ -73,7 +78,7 @@ public:
 
 protected:
     Camera(const glm::dvec3& pos, const glm::dvec3& center,
-            CameraType type, void* ptr);
+            CameraType type, shader::CameraStruct* ptr);
 
     virtual void updateProjMat() const = 0;
     void invalidate();
@@ -83,15 +88,15 @@ protected:
 private:
     friend class CameraManager;
 
-    mutable bool        m_modified;
-    bool                m_useFixedYawAxis;
-    CameraType          m_type;
-    glm::dvec3          m_position;
-    glm::dquat          m_orientation;
-    glm::dvec3          m_fixedYawAxis;
-    mutable glm::dmat4  m_viewmat;
-    mutable glm::dmat4  m_projviewmat;
-    void*               m_data;
+    mutable bool            m_modified;
+    bool                    m_useFixedYawAxis;
+    CameraType              m_type;
+    glm::dvec3              m_position;
+    glm::dquat              m_orientation;
+    glm::dvec3              m_fixedYawAxis;
+    mutable glm::dmat4      m_viewmat;
+    mutable glm::dmat4      m_projviewmat;
+    shader::CameraStruct*   m_data;
 };
 
 /*************************************************************************
@@ -124,11 +129,11 @@ public:
 protected:
     PerspectiveCamera(const glm::dvec3& pos, const glm::dvec3& center,
             double fovy, double aspect_ratio, double near,
-            void* ptr);
+            shader::CameraStruct* ptr);
 
     PerspectiveCamera(const glm::dvec3& pos, const glm::dvec3& center,
             double fovy, double aspect_ratio, double near,
-            double far, void* ptr);
+            double far, shader::CameraStruct* ptr);
 
 private:
     friend class CameraManager;
@@ -179,7 +184,7 @@ public:
 protected:
     OrthogonalCamera(const glm::dvec3& pos, const glm::dvec3& center,
             double left, double right, double bottom, double top,
-            double zNear, double zFar, void* ptr);
+            double zNear, double zFar, shader::CameraStruct* ptr);
 
 private:
     friend class CameraManager;

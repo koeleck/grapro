@@ -38,7 +38,7 @@ public:
 
 private:
     using InstanceMap = std::unordered_map<std::string, std::unique_ptr<Instance>>;
-    using InstancePool = BufferStoragePool<sizeof(shader::InstanceStruct)>;
+    using InstancePool = BufferStoragePool<shader::InstanceStruct>;
 
     InstancePool        m_instance_buffer;
     InstanceMap         m_instances;
