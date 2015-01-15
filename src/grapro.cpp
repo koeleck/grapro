@@ -88,13 +88,26 @@ void GraPro::update_gui(const double delta_t)
             ImGui::NextColumn();
             ImGui::Separator();
 
+            auto msecTotal = 0;
             for (const auto& t : m_timers.getTimers()) {
+
+                if (t.first == "Render") {
+                    ImGui::Text("Total");
+                    ImGui::NextColumn();
+                    ImGui::Text("%d ms", msecTotal);
+                    ImGui::NextColumn();
+                }
+
                 ImGui::Text(t.first.c_str());
                 ImGui::NextColumn();
                 auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(
                         t.second->time()).count();
                 ImGui::Text("%d ms", static_cast<int>(msec));
                 ImGui::NextColumn();
+
+                if (t.first != "Render") {
+                    msecTotal += static_cast<int>(msec);
+                }
             }
         }
     }

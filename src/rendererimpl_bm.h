@@ -15,20 +15,12 @@ public:
 
 private:
 
-    void initShaders();
-    void recreateBuffer(gl::Buffer &, size_t);
-    void resetBuffer(const gl::Buffer &, int);
-    void resetAtomicBuffer();
-
+    virtual void initShaders();
     virtual void createVoxelList(bool);
     virtual void buildVoxelTree(bool);
 
-    core::Program                       m_octreeNodeFlag_prog;
-    core::Program                       m_octreeNodeAlloc_prog;
-    core::Program                       m_octreeLeafStore_prog;
-    core::Program                       m_octreeMipMap_prog;
-    gl::Buffer                          m_atomicCounterBuffer;
-    gl::Buffer                          m_octreeNodeColorBuffer;
+    void resetBuffer(const gl::Buffer &, int) const;
+    void resetAtomicBuffer() const;
 
 };
 

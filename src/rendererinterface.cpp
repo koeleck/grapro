@@ -16,11 +16,12 @@
 
 RendererInterface::RendererInterface(core::TimerArray& timer_array, unsigned int treeLevels)
   : m_numVoxelFrag{0u},
-  	m_timers(timer_array), // bug in gcc
+    m_rebuildTree{true},
+    m_treeLevels{treeLevels},
+  	m_timers(timer_array), // bug in gcc 4.8.2
   	m_voxelize_timer{m_timers.addGPUTimer("Voxelize")},
   	m_tree_timer{m_timers.addGPUTimer("Octree")},
-    m_rebuildTree{true},
-    m_treeLevels{treeLevels}
+    m_mipmap_timer{m_timers.addGPUTimer("Mipmap")}
 {
 
 	initBBoxes();
@@ -162,7 +163,19 @@ void RendererInterface::initVoxelBBoxes()
 
 /****************************************************************************/
 
-void RendererInterface::renderBoundingBoxes()
+void RendererInterface::recreateBuffer(gl::Buffer & buf, const size_t size) const
+{
+    gl::Buffer tmp;
+    buf.swap(tmp);
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, buf);
+    glBufferStorage(GL_SHADER_STORAGE_BUFFER, size, nullptr, GL_MAP_READ_BIT);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+}
+
+/****************************************************************************/
+
+void RendererInterface::renderBoundingBoxes() const
 {
     if (m_geometry.empty())
         return;
@@ -182,7 +195,7 @@ void RendererInterface::renderBoundingBoxes()
 
 /****************************************************************************/
 
-void RendererInterface::renderVoxelBoundingBoxes()
+void RendererInterface::renderVoxelBoundingBoxes() const
 {
     if (m_voxel_bboxes.empty())
         return;
@@ -190,12 +203,17 @@ void RendererInterface::renderVoxelBoundingBoxes()
     glUseProgram(m_voxel_bbox_prog);
     glBindVertexArray(m_bbox_vao);
 
+    //const auto loc = glGetUniformLocation(m_voxel_bbox_prog, "u_color");
+
     glEnable(GL_DEPTH_TEST);
 
-    for (const auto& bbox : m_voxel_bboxes) {
+    for (auto i = 0u; i < m_voxel_bboxes.size(); ++i) {
+        const auto & bbox = m_voxel_bboxes[i];
         float data[6] = {bbox.pmin.x, bbox.pmin.y, bbox.pmin.z,
                          bbox.pmax.x, bbox.pmax.y, bbox.pmax.z};
         glUniform3fv(0, 2, data);
+        //glUniform4f(loc, m_voxel_bboxes_color[i][0], m_voxel_bboxes_color[i][1],
+        //                 m_voxel_bboxes_color[i][2], m_voxel_bboxes_color[i][3]);
         glDrawElements(GL_LINES, 24, GL_UNSIGNED_BYTE, nullptr);
     }
 
@@ -205,12 +223,18 @@ void RendererInterface::renderVoxelBoundingBoxes()
 
 void RendererInterface::createVoxelBBoxes(const unsigned int num)
 {
-    std::vector<GLuint> nodes(num);
+    std::vector<OctreeNodeStruct> nodes(num);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
-    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num * sizeof(GLuint), nodes.data());
+    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num * sizeof(OctreeNodeStruct), nodes.data());
+
+    //std::vector<OctreeNodeColorStruct> nodesColor(num);
+    //glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeColorBuffer);
+    //glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num * sizeof(OctreeNodeColorStruct), nodesColor.data());
 
     m_voxel_bboxes.clear();
     m_voxel_bboxes.reserve(num);
+    //m_voxel_bboxes_color.clear();
+    //m_voxel_bboxes_color.reserve(num);
     std::pair<GLuint, core::AABB> stack[128];
     stack[0] = std::make_pair(0u, m_scene_bbox);
     std::size_t top {1};
@@ -219,9 +243,10 @@ void RendererInterface::createVoxelBBoxes(const unsigned int num)
         const auto idx = stack[top].first;
         const auto bbox = stack[top].second;
 
-        const auto childidx = nodes[idx];
+        const auto childidx = nodes[idx].id;
         if (childidx == 0x80000000) {
             m_voxel_bboxes.emplace_back(bbox);
+            //m_voxel_bboxes_color.emplace_back(nodesColor[idx].color);
         } else if ((childidx & 0x80000000) != 0) {
             const auto baseidx = uint(childidx & 0x7FFFFFFFu);
             const auto c = bbox.center();
@@ -247,7 +272,7 @@ void RendererInterface::createVoxelBBoxes(const unsigned int num)
 
 /****************************************************************************/
 
-void RendererInterface::renderGeometry(const GLuint prog)
+void RendererInterface::renderGeometry(const GLuint prog) const
 {
     core::res::materials->bind();
     core::res::instances->bind();
@@ -330,7 +355,7 @@ void RendererInterface::renderGeometry(const GLuint prog)
 
 /****************************************************************************/
 
-void RendererInterface::resizeFBO()
+void RendererInterface::resizeFBO() const
 {
     const auto num_voxels = static_cast<int>(std::pow(2, m_treeLevels - 1));
     glBindFramebuffer(GL_FRAMEBUFFER, m_voxelizationFBO);
@@ -340,6 +365,19 @@ void RendererInterface::resizeFBO()
         LOG_ERROR("Empty framebuffer is not complete (WTF?!?)");
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+/****************************************************************************/
+
+unsigned int RendererInterface::calculateMaxNodes() const
+{
+    auto maxNodes = 1u;
+    auto tmp = 1u;
+    for (auto i = 0u; i < m_treeLevels; ++i) {
+        tmp *= 8;
+        maxNodes += tmp;
+    }
+    return maxNodes;
 }
 
 /****************************************************************************/

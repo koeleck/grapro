@@ -11,6 +11,8 @@
 #include "core/aabb.h"
 #include "core/program.h"
 
+#include "voxel.h"
+
 namespace core {
     class TimerArray;
     class GPUTimer;
@@ -27,21 +29,24 @@ public:
     virtual void render(unsigned int treeLevels, bool renderBBoxes = false,
                         bool renderOctree = false, bool debug_output = false) = 0;
 
-    virtual void setGeometry(std::vector<const core::Instance*> geometry) final;
-
-    virtual void markTreeInvalid() final { m_rebuildTree = true; }
+    void setGeometry(std::vector<const core::Instance*> geometry);
+    void markTreeInvalid() { m_rebuildTree = true; }
 
 protected:
     struct DrawCmd;
 
+    virtual void initShaders() = 0;
     virtual void createVoxelList(bool debug_output = false) = 0;
     virtual void buildVoxelTree(bool debug_output = false) = 0;
 
-    virtual void renderBoundingBoxes() final;
-    virtual void renderVoxelBoundingBoxes() final;
-    virtual void createVoxelBBoxes(unsigned int num) final;
-    virtual void renderGeometry(GLuint prog) final;
-    virtual void resizeFBO() final;
+    void renderGeometry(GLuint prog) const;
+    void renderBoundingBoxes() const;
+    void renderVoxelBoundingBoxes() const;
+
+    void createVoxelBBoxes(unsigned int num);
+    void resizeFBO() const;
+    unsigned int calculateMaxNodes() const;
+    void recreateBuffer(gl::Buffer & buf, size_t size) const;
 
     using ProgramMap = std::unordered_map<unsigned char, core::Program>;
     ProgramMap                          m_programs;
@@ -60,23 +65,37 @@ protected:
 
     // voxel bboxes for debugging
     std::vector<core::AABB>             m_voxel_bboxes;
+    std::vector<glm::vec4>              m_voxel_bboxes_color;
     core::Program                       m_voxel_bbox_prog;
 
     // voxelization & octree
     core::OrthogonalCamera*             m_voxelize_cam;
     core::Program                       m_voxel_prog;
     gl::Buffer                          m_voxelBuffer;
-    gl::Buffer                          m_octreeNodeBuffer;
     gl::Framebuffer                     m_voxelizationFBO;
     unsigned int                        m_numVoxelFrag;
+
+    // octree
+    core::Program                       m_octreeNodeFlag_prog;
+    core::Program                       m_octreeNodeAlloc_prog;
+    core::Program                       m_octreeLeafStore_prog;
+    core::Program                       m_octreeMipMap_prog;
+    gl::Buffer                          m_octreeNodeBuffer;
+    gl::Buffer                          m_octreeNodeColorBuffer;
+    bool                                m_rebuildTree;
+    unsigned int                        m_treeLevels;
 
     // timing
     core::TimerArray&                   m_timers;
     core::GPUTimer*                     m_voxelize_timer;
     core::GPUTimer*                     m_tree_timer;
+    core::GPUTimer*                     m_mipmap_timer;
 
-    bool                                m_rebuildTree;
-    unsigned int                        m_treeLevels;
+    // other
+    gl::Buffer                          m_atomicCounterBuffer;
+
+
+
 
 private:
 

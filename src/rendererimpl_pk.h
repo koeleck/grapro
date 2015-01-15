@@ -15,13 +15,9 @@ public:
 
 private:
 
+    virtual void initShaders();
     virtual void createVoxelList(bool);
     virtual void buildVoxelTree(bool);
-
-    core::Program                       m_octreeNodeFlag_prog;
-    core::Program                       m_octreeNodeAlloc_prog;
-    core::Program                       m_octreeLeafStore_prog;
-    gl::Buffer                          m_atomicCounterBuffer;
 
 };
 

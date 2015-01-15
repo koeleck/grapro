@@ -22,18 +22,13 @@ RendererImplBM::RendererImplBM(core::TimerArray& timer_array, unsigned int treeL
     initShaders();
 
     // allocate voxelBuffer
-    recreateBuffer(m_voxelBuffer, vars.max_voxel_fragments * sizeof(VoxelStruct));
+    auto sizeOfVoxels = vars.max_voxel_fragments * sizeof(VoxelStruct);
+    recreateBuffer(m_voxelBuffer, sizeOfVoxels);
 
     // allocate octreeBuffer
-    // calculate max possible size of octree
-    auto totalNodes = 1u;
-    auto tmp = 1u;
-    for (auto i = 0u; i < m_treeLevels; ++i) {
-        tmp *= 8;
-        totalNodes += tmp;
-    }
-    auto mem = totalNodes * 4 +
-        static_cast<unsigned int>(vars.max_voxel_fragments * sizeof(VoxelStruct));
+    auto totalNodes = calculateMaxNodes();
+
+    auto mem = totalNodes * 4 + sizeOfVoxels;
     auto unit = "B";
     if (mem > 1024) {
         unit = "kiB";
@@ -77,24 +72,12 @@ void RendererImplBM::initShaders()
 
 /****************************************************************************/
 
-void RendererImplBM::recreateBuffer(gl::Buffer & buf, const size_t size)
+void RendererImplBM::resetAtomicBuffer() const
 {
-    gl::Buffer tmp;
-    buf.swap(tmp);
-
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, buf);
-    glBufferStorage(GL_SHADER_STORAGE_BUFFER, size, nullptr, GL_MAP_READ_BIT);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-}
-
-/****************************************************************************/
-
-void RendererImplBM::resetAtomicBuffer()
-{
-    GLuint initVal{};
+    const auto zero = GLuint{};
 
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
-    glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(GLuint), &initVal, GL_STATIC_DRAW);
+    glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(GLuint), &zero, GL_STATIC_DRAW);
 
     glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0, m_atomicCounterBuffer);
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
@@ -102,7 +85,7 @@ void RendererImplBM::resetAtomicBuffer()
 
 /****************************************************************************/
 
-void RendererImplBM::resetBuffer(const gl::Buffer & buf, const int binding)
+void RendererImplBM::resetBuffer(const gl::Buffer & buf, const int binding) const
 {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, buf);
 
@@ -316,6 +299,8 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
 
     m_tree_timer->stop();
 
+    m_mipmap_timer->start();
+
     /*
      *  write information to leafs
      */
@@ -357,6 +342,8 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
 
     }
 
+    m_mipmap_timer->stop();
+
     createVoxelBBoxes(nodeOffset);
 
 }
@@ -373,13 +360,7 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
         m_treeLevels = treeLevels;
         m_rebuildTree = true;
 
-        auto totalNodes = 1u;
-        auto tmp = 1u;
-        for (auto i = 0u; i < m_treeLevels; ++i) {
-            tmp *= 8;
-            totalNodes += tmp;
-        }
-
+        auto totalNodes = calculateMaxNodes();
         recreateBuffer(m_octreeNodeBuffer, totalNodes * sizeof(OctreeNodeStruct));
         recreateBuffer(m_octreeNodeColorBuffer, totalNodes * sizeof(OctreeNodeColorStruct));
         resizeFBO();
