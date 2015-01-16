@@ -1,5 +1,19 @@
 #version 440 core
 
+#include "common/voxel.glsl"
+
+/******************************************************************************/
+
+struct octreeColorBuffer
+{
+    vec4    color;
+};
+
+layout(std430, binding = OCTREE_COLOR_BINDING) restrict buffer octreeColorBlock
+{
+    octreeColorBuffer octreeColor[];
+};
+
 /******************************************************************************/
 
 uniform sampler2D u_pos;
@@ -75,14 +89,17 @@ void main()
     vec3 color  = texture(u_depth, gl_FragCoord.xy).xyz;
 
     // cone tracing
+    const float step = (1.f / float(num_sqrt_cones));
     float ux = 0.f;
     float uy = 0.f;
+
     for(uint y = 0; y < num_sqrt_cones; ++y)
     {
-        uy = y * (1.f / float(num_sqrt_cones));
+        uy = ( 0.5 * step ) + y * step;
+
         for(uint x = 0; x < num_sqrt_cones; ++x)
         {
-            ux = x * (1.f / float(num_sqrt_cones));
+            ux = ( 0.5 * step ) + x * step;
 
             ONB onb = toONB(normal);
             vec3 v = UniformHemisphereSampling(ux, uy);
