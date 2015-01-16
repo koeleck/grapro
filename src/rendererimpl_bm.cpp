@@ -459,18 +459,11 @@ void RendererImplBM::renderAmbientOcclusion() const
      *  positions.
      */
 
-    core::res::instances->bind();
-    core::res::meshes->bind();
-
     // bind gbuffer texture
     glBindTexture(GL_TEXTURE_2D, m_tex_position.get());
     glBindTexture(GL_TEXTURE_2D, m_tex_normal.get());
     glBindTexture(GL_TEXTURE_2D, m_tex_color.get());
     glBindTexture(GL_TEXTURE_2D, m_tex_depth.get());
-
-    // bind shader
-    glUseProgram(m_gbuffer_prog);
-    glBindVertexArray(m_vertexpulling_vao);
 
     // FBO
     glBindFramebuffer(GL_FRAMEBUFFER, m_gbuffer_FBO);    
@@ -479,7 +472,6 @@ void RendererImplBM::renderAmbientOcclusion() const
     glDrawBuffers(4, DrawBuffers);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_DEPTH_TEST);
     renderGeometry(m_gbuffer_prog);
 
     // unbind fbo
@@ -490,7 +482,7 @@ void RendererImplBM::renderAmbientOcclusion() const
      *  Render screen space quad
      */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    /*
+    
     glUseProgram(m_ssq_ao_prog);
 
     glActiveTexture(GL_TEXTURE0);
@@ -513,13 +505,11 @@ void RendererImplBM::renderAmbientOcclusion() const
 
     glBindVertexArray(m_vao_ssq.get());
     glDrawArrays(GL_TRIANGLES, 0, 6);
-    */
+    
 
     // TODO: FIX THIS
-    // only the color attachment0 works (position)
-    // all other textures are broken
     // debug: check if the gbuffer textures are filled
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, m_gbuffer_FBO);
+    /*glBindFramebuffer(GL_READ_FRAMEBUFFER, m_gbuffer_FBO);
     glReadBuffer(GL_COLOR_ATTACHMENT0);
     glBlitFramebuffer(0, 0, vars.screen_width, vars.screen_height,
                       0, 0, vars.screen_width/2, vars.screen_height/2,
@@ -535,7 +525,7 @@ void RendererImplBM::renderAmbientOcclusion() const
     glReadBuffer(GL_COLOR_ATTACHMENT3);
     glBlitFramebuffer(0, 0, vars.screen_width, vars.screen_height,
                       vars.screen_width/2, vars.screen_height/2, vars.screen_width, vars.screen_height,
-                      GL_COLOR_BUFFER_BIT, GL_LINEAR);
+                      GL_COLOR_BUFFER_BIT, GL_LINEAR);*/
 }
 
 /****************************************************************************/
