@@ -387,8 +387,8 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
     glDepthFunc(GL_LEQUAL);
 
     // renderGeometry(m_vertexpulling_prog);
-    //renderAmbientOcclusion();
-    renderColorBoxes();
+    renderAmbientOcclusion();
+    //renderColorBoxes();
 
     if (renderBBoxes)
         renderBoundingBoxes();
@@ -508,7 +508,7 @@ void RendererImplBM::renderAmbientOcclusion() const
     glBindTexture(GL_TEXTURE_2D, m_tex_depth.get());
 
     auto loc = glGetUniformLocation(m_ssq_ao_prog, "u_pos");
-    glUniform1i(loc, m_tex_position.get());
+    glUniform1i(loc, 0);
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_normal");
     glUniform1i(loc, m_tex_normal.get());
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_color");
