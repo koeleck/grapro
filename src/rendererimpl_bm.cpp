@@ -387,8 +387,7 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
     glDepthFunc(GL_LEQUAL);
 
     // renderGeometry(m_vertexpulling_prog);
-    renderAmbientOcclusion();
-    //renderGeometry(m_vertexpulling_prog);
+    //renderAmbientOcclusion();
     renderColorBoxes();
 
     if (renderBBoxes)

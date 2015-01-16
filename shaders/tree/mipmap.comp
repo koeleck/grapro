@@ -43,6 +43,7 @@ void main()
     // local vars
     uint childIdx = 0;
     uint nodePtr = octree[childIdx].id;
+    uint parent = 0;
 
     uint voxelDim = u_voxelDim;
 
@@ -54,6 +55,7 @@ void main()
         // go to next dimension
         voxelDim /= 2;
 
+        parent = childIdx;
         // mask out flag bit to get child idx
         childIdx = int(nodePtr & 0x7FFFFFFF);
 
@@ -75,18 +77,17 @@ void main()
 
     }
 
-    uint parent = childIdx;
     uint count = 0;
     vec4 colorSum = vec4(0.0);
 
     // check each child for flag
     for (uint i = 0; i < 8; ++i) {
 
-        childIdx = octree[nodePtr + i].id;
+        //childIdx = octree[nodePtr + i].id;
         if ((childIdx & 0x80000000) != 0) {
             // has flag -> has color
             ++count;
-            colorSum += octreeColor[nodePtr + i].color;
+            //colorSum += octreeColor[childIdx & 0x7FFFFFFF].color;
         }
 
     }
@@ -97,10 +98,10 @@ void main()
         colorSum /= colorSum.w; // see leafstore shader
         colorSum /= count;
 
-        atomicExchange(octreeColor[parent].color.x, colorSum.x);
-        atomicExchange(octreeColor[parent].color.y, colorSum.y);
-        atomicExchange(octreeColor[parent].color.z, colorSum.z);
-        atomicExchange(octreeColor[parent].color.w, colorSum.w);
+        //atomicExchange(octreeColor[parent].color.x, colorSum.x);
+        //atomicExchange(octreeColor[parent].color.y, colorSum.y);
+        //atomicExchange(octreeColor[parent].color.z, colorSum.z);
+        //atomicExchange(octreeColor[parent].color.w, colorSum.w);
 
     }
 
