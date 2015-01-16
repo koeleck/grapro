@@ -54,7 +54,7 @@ float ConeAreaAtDistance(uint idx, float distance)
     */
     const float angle  = cone[idx].angle * 0.5 + 90;
     const float radius = distance / tan(angle);
-    return 2 * M_PI * radius;
+    return abs(2 * M_PI * radius);
 }
 
 /******************************************************************************/
@@ -200,22 +200,27 @@ void main()
                 // voxel where the area does not fit anymore
                 uint level = -1;
                 float voxel_size = u_voxelDim;
-                /*while(voxel_size > area)
+                while(voxel_size > area)
                 {
                     voxel_size /= 2;
                     ++level;
-                }*/
+                }
 
                 // ambient occlusion
                 vec3 wpos = pos.xyz + sample_distance * cone[idx].dir;
-                if(checkOcclusion(level, wpos))
+                /*if(checkOcclusion(level, wpos))
                 {
                     // we are occluded here
                     ++occluded_cone;
-                }
+                }*/
             }
         }
     }
 
+    // AO
+    // const float ratio = float(occlude_cone) / float(num_sqrt_cones * num_sqrt_cones)
+    // out_color = vec4(ratio, 0, 0, 1);
+
+    // debug
     out_color = vec4(normal, 1);
 }
