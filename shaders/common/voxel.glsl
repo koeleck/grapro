@@ -19,4 +19,14 @@ layout(std430, binding = OCTREE_BINDING) restrict buffer octreeBlock
     octreeBuffer octree[];
 };
 
+struct octreeColorBuffer
+{
+    vec4    color;
+};
+
+layout(std430, binding = OCTREE_COLOR_BINDING) restrict buffer octreeColorBlock
+{
+    octreeColorBuffer octreeColor[];
+};
+
 #endif // SHADER_COMMON_VOXEL_GLSL

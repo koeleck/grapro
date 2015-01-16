@@ -23,22 +23,11 @@ uniform vec3 u_bboxMax;
 uniform uint u_voxelDim;
 uniform uint u_treeLevels;
 
-struct octreeColorBuffer
-{
-    vec4    color;
-};
-
-layout(std430, binding = OCTREE_COLOR_BINDING) restrict buffer octreeColorBlock
-{
-    octreeColorBuffer octreeColor[];
-};
-
 void main()
 {
 
 	vec3 voxelSize = (u_bboxMax - u_bboxMin) / float(u_voxelDim);
 	ivec3 pos = ivec3(vec3(worldPosition.xyz - u_bboxMin) / voxelSize);
-	vec3 clamped = vec3(pos) / float(u_voxelDim);
 
 	// local vars
     uint childIdx = 0;
@@ -77,6 +66,5 @@ void main()
     vec4 col = octreeColor[childIdx].color;
 
 	out_Color = vec4(col.xyz / col.w, 1.0);
-	//out_Color = vec4(clamped, 1.0);
-	//out_Color = vec4(octree[0].id) / 2;
+
 }

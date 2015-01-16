@@ -25,7 +25,7 @@ GraPro::GraPro(GLFWwindow* window)
     m_render_bboxes{false},
     m_render_octree{false},
     m_render_voxelColors{false},
-    m_debug_output{false},
+    m_debug_output{true},
     m_tree_levels{static_cast<int>(vars.voxel_octree_levels)},
     m_renderer{new RendererImplBM(m_timers, m_tree_levels)}
     //m_renderer{new RendererImplPK(m_timers, m_tree_levels)}

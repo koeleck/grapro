@@ -186,7 +186,7 @@ void RendererImplPK::buildVoxelTree(const bool debug_output)
     const auto loc_u_level = glGetUniformLocation(m_octreeMipMap_prog, "u_level");
     const auto loc_u_voxelDim_MipMap = glGetUniformLocation(m_octreeMipMap_prog, "u_voxelDim");
 
-    const auto voxelDim = static_cast<unsigned int>(std::pow(2, m_treeLevels));
+    const auto voxelDim = static_cast<unsigned int>(std::pow(2, m_treeLevels - 1));
 
     glProgramUniform1ui(m_octreeLeafStore_prog, loc_u_numVoxelFrag_Store, m_numVoxelFrag);
     glProgramUniform1ui(m_octreeLeafStore_prog, loc_u_voxelDim_Store, voxelDim);
@@ -299,7 +299,7 @@ void RendererImplPK::buildVoxelTree(const bool debug_output)
 
     auto i = m_treeLevels - 1;
     assert(m_treeLevels != 0);
-    while (m_treeLevels != 1) {
+    while (i > 0u) {
 
         glUseProgram(m_octreeMipMap_prog);
 
@@ -310,9 +310,7 @@ void RendererImplPK::buildVoxelTree(const bool debug_output)
         glDispatchCompute(groupDimX, groupDimY, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-        if (--i == 0u) {
-            break;
-        }
+        --i;
 
     }
 
@@ -325,7 +323,7 @@ void RendererImplPK::buildVoxelTree(const bool debug_output)
 /****************************************************************************/
 
 void RendererImplPK::render(const unsigned int treeLevels, const bool renderBBoxes,
-                            const bool renderOctree, const bool renderVoxelColors,
+                            const bool renderOctree, const bool renderVoxColors,
                             const bool debug_output)
 {
     if (m_geometry.empty())
@@ -351,8 +349,8 @@ void RendererImplPK::render(const unsigned int treeLevels, const bool renderBBox
     glEnable(GL_CULL_FACE);
     glDepthFunc(GL_LEQUAL);
 
-    if (renderVoxelColors) {
-
+    if (renderVoxColors) {
+        renderVoxelColors();
     } else {
         renderGeometry(m_vertexpulling_prog);
     }

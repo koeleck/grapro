@@ -17,16 +17,6 @@ layout (std430, binding = VOXEL_BINDING) restrict readonly buffer voxelBlock {
     voxelStruct voxel[];
 };
 
-struct octreeColorBuffer
-{
-    vec4    color;
-};
-
-layout(std430, binding = OCTREE_COLOR_BINDING) restrict buffer octreeColorBlock
-{
-    octreeColorBuffer octreeColor[];
-};
-
 uniform uint u_numVoxelFrag;
 uniform uint u_treeLevels;
 uniform uint u_voxelDim;

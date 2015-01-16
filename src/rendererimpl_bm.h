@@ -41,10 +41,6 @@ private:
     gl::VertexArray                     m_vao_ssq;
     gl::Buffer                          m_vbo_ssq;
 
-    // colorbox stuff
-    void renderColorBoxes() const;
-    core::Program   m_colorboxes_prog;
-
 };
 
 #endif // RENDERER_H

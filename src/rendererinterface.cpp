@@ -28,6 +28,7 @@ RendererInterface::RendererInterface(core::TimerArray& timer_array, unsigned int
 	initVertexPulling();
 	initVoxelization();
 	initVoxelBBoxes();
+    initVoxelColors();
 
 }
 
@@ -163,6 +164,16 @@ void RendererInterface::initVoxelBBoxes()
 
 /****************************************************************************/
 
+void RendererInterface::initVoxelColors()
+{
+    core::res::shaders->registerShader("colorboxes_frag", "tree/colorboxes.frag",
+            GL_FRAGMENT_SHADER);
+    m_colorboxes_prog = core::res::shaders->registerProgram("colorboxes_prog",
+            {"vertexpulling_vert", "colorboxes_frag"});
+}
+
+/****************************************************************************/
+
 void RendererInterface::recreateBuffer(gl::Buffer & buf, const size_t size) const
 {
     gl::Buffer tmp;
@@ -227,9 +238,9 @@ void RendererInterface::createVoxelBBoxes(const unsigned int num)
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
     glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num * sizeof(OctreeNodeStruct), nodes.data());
 
-    //std::vector<OctreeNodeColorStruct> nodesColor(num);
-    //glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeColorBuffer);
-    //glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num * sizeof(OctreeNodeColorStruct), nodesColor.data());
+    /*std::vector<OctreeNodeColorStruct> nodesColor(num);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeColorBuffer);
+    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num * sizeof(OctreeNodeColorStruct), nodesColor.data());*/
 
     m_voxel_bboxes.clear();
     m_voxel_bboxes.reserve(num);
@@ -242,9 +253,11 @@ void RendererInterface::createVoxelBBoxes(const unsigned int num)
         top--;
         const auto idx = stack[top].first;
         const auto bbox = stack[top].second;
-//LOG_INFO("idx: ", idx, ", childidx: ", nodes[idx].id & 0x7FFFFFFF);
-//LOG_INFO("color: (", nodesColor[idx].color[0], "|", nodesColor[idx].color[1], "|",
-//                     nodesColor[idx].color[2], "|", nodesColor[idx].color[3], ")");
+/*LOG_INFO("idx: ", idx, ", childidx: ", nodes[idx].id & 0x7FFFFFFF);
+LOG_INFO("color: (", nodesColor[idx].color[0] / nodesColor[idx].color[3], "|",
+                     nodesColor[idx].color[1] / nodesColor[idx].color[3], "|",
+                     nodesColor[idx].color[2] / nodesColor[idx].color[3], "|",
+                     nodesColor[idx].color[3], ")");*/
         const auto childidx = nodes[idx].id;
         if (childidx == 0x80000000) {
             m_voxel_bboxes.emplace_back(bbox);
@@ -381,6 +394,24 @@ unsigned int RendererInterface::calculateMaxNodes() const
         maxNodes += tmp;
     }
     return maxNodes;
+}
+
+/****************************************************************************/
+
+void RendererInterface::renderVoxelColors() const
+{
+    // uniforms
+    const auto dim = static_cast<int>(std::pow(2.0, m_treeLevels - 1));
+    auto loc = glGetUniformLocation(m_colorboxes_prog, "u_bboxMin");
+    glProgramUniform3f(m_colorboxes_prog, loc, m_scene_bbox.pmin.x, m_scene_bbox.pmin.y, m_scene_bbox.pmin.z);
+    loc = glGetUniformLocation(m_colorboxes_prog, "u_bboxMax");
+    glProgramUniform3f(m_colorboxes_prog, loc, m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z);
+    loc = glGetUniformLocation(m_colorboxes_prog, "u_voxelDim");
+    glProgramUniform1ui(m_colorboxes_prog, loc, dim);
+    loc = glGetUniformLocation(m_colorboxes_prog, "u_treeLevels");
+    glProgramUniform1ui(m_colorboxes_prog, loc, m_treeLevels);
+
+    renderGeometry(m_colorboxes_prog);
 }
 
 /****************************************************************************/

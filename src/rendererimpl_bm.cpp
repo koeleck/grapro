@@ -52,11 +52,6 @@ RendererImplBM::RendererImplBM(core::TimerArray& timer_array, unsigned int treeL
     recreateBuffer(m_octreeNodeBuffer, totalNodes * sizeof(OctreeNodeStruct));
     recreateBuffer(m_octreeNodeColorBuffer, totalNodes * sizeof(OctreeNodeColorStruct));
 
-    core::res::shaders->registerShader("colorboxes_frag", "tree/colorboxes.frag",
-            GL_FRAGMENT_SHADER);
-    m_colorboxes_prog = core::res::shaders->registerProgram("colorboxes_prog",
-            {"vertexpulling_vert", "colorboxes_frag"});
-
 }
 
 /****************************************************************************/
@@ -179,11 +174,15 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
     m_tree_timer->start();
 
     // calculate max threads for flag shader to get all the voxel fragments
+    auto calculateDataHeight = [&](unsigned int num, unsigned width) {
+        return (num + width - 1) / width;
+    };
     const auto dataWidth = 1024u;
-    const auto dataHeight = static_cast<unsigned int>((m_numVoxelFrag + dataWidth - 1) / dataWidth);
-    const auto groupDimX = static_cast<unsigned int>(dataWidth / 8);
-    const auto groupDimY = static_cast<unsigned int>((dataHeight + 7) / 8);
+    const auto groupWidth = 128u;
     const auto allocwidth = 64u;
+
+    auto dataHeight = calculateDataHeight(m_numVoxelFrag, dataWidth);
+    auto groupHeight = calculateDataHeight(dataHeight, 8u);
 
     // octree buffer
     resetBuffer(m_octreeNodeBuffer, core::bindings::OCTREE);
@@ -206,21 +205,14 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
     const auto loc_u_voxelDim_Store = glGetUniformLocation(m_octreeLeafStore_prog, "u_voxelDim");
     const auto loc_u_treeLevels = glGetUniformLocation(m_octreeLeafStore_prog, "u_treeLevels");
 
-    const auto loc_u_numVoxelFrag_MipMap = glGetUniformLocation(m_octreeMipMap_prog, "u_numVoxelFrag");
-    const auto loc_u_level = glGetUniformLocation(m_octreeMipMap_prog, "u_level");
-    const auto loc_u_voxelDim_MipMap = glGetUniformLocation(m_octreeMipMap_prog, "u_voxelDim");
-
-    const auto voxelDim = static_cast<unsigned int>(std::pow(2, m_treeLevels));
+    const auto voxelDim = static_cast<unsigned int>(std::pow(2, m_treeLevels - 1));
 
     glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_numVoxelFrag, m_numVoxelFrag);
     glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_voxelDim, voxelDim);
 
     glProgramUniform1ui(m_octreeLeafStore_prog, loc_u_numVoxelFrag_Store, m_numVoxelFrag);
-    glProgramUniform1ui(m_octreeLeafStore_prog, loc_u_voxelDim_Store, voxelDim / 2);
+    glProgramUniform1ui(m_octreeLeafStore_prog, loc_u_voxelDim_Store, voxelDim);
     glProgramUniform1ui(m_octreeLeafStore_prog, loc_u_treeLevels, m_treeLevels);
-
-    glProgramUniform1ui(m_octreeMipMap_prog, loc_u_numVoxelFrag_MipMap, m_numVoxelFrag);
-    glProgramUniform1ui(m_octreeMipMap_prog, loc_u_voxelDim_MipMap, voxelDim);
 
     auto nodeOffset = 0u; // offset to first node of next level
     auto allocOffset = 1u; // offset to first free space for new nodes
@@ -244,10 +236,10 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
 
         // dispatch
         if (debug_output) {
-            LOG_INFO("Dispatching NodeFlag with ", groupDimX, "*", groupDimY, "*1 groups with 8*8*1 threads each");
-            LOG_INFO("--> ", groupDimX * groupDimY * 64, " threads");
+            LOG_INFO("Dispatching NodeFlag with ", groupWidth, "*", groupHeight, "*1 groups with 8*8*1 threads each");
+            LOG_INFO("--> ", groupWidth * groupHeight * 64, " threads");
         }
-        glDispatchCompute(groupDimX, groupDimY, 1);
+        glDispatchCompute(groupWidth, groupHeight, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         // break to avoid allocating with ptrs to more children
@@ -319,36 +311,45 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
 
     // dispatch
     if (debug_output) {
-        LOG_INFO("Dispatching LeafStore with ", groupDimX, "*", groupDimY, "*1 groups with 8*8*1 threads each");
-        LOG_INFO("--> ", groupDimX * groupDimY * 64, " threads");
+        LOG_INFO("Dispatching LeafStore with ", groupWidth, "*", groupHeight, "*1 groups with 8*8*1 threads each");
+        LOG_INFO("--> ", groupWidth * groupHeight * 64, " threads");
     }
-    glDispatchCompute(groupDimX, groupDimY, 1);
+    glDispatchCompute(groupWidth, groupHeight, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     /*
      *  mip map higher levels
      */
 
-    auto i = m_treeLevels - 1;
-    assert(m_treeLevels != 0);
-    while (m_treeLevels != 1) {
+    glUseProgram(m_octreeMipMap_prog);
 
-        glUseProgram(m_octreeMipMap_prog);
+    // uniforms
+    const auto loc_nodeOffset_MipMap = glGetUniformLocation(m_octreeMipMap_prog, "u_nodeOffset");
+    const auto loc_nodesThisLevel_MipMap = glGetUniformLocation(m_octreeMipMap_prog, "u_nodesThisLevel");
+
+    auto offset = nodeOffset - maxNodesPerLevel.back();
+
+    for (auto i = static_cast<int>(m_treeLevels) - 2; i >= 0; --i) {
+
+        offset -= maxNodesPerLevel[i];
+        if (debug_output) {
+            LOG_INFO("");
+            LOG_INFO("offset: ", offset, ", u_nodesThisLevel: ", maxNodesPerLevel[i]);
+        }
 
         // uniforms
-        glProgramUniform1ui(m_octreeMipMap_prog, loc_u_level, i);
+        glUniform1ui(loc_nodeOffset_MipMap, offset);
+        glUniform1ui(loc_nodesThisLevel_MipMap, maxNodesPerLevel[i]);
 
         // dispatch
+        auto groupX = calculateDataHeight(maxNodesPerLevel[i], 64);
         if (debug_output) {
-            LOG_INFO("Dispatching MipMap with ", groupDimX, "*", groupDimY, "*1 groups with 8*8*1 threads each");
-            LOG_INFO("--> ", groupDimX * groupDimY * 64, " threads");
+            LOG_INFO("Dispatching MipMap with ", groupX, "*1*1 groups with 64*1*1 threads each");
+            LOG_INFO("--> ", groupX * 64, " threads");
         }
-        glDispatchCompute(groupDimX, groupDimY, 1);
+        glDispatchComputeGroupSizeARB(groupX, 1, 1,
+                                      64, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
-        if (--i == 0u) {
-            break;
-        }
 
     }
 
@@ -361,7 +362,7 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
 /****************************************************************************/
 
 void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBoxes,
-                            const bool renderOctree, const bool renderVoxelColors,
+                            const bool renderOctree, const bool renderVoxColors,
                             const bool debug_output)
 {
     if (m_geometry.empty())
@@ -388,8 +389,8 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
     glDepthFunc(GL_LEQUAL);
 
     //renderAmbientOcclusion();
-    if (renderVoxelColors) {
-        renderColorBoxes();
+    if (renderVoxColors) {
+        renderVoxelColors();
     } else {
         renderGeometry(m_vertexpulling_prog);
     }
@@ -533,24 +534,6 @@ void RendererImplBM::renderAmbientOcclusion() const
     glBlitFramebuffer(0, 0, vars.screen_width, vars.screen_height,
                       vars.screen_width/2, vars.screen_height/2, vars.screen_width, vars.screen_height,
                       GL_COLOR_BUFFER_BIT, GL_LINEAR);*/
-}
-
-/****************************************************************************/
-
-void RendererImplBM::renderColorBoxes() const
-{
-    // uniforms
-    const auto dim = static_cast<int>(std::pow(2.0, m_treeLevels - 1));
-    auto loc = glGetUniformLocation(m_colorboxes_prog, "u_bboxMin");
-    glProgramUniform3f(m_colorboxes_prog, loc, m_scene_bbox.pmin.x, m_scene_bbox.pmin.y, m_scene_bbox.pmin.z);
-    loc = glGetUniformLocation(m_colorboxes_prog, "u_bboxMax");
-    glProgramUniform3f(m_colorboxes_prog, loc, m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z);
-    loc = glGetUniformLocation(m_colorboxes_prog, "u_voxelDim");
-    glProgramUniform1ui(m_colorboxes_prog, loc, dim);
-    loc = glGetUniformLocation(m_colorboxes_prog, "u_treeLevels");
-    glProgramUniform1ui(m_colorboxes_prog, loc, m_treeLevels);
-
-    renderGeometry(m_colorboxes_prog);
 }
 
 /****************************************************************************/

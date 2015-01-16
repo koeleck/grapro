@@ -27,7 +27,7 @@ public:
     virtual ~RendererInterface();
 
     virtual void render(unsigned int treeLevels, bool renderBBoxes = false,
-                        bool renderOctree = false, bool renderVoxelColors = false,
+                        bool renderOctree = false, bool renderVoxColors = false,
                         bool debug_output = false) = 0;
 
     void setGeometry(std::vector<const core::Instance*> geometry);
@@ -43,6 +43,7 @@ protected:
     void renderGeometry(GLuint prog) const;
     void renderBoundingBoxes() const;
     void renderVoxelBoundingBoxes() const;
+    void renderVoxelColors() const;
 
     void createVoxelBBoxes(unsigned int num);
     void resizeFBO() const;
@@ -94,9 +95,7 @@ protected:
 
     // other
     gl::Buffer                          m_atomicCounterBuffer;
-
-
-
+    core::Program                       m_colorboxes_prog;
 
 private:
 
@@ -104,6 +103,7 @@ private:
     void initVertexPulling();
     void initVoxelization();
     void initVoxelBBoxes();
+    void initVoxelColors();
 
 };
 
