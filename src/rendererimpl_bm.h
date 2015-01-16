@@ -22,6 +22,10 @@ private:
     void resetBuffer(const gl::Buffer &, int) const;
     void resetAtomicBuffer() const;
 
+    void renderColorBoxes() const;
+
+    core::Program   m_colorboxes_prog;
+
 };
 
 #endif // RENDERER_H
