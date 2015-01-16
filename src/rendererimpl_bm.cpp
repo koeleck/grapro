@@ -439,7 +439,9 @@ void RendererImplBM::initAmbientOcclusion()
     float ssq[] = { -1.f, -1.f, 0.f,
                     1.f, -1.f, 0.f,
                     1.f, 1.f, 0.f,
-                    -1.f, 1.f, 0.f };
+                    1.f, 1.f, 0.f,
+                    -1.f, 1.f, 0.f,
+                    -1.f, -1.f, 0.f };
 
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo_ssq.get());
     glBufferData(GL_ARRAY_BUFFER, sizeof(ssq), ssq, GL_STATIC_DRAW);
@@ -496,8 +498,27 @@ void RendererImplBM::renderAmbientOcclusion() const
      *  Render screen space quad
      */
     glUseProgram(m_ssq_ao_prog);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_tex_position.get());
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, m_tex_normal.get());
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, m_tex_color.get());
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, m_tex_depth.get());
+
+    auto loc = glGetUniformLocation(m_ssq_ao_prog, "u_pos");
+    glUniform1i(loc, m_tex_position.get());
+    loc = glGetUniformLocation(m_ssq_ao_prog, "u_normal");
+    glUniform1i(loc, m_tex_normal.get());
+    loc = glGetUniformLocation(m_ssq_ao_prog, "u_color");
+    glUniform1i(loc, m_tex_color.get());
+    loc = glGetUniformLocation(m_ssq_ao_prog, "u_depth");
+    glUniform1i(loc, m_tex_depth.get());
+
     glBindVertexArray(m_vao_ssq.get());
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
 /****************************************************************************/

@@ -36,7 +36,7 @@ private:
     gl::Texture                         m_tex_color;    // 2
     gl::Texture                         m_tex_depth;    // 3
 
-    GLuint                              m_v_ssq = 4;    // 4
+    GLuint                              m_v_ssq = 0;    // 4
 
     gl::VertexArray                     m_vao_ssq;
     gl::Buffer                          m_vbo_ssq;
