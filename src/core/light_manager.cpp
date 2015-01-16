@@ -40,7 +40,7 @@ LightManager::LightManager()
     glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, m_shadowcubemaps);
     glTexStorage3D(GL_TEXTURE_CUBE_MAP_ARRAY,  1, internalformat,
             vars.shadowcubemap_res, vars.shadowcubemap_res,
-            vars.max_num_cube_shadowmaps);
+            6 * vars.max_num_cube_shadowmaps);
     glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
