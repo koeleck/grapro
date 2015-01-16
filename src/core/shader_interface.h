@@ -56,7 +56,8 @@ namespace shader
 
 struct CameraStruct
 {
-    static constexpr int alignment() {return 64;}
+    static constexpr int alignment() {return 64;} // ??? not sure why, but glBindBufferRange
+                                                  // doesn't accept other alignments
     glm::mat4                       ViewMatrix;
     glm::mat4                       ProjMatrix;
     glm::mat4                       ProjViewMatrix;
@@ -118,7 +119,10 @@ static_assert(sizeof(MeshStruct) == 12 &&
 
 struct LightStruct
 {
-    static constexpr int alignment() {return 16;}
+    static constexpr int alignment() {return 16;} // vec4
+    glm::mat4                       lightMatrix;
+    glm::mat4                       projViewMatrix;
+
     glm::vec3                       position;
     GLfloat                         angleInnerCone;
 
@@ -131,11 +135,11 @@ struct LightStruct
     GLfloat                         constantAttenuation;
     GLfloat                         linearAttenuation;
     GLfloat                         quadraticAttenuation;
-    GLint                           type_texid; // highest bit: is shadowcasting,
-                                                // second highest: is omnidirectional
-                                                // rest: depth texture index
+    GLint                           type_texid; // 31:      is shadowcasting
+                                                // [30:29]: type
+                                                // [28:0]:  depth texture index
 };
-static_assert(sizeof(LightStruct) == 64 &&
+static_assert(sizeof(LightStruct) == 192 &&
         sizeof(LightStruct) % LightStruct::alignment() == 0, "");
 
 } // namespace shader

@@ -6,6 +6,7 @@
 #include "mesh_manager.h"
 #include "instance_manager.h"
 #include "light_manager.h"
+#include "gl/gl_sys.h"
 
 namespace core
 {
@@ -34,6 +35,8 @@ void initializeManagers()
     res::instances = new InstanceManager();
     res::meshes = new MeshManager();
     res::lights = new LightManager();
+
+    gl::printInfo();
 }
 
 /***************************************************************************/

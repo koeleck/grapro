@@ -10,7 +10,8 @@
 #define MATERIAL_BINDING    3
 #define INSTANCE_BINDING    4
 #define VERTEX_BINDING      5
-#define VOXEL_BINDING		6
+#define VOXEL_BINDING       6
 #define OCTREE_BINDING      7
+#define LIGHT_BINDING       8
 
 #endif // SHADERS_COMMON_BINDINGS_GLSL
