@@ -389,7 +389,7 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
     // renderGeometry(m_vertexpulling_prog);
     renderAmbientOcclusion();
     //renderGeometry(m_vertexpulling_prog);
-    // renderColorBoxes();
+    renderColorBoxes();
 
     if (renderBBoxes)
         renderBoundingBoxes();
@@ -437,7 +437,7 @@ void RendererImplBM::renderAmbientOcclusion() const
 {
 
     /*
-     *   First step: fill "gbuffer" with camera <-> scene intersection 
+     *   First step: fill "gbuffer" with camera <-> scene intersection
      *  positions.
      */
 
@@ -457,7 +457,7 @@ void RendererImplBM::renderAmbientOcclusion() const
     glBindVertexArray(m_vertexpulling_vao);
 
     // FBO
-    glBindFramebuffer(GL_FRAMEBUFFER, m_gbuffer_FBO);    
+    glBindFramebuffer(GL_FRAMEBUFFER, m_gbuffer_FBO);
     glViewport(0, 0, vars.screen_width, vars.screen_height);
     GLenum DrawBuffers[4] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3};
     glDrawBuffers(1, DrawBuffers);

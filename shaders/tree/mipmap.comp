@@ -86,7 +86,7 @@ void main()
         if ((childIdx & 0x80000000) != 0) {
             // has flag -> has color
             ++count;
-            colorSum += octreeColor[childIdx].color;
+            colorSum += octreeColor[nodePtr + i].color;
         }
 
     }
