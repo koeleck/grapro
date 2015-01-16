@@ -1,4 +1,7 @@
+#include <limits>
+#include <glm/gtc/constants.hpp>
 #include "light.h"
+#include "shader_interface.h"
 
 namespace core
 {
@@ -9,7 +12,19 @@ namespace core
  *
  ****************************************************************************/
 
-Light::Light() = default;
+Light::Light(shader::LightStruct* const data, const LightType type,
+        const int depthTex)
+  : m_data{data},
+    m_position{.0f},
+    m_intensity{.0f},
+    m_constant_attenuation{.0f},
+    m_linear_attenuation{.0f},
+    m_quadratic_attenuation{.0f},
+    m_max_distance{std::numeric_limits<float>::infinity()},
+    m_type{type},
+    m_depth_tex{depthTex}
+{
+}
 
 /****************************************************************************/
 
@@ -135,6 +150,16 @@ bool Light::isShadowcasting() const
  *
  ****************************************************************************/
 
+SpotLight::SpotLight(shader::LightStruct* const data, const int depthTex)
+  : Light(data, LightType::SPOT, depthTex),
+    m_direction{.0f, -1.f, .0f},
+    m_angle_inner_cone{glm::pi<float>()},
+    m_angle_outer_cone{glm::pi<float>()}
+{
+}
+
+/****************************************************************************/
+
 float SpotLight::getAngleInnerCone() const
 {
     return m_angle_inner_cone;
@@ -187,6 +212,17 @@ void SpotLight::setDirection(const glm::vec3& dir)
  *
  ****************************************************************************/
 
+DirectionalLight::DirectionalLight(shader::LightStruct* const data,
+        const int depthTex)
+  : Light(data, LightType::DIRECTIONAL, depthTex),
+    m_direction{.0f, -1.f, .0f},
+    m_rotation{.0f},
+    m_size{1.f}
+{
+}
+
+/****************************************************************************/
+
 const glm::vec3& DirectionalLight::getDirection() const
 {
     return m_direction;
@@ -235,6 +271,11 @@ void DirectionalLight::setSize(const float size)
  * PointLight
  *
  ****************************************************************************/
+
+PointLight::PointLight(shader::LightStruct* const data, const int depthTex)
+  : Light(data, LightType::POINT, depthTex)
+{
+}
 
 /****************************************************************************/
 

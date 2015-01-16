@@ -34,6 +34,14 @@ DEF_VAR(shader_dir, std::string, "shaders/")
 DEF_VAR(max_voxel_fragments, unsigned int, 2097152)
 DEF_VAR(voxel_octree_levels, unsigned int, 8)
 
+// Lights
+DEF_VAR(max_num_lights, int, 1024)
+DEF_VAR(max_num_2d_shadowmaps, int, 10)
+DEF_VAR(max_num_cube_shadowmaps, int, 10)
+DEF_VAR(shadowmap_res, int, 512)
+DEF_VAR(shadowcubemap_res, int, 256)
+DEF_VAR(shadowmap_internalformat, std::string, "GL_DEPTH_COMPONENT24")
+
 /***************************************************************
  *
  *  Core
