@@ -26,14 +26,20 @@ private:
     void resetAtomicBuffer() const;
 
 	// cone tracing
-    core::Program                       m_ao_prog;
+    core::Program                       m_ssq_ao_prog;
     
     core::Program                       m_gbuffer_prog;
     gl::Framebuffer                     m_gbuffer_FBO;
-    gl::Texture                         m_tex_position;
-    gl::Texture                         m_tex_normal;
-    gl::Texture                         m_tex_color;
-    gl::Texture                         m_tex_depth;
+    
+    gl::Texture                         m_tex_position; // 0
+    gl::Texture                         m_tex_normal;   // 1
+    gl::Texture                         m_tex_color;    // 2
+    gl::Texture                         m_tex_depth;    // 3
+
+    GLuint                              m_v_ssq = 4;    // 4
+
+    gl::VertexArray                     m_vao_ssq;
+    gl::Buffer                          m_vbo_ssq;
 
     // colorbox stuff
     void renderColorBoxes() const;
