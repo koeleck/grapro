@@ -35,6 +35,22 @@ struct Cone
     float angle;
 } cone[num_sqrt_cones*num_sqrt_cones];
 
+float ConeAreaAtDistance(uint idx, float distance)
+{
+    /*
+        http://www.mathematische-basteleien.de/kegel.htm
+                 ^ 
+                /|\  <-- angle * 0.5 + 90
+               / | \ 
+              / d|  \
+             /   |   \
+            /____|____\ <-- angle * 0.5 
+                   r
+    */
+    const float angle  = cone[idx].angle * 0.5 + 90;
+    const float radius = distance / tan(angle);
+    return 2 * M_PI * radius;
+}
 
 /******************************************************************************/
 
