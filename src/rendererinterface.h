@@ -27,7 +27,8 @@ public:
     virtual ~RendererInterface();
 
     virtual void render(unsigned int treeLevels, bool renderBBoxes = false,
-                        bool renderOctree = false, bool debug_output = false) = 0;
+                        bool renderOctree = false, bool renderVoxelColors = false,
+                        bool debug_output = false) = 0;
 
     void setGeometry(std::vector<const core::Instance*> geometry);
     void markTreeInvalid() { m_rebuildTree = true; }

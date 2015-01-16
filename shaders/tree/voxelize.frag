@@ -96,7 +96,6 @@ void main()
 
     voxel[idx].position = uvec4(texcoord.xyz, 0);
     voxel[idx].color = vec4(m_diffuse_color, 0.f);
-    //voxel[idx].color = vec4(1.f);
     voxel[idx].normal = vec4(m_normal, 0.f);
 
 }

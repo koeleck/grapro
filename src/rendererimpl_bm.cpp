@@ -216,7 +216,7 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
     glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_voxelDim, voxelDim);
 
     glProgramUniform1ui(m_octreeLeafStore_prog, loc_u_numVoxelFrag_Store, m_numVoxelFrag);
-    glProgramUniform1ui(m_octreeLeafStore_prog, loc_u_voxelDim_Store, voxelDim);
+    glProgramUniform1ui(m_octreeLeafStore_prog, loc_u_voxelDim_Store, voxelDim / 2);
     glProgramUniform1ui(m_octreeLeafStore_prog, loc_u_treeLevels, m_treeLevels);
 
     glProgramUniform1ui(m_octreeMipMap_prog, loc_u_numVoxelFrag_MipMap, m_numVoxelFrag);
@@ -361,7 +361,8 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
 /****************************************************************************/
 
 void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBoxes,
-                      const bool renderOctree, const bool debug_output)
+                            const bool renderOctree, const bool renderVoxelColors,
+                            const bool debug_output)
 {
     if (m_geometry.empty())
         return;
@@ -386,9 +387,12 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
     glEnable(GL_CULL_FACE);
     glDepthFunc(GL_LEQUAL);
 
-    // renderGeometry(m_vertexpulling_prog);
     //renderAmbientOcclusion();
-    renderColorBoxes();
+    if (renderVoxelColors) {
+        renderColorBoxes();
+    } else {
+        renderGeometry(m_vertexpulling_prog);
+    }
 
     if (renderBBoxes)
         renderBoundingBoxes();
@@ -481,7 +485,7 @@ void RendererImplBM::renderAmbientOcclusion() const
      *  Render screen space quad
      */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
+
     glUseProgram(m_ssq_ao_prog);
 
     glActiveTexture(GL_TEXTURE0);
@@ -504,7 +508,7 @@ void RendererImplBM::renderAmbientOcclusion() const
 
     glBindVertexArray(m_vao_ssq.get());
     glDrawArrays(GL_TRIANGLES, 0, 6);
-    
+
 
     // TODO: FIX THIS
     // debug: check if the gbuffer textures are filled

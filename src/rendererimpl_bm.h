@@ -11,7 +11,7 @@ public:
     explicit RendererImplBM(core::TimerArray&, unsigned int);
     ~RendererImplBM();
 
-    virtual void render(unsigned int, bool = false, bool = false, bool = false);
+    virtual void render(unsigned int, bool = false, bool = false, bool = false, bool = false);
 
 private:
 
@@ -27,10 +27,10 @@ private:
 
 	// cone tracing
     core::Program                       m_ssq_ao_prog;
-    
+
     core::Program                       m_gbuffer_prog;
     gl::Framebuffer                     m_gbuffer_FBO;
-    
+
     gl::Texture                         m_tex_position; // 0
     gl::Texture                         m_tex_normal;   // 1
     gl::Texture                         m_tex_color;    // 2

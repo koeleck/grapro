@@ -80,7 +80,7 @@ void atomicAvgFloat(vec4 newColor, uint idx)
     atomicAdd(octreeColor[idx].color.x, newColor.x);
     atomicAdd(octreeColor[idx].color.y, newColor.y);
     atomicAdd(octreeColor[idx].color.z, newColor.z);
-    atomicAdd(octreeColor[idx].color.w, idx);
+    atomicAdd(octreeColor[idx].color.w, 1);
 
 }
 
@@ -103,7 +103,7 @@ void main()
     uvec3 umin = uvec3(0);
 
     // iterate through all tree levels
-    for (uint i = 0; i < u_treeLevels; ++i) {
+    for (uint i = 0; i < u_treeLevels - 1; ++i) {
 
         // go to next dimension
         voxelDim /= 2;
