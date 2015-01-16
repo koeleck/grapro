@@ -407,6 +407,10 @@ void RendererImplBM::initAmbientOcclusion()
     core::res::shaders->registerShader("gbuffer_frag", "conetracing/gbuffer.frag", GL_FRAGMENT_SHADER);
     m_gbuffer_prog = core::res::shaders->registerProgram("gbuffer_prog", {"vertexpulling_vert", "gbuffer_frag"});
 
+    core::res::shaders->registerShader("ssq_ao_vert", "conetracing/ssq_ao.vert", GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("ssq_ao_frag", "conetracing/ssq_ao.frag", GL_FRAGMENT_SHADER);
+    m_ssq_ao_prog = core::res::shaders->registerProgram("ssq_ao_prog", {"ssq_ao_vert", "ssq_ao_frag"});
+
     // textures
     glBindTexture(GL_TEXTURE_2D, m_tex_position.get());
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, vars.screen_width, vars.screen_height, 0, GL_RGBA, GL_FLOAT, 0);
@@ -429,6 +433,18 @@ void RendererImplBM::initAmbientOcclusion()
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         LOG_ERROR("Empty framebuffer is not complete (WTF?!?)");
     }
+
+    // screen space quad
+    glBindVertexArray(m_vao_ssq.get());
+    float ssq[] = { -1.f, -1.f, 0.f,
+                    1.f, -1.f, 0.f,
+                    1.f, 1.f, 0.f,
+                    -1.f, 1.f, 0.f };
+
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_ssq.get());
+    glBufferData(GL_ARRAY_BUFFER, sizeof(ssq), ssq, GL_STATIC_DRAW);
+    glVertexAttribPointer(m_v_ssq, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(m_v_ssq);
 }
 
 /****************************************************************************/
@@ -479,7 +495,9 @@ void RendererImplBM::renderAmbientOcclusion() const
     /*
      *  Render screen space quad
      */
-    // TODO
+    glUseProgram(m_ssq_ao_prog);
+    glBindVertexArray(m_vao_ssq.get());
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
 /****************************************************************************/
