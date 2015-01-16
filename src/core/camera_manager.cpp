@@ -36,7 +36,7 @@ PerspectiveCamera* CameraManager::createPerspectiveCam(const std::string& name,
     }
 
     const auto offset = m_camera_buffer.alloc();
-    void* const ptr = m_camera_buffer.offsetToPointer(offset);
+    auto* const ptr = m_camera_buffer.offsetToPointer(offset);
 
     m_cameras.emplace_back(new PerspectiveCamera(pos, center, fovy, aspect_ratio, near, far, ptr));
     m_camera_names.emplace(name, m_cameras.size());
@@ -67,7 +67,7 @@ OrthogonalCamera* CameraManager::createOrthogonalCam(const std::string& name,
     }
 
     const auto offset = m_camera_buffer.alloc();
-    void* const ptr = m_camera_buffer.offsetToPointer(offset);
+    auto* const ptr = m_camera_buffer.offsetToPointer(offset);
 
     m_cameras.emplace_back(new OrthogonalCamera(pos, center, left, right, bottom, top, zNear, zFar, ptr));
     m_camera_names.emplace(name, m_cameras.size());

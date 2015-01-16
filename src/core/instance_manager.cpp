@@ -32,8 +32,7 @@ Instance* InstanceManager::addInstance(const std::string& name,
     }
 
     const GLintptr offset = m_instance_buffer.alloc();
-    const GLuint index = static_cast<GLuint>(offset /
-            static_cast<GLintptr>(sizeof(shader::InstanceStruct)));
+    const GLuint index = m_instance_buffer.offsetToIndex(offset);
     auto* const ptr = m_instance_buffer.offsetToPointer(offset);
 
     auto res = m_instances.emplace(name,

@@ -24,7 +24,7 @@ namespace core
 //////////////////////////////////////////////////////////////////////////
 
 Camera::Camera(const glm::dvec3& pos, const glm::dvec3& center,
-        const CameraType camtype, void* const ptr)
+        const CameraType camtype, shader::CameraStruct* const ptr)
   : m_modified{true},
     m_useFixedYawAxis{false},
     m_type{camtype},
@@ -285,7 +285,8 @@ void Camera::update() const
 
 PerspectiveCamera::PerspectiveCamera(const glm::dvec3& pos,
         const glm::dvec3& center, const double fovy,
-        const double aspect_ratio, const double near, void* ptr)
+        const double aspect_ratio, const double near,
+        shader::CameraStruct* ptr)
   : PerspectiveCamera(pos, center, fovy, aspect_ratio,
             near, std::numeric_limits<double>::infinity(), ptr)
 {
@@ -296,7 +297,7 @@ PerspectiveCamera::PerspectiveCamera(const glm::dvec3& pos,
 PerspectiveCamera::PerspectiveCamera(const glm::dvec3& pos,
         const glm::dvec3& center, const double fovy,
         const double aspect_ratio, const double near,
-        const double far, void* ptr)
+        const double far, shader::CameraStruct* ptr)
   : Camera(pos, center, CameraType::PERSPECTIVE, ptr),
     m_fovy{fovy},
     m_aspect_ratio{aspect_ratio},
@@ -469,7 +470,7 @@ bool PerspectiveCamera::inFrustum(const AABB& bbox) const
 OrthogonalCamera::OrthogonalCamera(const glm::dvec3& pos,
         const glm::dvec3& center, const double left, const double right,
         const double bottom, const double top, const double zNear,
-        const double zFar, void* ptr)
+        const double zFar, shader::CameraStruct* ptr)
   : Camera(pos, center, CameraType::ORTHOGONAL, ptr),
     m_left{left},
     m_right{right},

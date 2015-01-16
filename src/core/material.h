@@ -61,7 +61,7 @@ public:
 
 private:
     friend class MaterialManager;
-    Material(GLuint index, void* ptr);
+    Material(GLuint index, shader::MaterialStruct* ptr);
 
     const Texture*  m_diffuse_texture;
     const Texture*  m_specular_texture;

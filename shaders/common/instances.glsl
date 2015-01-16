@@ -20,6 +20,7 @@ struct Instance
 
 layout(std430, binding = INSTANCE_BINDING) restrict readonly buffer InstanceBlock
 {
+    int         numInstances;
     Instance    instances[];
 };
 

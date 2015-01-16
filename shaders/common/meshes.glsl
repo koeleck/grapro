@@ -23,6 +23,7 @@ struct Mesh
 
 layout(std430, binding = MESH_BINDING) restrict readonly buffer MeshBlock
 {
+    int     numMeshes;
     Mesh    meshes[];
 };
 

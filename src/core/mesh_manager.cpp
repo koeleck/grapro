@@ -128,9 +128,8 @@ Mesh* MeshManager::addMesh(const import::Mesh* mesh)
 
     // Add MeshStruct on GPU
     const GLintptr mesh_offset = m_mesh_pool.alloc();
-    const GLuint mesh_index = static_cast<GLuint>(mesh_offset /
-            static_cast<GLintptr>(sizeof(shader::MeshStruct)));
-    auto* mesh_data = static_cast<shader::MeshStruct*>(m_mesh_pool.offsetToPointer(mesh_offset));
+    const GLuint mesh_index = m_mesh_pool.offsetToIndex(mesh_offset);
+    auto* mesh_data = m_mesh_pool.offsetToPointer(mesh_offset);
     // remember: we're using a float[] array, so divide everything by sizeof(float)
     mesh_data->stride = static_cast<GLuint>(per_vertex_size / static_cast<GLsizei>(sizeof(float)));
     mesh_data->components = static_cast<GLuint>(components());

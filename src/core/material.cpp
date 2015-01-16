@@ -9,7 +9,7 @@ namespace core
 
 /****************************************************************************/
 
-Material::Material(const GLuint index, void* const ptr)
+Material::Material(const GLuint index, shader::MaterialStruct* const ptr)
   : m_diffuse_texture{nullptr},
     m_specular_texture{nullptr},
     m_glossy_texture{nullptr},
@@ -25,7 +25,7 @@ Material::Material(const GLuint index, void* const ptr)
     m_glossiness{1.f},
     m_opacity{1.f},
     m_index{index},
-    m_data{static_cast<shader::MaterialStruct*>(ptr)}
+    m_data{ptr}
 {
     shader::MaterialStruct data;
     data.hasDiffuseTex = 0;
