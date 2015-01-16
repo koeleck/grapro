@@ -506,6 +506,10 @@ void RendererImplBM::renderAmbientOcclusion() const
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_depth");
     glUniform1i(loc, 3);
 
+    const auto voxelDim = static_cast<unsigned int>(std::pow(2, m_treeLevels));
+    loc = glGetUniformLocation(m_ssq_ao_prog, "u_voxelDim");
+    glProgramUniform1ui(m_ssq_ao_prog, loc, voxelDim);
+
     glBindVertexArray(m_vao_ssq.get());
     glDrawArrays(GL_TRIANGLES, 0, 6);
 

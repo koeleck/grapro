@@ -1,5 +1,21 @@
 #version 440 core
 
+#include "common/voxel.glsl"
+
+/******************************************************************************/
+
+struct octreeColorBuffer
+{
+    vec4    color;
+};
+
+layout(std430, binding = OCTREE_COLOR_BINDING) restrict buffer octreeColorBlock
+{
+    octreeColorBuffer octreeColor[];
+};
+
+uniform uint u_voxelDim;
+
 /******************************************************************************/
 
 uniform sampler2D u_pos;
@@ -10,7 +26,8 @@ uniform sampler2D u_depth;
 layout(location = 0) out vec4 out_color;
 
 const float M_PI          = 3.14159265359;
-const uint num_sqrt_cones = 2; // 2x2 grid        
+const uint num_sqrt_cones = 2;   // 2x2 grid 
+const uint max_samples    = 100; // how many samples to take along each cone?
 
 /******************************************************************************/
 
@@ -19,8 +36,24 @@ struct Cone
     vec3 pos;
     vec3 dir;
     float angle;
-} cone[num_sqrt_cones*num_sqrt_cones];
+} cone[num_sqrt_cones * num_sqrt_cones];
 
+float ConeAreaAtDistance(uint idx, float distance)
+{
+    /*
+        http://www.mathematische-basteleien.de/kegel.htm
+                 ^ 
+                /|\  <-- angle * 0.5 + 90
+               / | \ 
+              / d|  \
+             /   |   \
+            /____|____\ <-- angle * 0.5 
+                   r
+    */
+    const float angle  = cone[idx].angle * 0.5 + 90;
+    const float radius = distance / tan(angle);
+    return 2 * M_PI * radius;
+}
 
 /******************************************************************************/
 
@@ -75,20 +108,44 @@ void main()
     vec3 color  = texture(u_depth, gl_FragCoord.xy).xyz;
 
     // cone tracing
+    const float step = (1.f / float(num_sqrt_cones));
     float ux = 0.f;
     float uy = 0.f;
+
     for(uint y = 0; y < num_sqrt_cones; ++y)
     {
-        uy = y * (1.f / float(num_sqrt_cones));
+        uy = (0.5 * step) + y * step;
+
         for(uint x = 0; x < num_sqrt_cones; ++x)
         {
-            ux = x * (1.f / float(num_sqrt_cones));
+            ux = (0.5 * step) + x * step;
 
+            // create the cone
             ONB onb = toONB(normal);
             vec3 v = UniformHemisphereSampling(ux, uy);
             cone[y * num_sqrt_cones + x].dir   = toWorld(onb, v);
             cone[y * num_sqrt_cones + x].pos   = pos.xyz;
             cone[y * num_sqrt_cones + x].angle = 180 / num_sqrt_cones;
+
+            // trace the cone for each sample
+            for(uint s = 0; s < max_samples; ++s)
+            {
+                const float d = 17; // has to be smaller than the current voxel size
+                const float sample_distance = s * d;
+                const float area = ConeAreaAtDistance(y * num_sqrt_cones + x, sample_distance);
+
+                // find the corresponding mipmap level.
+                // start at -1: the final level that is found will be 1 level to much,
+                // because we need the first voxel where the area fits and not the first
+                // voxel where the area does not fit anymore
+                uint level = -1;
+                float voxel_size = u_voxelDim;
+                while(voxel_size > area)
+                {
+                    voxel_size = u_voxelDim / 2;
+                    ++level;
+                }
+            }
         }
     }
 
