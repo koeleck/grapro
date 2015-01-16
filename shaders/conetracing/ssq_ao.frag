@@ -15,6 +15,8 @@ layout(std430, binding = OCTREE_COLOR_BINDING) restrict buffer octreeColorBlock
 };
 
 uniform uint u_voxelDim;
+uniform vec3 u_bboxMin;
+uniform vec3 u_bboxMax;
 
 /******************************************************************************/
 
@@ -100,12 +102,69 @@ vec3 toWorld(ONB onb, vec3 v)
 
 /******************************************************************************/
 
+bool checkOcclusion(uint maxlevel, vec4 wpos)
+{
+    vec3 voxelSize = (u_bboxMax - u_bboxMin) / float(u_voxelDim);
+    ivec3 pos = ivec3(vec3(wpos.xyz - u_bboxMin) / voxelSize);
+    vec3 clamped = vec3(pos) / float(u_voxelDim);
+
+    bool is_occluded = false;
+
+    // local vars
+    uint childIdx = 0;
+    uint nodePtr = octree[childIdx].id;
+
+    uint voxelDim = u_voxelDim;
+
+    uvec3 umin = uvec3(0);
+
+    // iterate through all tree levels
+    for (uint i = 0; i < maxlevel - 1; ++i) {
+
+        // go to next dimension
+        voxelDim /= 2;
+
+        // mask out flag bit to get child idx
+        childIdx = int(nodePtr & 0x7FFFFFFF);
+
+        // create subnodes
+        ivec3 subnodeptrXYZ = clamp(ivec3(1 + pos - umin - voxelDim), 0, 1);
+
+        int subnodeptr = subnodeptrXYZ.x;
+        subnodeptr += 2 * subnodeptrXYZ.y;
+        subnodeptr += 4 * subnodeptrXYZ.z;
+
+        childIdx += subnodeptr;
+
+        umin.x += voxelDim * subnodeptrXYZ.x;
+        umin.y += voxelDim * subnodeptrXYZ.y;
+        umin.z += voxelDim * subnodeptrXYZ.z;
+
+        // update node
+        nodePtr = octree[childIdx].id;
+
+        // check occlusion
+        if(nodePtr & 0x80000000) 
+        {
+            is_occluded = true;
+            return is_occluded;
+        }
+    }
+
+    return is_occluded;
+}
+
+/******************************************************************************/
+
 void main()
 {
     vec4 pos    = texture(u_pos, gl_FragCoord.xy);
     vec3 normal = texture(u_normal, gl_FragCoord.xy).xyz;
     float depth = texture(u_color, gl_FragCoord.xy).x;
     vec3 color  = texture(u_depth, gl_FragCoord.xy).xyz;
+
+    // AO: count number of occluded cones
+    uint occluded_cone = 0;
 
     // cone tracing
     const float step = (1.f / float(num_sqrt_cones));
@@ -119,20 +178,21 @@ void main()
         for(uint x = 0; x < num_sqrt_cones; ++x)
         {
             ux = (0.5 * step) + x * step;
+            const uint idx = y * num_sqrt_cones + x;
 
             // create the cone
             ONB onb = toONB(normal);
             vec3 v = UniformHemisphereSampling(ux, uy);
-            cone[y * num_sqrt_cones + x].dir   = toWorld(onb, v);
-            cone[y * num_sqrt_cones + x].pos   = pos.xyz;
-            cone[y * num_sqrt_cones + x].angle = 180 / num_sqrt_cones;
+            cone[idx].dir   = toWorld(onb, v);
+            cone[idx].pos   = pos.xyz;
+            cone[idx].angle = 180 / num_sqrt_cones;
 
             // trace the cone for each sample
             for(uint s = 0; s < max_samples; ++s)
             {
                 const float d = 17; // has to be smaller than the current voxel size
                 const float sample_distance = s * d;
-                const float area = ConeAreaAtDistance(y * num_sqrt_cones + x, sample_distance);
+                const float area = ConeAreaAtDistance(idx, sample_distance);
 
                 // find the corresponding mipmap level.
                 // start at -1: the final level that is found will be 1 level to much,
@@ -140,10 +200,18 @@ void main()
                 // voxel where the area does not fit anymore
                 uint level = -1;
                 float voxel_size = u_voxelDim;
-                while(voxel_size > area)
+                /*while(voxel_size > area)
                 {
-                    voxel_size = u_voxelDim / 2;
+                    voxel_size /= 2;
                     ++level;
+                }*/
+
+                // ambient occlusion
+                vec4 wpos = pos + sample_distance * cone[idx].dir;
+                if(checkOcclusion(level, wpos))
+                {
+                    // we are occluded here
+                    ++occluded_cone;
                 }
             }
         }
