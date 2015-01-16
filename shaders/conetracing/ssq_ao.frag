@@ -24,7 +24,8 @@ uniform sampler2D u_depth;
 layout(location = 0) out vec4 out_color;
 
 const float M_PI          = 3.14159265359;
-const uint num_sqrt_cones = 2; // 2x2 grid        
+const uint num_sqrt_cones = 2;   // 2x2 grid 
+const uint max_samples    = 100; // how many samples to take along each cone?
 
 /******************************************************************************/
 
@@ -117,11 +118,20 @@ void main()
         {
             ux = ( 0.5 * step ) + x * step;
 
+            // create the cone
             ONB onb = toONB(normal);
             vec3 v = UniformHemisphereSampling(ux, uy);
             cone[y * num_sqrt_cones + x].dir   = toWorld(onb, v);
             cone[y * num_sqrt_cones + x].pos   = pos.xyz;
             cone[y * num_sqrt_cones + x].angle = 180 / num_sqrt_cones;
+
+            // trace the cone for each sample
+            for(uint s = 0; s < max_samples; ++s)
+            {
+                const float d = 17; // has to be smaller than the current voxel size
+                const float sample_distance = s * d;
+                const float area = ConeAreaAtDistance(y * num_sqrt_cones + x, sample_distance);
+            }
         }
     }
 
