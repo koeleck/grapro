@@ -227,9 +227,9 @@ void RendererInterface::createVoxelBBoxes(const unsigned int num)
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
     glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num * sizeof(OctreeNodeStruct), nodes.data());
 
-    //std::vector<OctreeNodeColorStruct> nodesColor(num);
-    //glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeColorBuffer);
-    //glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num * sizeof(OctreeNodeColorStruct), nodesColor.data());
+    std::vector<OctreeNodeColorStruct> nodesColor(num);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeColorBuffer);
+    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num * sizeof(OctreeNodeColorStruct), nodesColor.data());
 
     m_voxel_bboxes.clear();
     m_voxel_bboxes.reserve(num);
@@ -247,6 +247,9 @@ void RendererInterface::createVoxelBBoxes(const unsigned int num)
         if (childidx == 0x80000000) {
             m_voxel_bboxes.emplace_back(bbox);
             //m_voxel_bboxes_color.emplace_back(nodesColor[idx].color);
+            LOG_INFO("id: ", nodes[idx].id);
+            LOG_INFO("color: (", nodesColor[idx].color[0], "|", nodesColor[idx].color[1], "|",
+                                 nodesColor[idx].color[2], "|", nodesColor[idx].color[3], ")");
         } else if ((childidx & 0x80000000) != 0) {
             const auto baseidx = uint(childidx & 0x7FFFFFFFu);
             const auto c = bbox.center();

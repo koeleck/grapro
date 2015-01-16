@@ -16,6 +16,8 @@ out VertexData
     flat uint materialID;
 } outData;
 
+out vec4 worldPosition;
+
 void main()
 {
     const uint instanceID = gl_BaseInstanceARB + gl_InstanceID;
@@ -33,6 +35,7 @@ void main()
     value.z = vertexData[idx++];
 
     const vec4 worldPos = modelMatrix* vec4(value, 1.0);
+    worldPosition = worldPos;
 
     outData.viewdir = normalize(cam.Position.xyz - worldPos.xyz);
 

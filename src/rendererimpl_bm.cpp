@@ -52,6 +52,11 @@ RendererImplBM::RendererImplBM(core::TimerArray& timer_array, unsigned int treeL
     recreateBuffer(m_octreeNodeBuffer, totalNodes * sizeof(OctreeNodeStruct));
     recreateBuffer(m_octreeNodeColorBuffer, totalNodes * sizeof(OctreeNodeColorStruct));
 
+    core::res::shaders->registerShader("colorboxes_frag", "tree/colorboxes.frag",
+            GL_FRAGMENT_SHADER);
+    m_colorboxes_prog = core::res::shaders->registerProgram("colorboxes_prog",
+            {"vertexpulling_vert", "colorboxes_frag"});
+
 }
 
 /****************************************************************************/
@@ -380,8 +385,11 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glDepthFunc(GL_LEQUAL);
+
     // renderGeometry(m_vertexpulling_prog);
     renderAmbientOcclusion();
+    //renderGeometry(m_vertexpulling_prog);
+    // renderColorBoxes();
 
     if (renderBBoxes)
         renderBoundingBoxes();
@@ -451,6 +459,24 @@ void RendererImplBM::renderAmbientOcclusion() const
 
     // unbind fbo
     glBindFramebuffer(GL_FRAMEBUFFER, 0);    
+}
+
+/****************************************************************************/
+
+void RendererImplBM::renderColorBoxes() const
+{
+    // uniforms
+    const auto dim = static_cast<int>(std::pow(2.0, m_treeLevels - 1));
+    auto loc = glGetUniformLocation(m_colorboxes_prog, "u_bboxMin");
+    glProgramUniform3f(m_colorboxes_prog, loc, m_scene_bbox.pmin.x, m_scene_bbox.pmin.y, m_scene_bbox.pmin.z);
+    loc = glGetUniformLocation(m_colorboxes_prog, "u_bboxMax");
+    glProgramUniform3f(m_colorboxes_prog, loc, m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z);
+    loc = glGetUniformLocation(m_colorboxes_prog, "u_voxelDim");
+    glProgramUniform1ui(m_colorboxes_prog, loc, dim);
+    loc = glGetUniformLocation(m_colorboxes_prog, "u_treeLevels");
+    glProgramUniform1ui(m_colorboxes_prog, loc, m_treeLevels);
+
+    renderGeometry(m_colorboxes_prog);
 }
 
 /****************************************************************************/

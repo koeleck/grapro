@@ -30,6 +30,10 @@ private:
     gl::Framebuffer                     m_gbuffer_FBO;
     gl::Texture                         m_tex_position;
 
+    // colorbox stuff
+    void renderColorBoxes() const;
+    core::Program   m_colorboxes_prog;
+
 };
 
 #endif // RENDERER_H
