@@ -80,7 +80,7 @@ void atomicAvgFloat(vec4 newColor, uint idx)
     atomicAdd(octreeColor[idx].color.x, newColor.x);
     atomicAdd(octreeColor[idx].color.y, newColor.y);
     atomicAdd(octreeColor[idx].color.z, newColor.z);
-    atomicAdd(octreeColor[idx].color.w, 1.f);
+    atomicAdd(octreeColor[idx].color.w, idx);
 
 }
 

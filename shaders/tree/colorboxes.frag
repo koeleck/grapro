@@ -78,5 +78,5 @@ void main()
 
 	out_Color = vec4(col.xyz / col.w, 1.0);
 	//out_Color = vec4(clamped, 1.0);
-	out_Color = vec4(octree[0].id) / 2;
+	//out_Color = vec4(octree[0].id) / 2;
 }

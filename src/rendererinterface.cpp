@@ -226,7 +226,7 @@ void RendererInterface::createVoxelBBoxes(const unsigned int num)
     std::vector<OctreeNodeStruct> nodes(num);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
     glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num * sizeof(OctreeNodeStruct), nodes.data());
-LOG_INFO("nodes[0].id: ", nodes[0].id);
+LOG_INFO("nodes[0].id: ", nodes[0].id & 0x7FFFFFFF);
     std::vector<OctreeNodeColorStruct> nodesColor(num);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeColorBuffer);
     glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num * sizeof(OctreeNodeColorStruct), nodesColor.data());
