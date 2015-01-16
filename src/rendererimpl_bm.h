@@ -19,8 +19,16 @@ private:
     virtual void createVoxelList(bool);
     virtual void buildVoxelTree(bool);
 
+    void initAmbientOcclusion();
+    void renderAmbientOcclusion() const;
+
     void resetBuffer(const gl::Buffer &, int) const;
     void resetAtomicBuffer() const;
+
+	// cone tracing
+    core::Program                       m_gbuffer_prog;
+    gl::Framebuffer                     m_gbuffer_FBO;
+    gl::Texture                         m_tex_position;
 
 };
 

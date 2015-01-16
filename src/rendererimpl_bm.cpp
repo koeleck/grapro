@@ -6,6 +6,8 @@
 #include "core/shader_manager.h"
 #include "core/camera_manager.h"
 #include "core/timer_array.h"
+#include "core/instance_manager.h"
+#include "core/mesh_manager.h"
 
 #include "log/log.h"
 
@@ -20,6 +22,9 @@ RendererImplBM::RendererImplBM(core::TimerArray& timer_array, unsigned int treeL
 {
 
     initShaders();
+
+    initAmbientOcclusion();
+
 
     // allocate voxelBuffer
     auto sizeOfVoxels = vars.max_voxel_fragments * sizeof(VoxelStruct);
@@ -375,13 +380,77 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glDepthFunc(GL_LEQUAL);
-    renderGeometry(m_vertexpulling_prog);
+    // renderGeometry(m_vertexpulling_prog);
+    renderAmbientOcclusion();
 
     if (renderBBoxes)
         renderBoundingBoxes();
 
     if (renderOctree)
         renderVoxelBoundingBoxes();
+}
+
+/****************************************************************************/
+
+void RendererImplBM::initAmbientOcclusion()
+{
+    // shader
+    core::res::shaders->registerShader("vertexpulling_vert", "basic/vertexpulling.vert", GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("gbuffer_frag", "conetracing/gbuffer.frag", GL_FRAGMENT_SHADER);
+    m_gbuffer_prog = core::res::shaders->registerProgram("gbuffer_prog", {"vertexpulling_vert", "gbuffer_frag"});
+
+    // textures
+    glActiveTexture(GL_TEXTURE0 + m_tex_position.get());
+    glBindTexture(GL_TEXTURE_2D, m_tex_position.get());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, vars.screen_width, vars.screen_height, 0, GL_RGBA, GL_FLOAT, 0);
+
+    // FBO
+    glBindFramebuffer(GL_FRAMEBUFFER, m_gbuffer_FBO);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_tex_position, 0);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        LOG_ERROR("Empty framebuffer is not complete (WTF?!?)");
+    }
+}
+
+/****************************************************************************/
+
+void RendererImplBM::renderAmbientOcclusion() const
+{
+
+    /*
+     *   First step: fill "gbuffer" with camera <-> scene intersection 
+     *  positions.
+     */
+
+    core::res::instances->bind();
+    core::res::meshes->bind();
+
+    const auto* cam = core::res::cameras->getDefaultCam();
+
+    // bind gbuffer texture
+    glBindTexture(GL_TEXTURE_2D, m_tex_position.get());
+
+    glUseProgram(m_gbuffer_prog);
+    glBindVertexArray(m_vertexpulling_vao);
+
+    // FBO
+    glBindFramebuffer(GL_FRAMEBUFFER, m_gbuffer_FBO);    
+    glViewport(0, 0, vars.screen_width, vars.screen_height);
+    GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+    glDrawBuffers(1, DrawBuffers);
+
+    for (const auto& cmd : m_drawlist) {
+        // Frustum Culling
+        if (!cam->inFrustum(cmd.instance->getBoundingBox()))
+            continue;
+
+        // bind textures
+        glDrawElementsInstancedBaseVertexBaseInstance(cmd.mode, cmd.count, cmd.type,
+                cmd.indices, 1, 0, cmd.instance->getIndex());
+    }
+
+    // unbind fbo
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);    
 }
 
 /****************************************************************************/
