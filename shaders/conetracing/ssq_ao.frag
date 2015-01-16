@@ -29,7 +29,7 @@ layout(location = 0) out vec4 out_color;
 
 const float M_PI          = 3.14159265359;
 const uint num_sqrt_cones = 2;   // 2x2 grid 
-const uint max_samples    = 100; // how many samples to take along each cone?
+const uint max_samples    = 3; // how many samples to take along each cone?
 
 /******************************************************************************/
 
@@ -102,10 +102,10 @@ vec3 toWorld(ONB onb, vec3 v)
 
 /******************************************************************************/
 
-bool checkOcclusion(uint maxlevel, vec4 wpos)
+bool checkOcclusion(uint maxlevel, vec3 wpos)
 {
     vec3 voxelSize = (u_bboxMax - u_bboxMin) / float(u_voxelDim);
-    ivec3 pos = ivec3(vec3(wpos.xyz - u_bboxMin) / voxelSize);
+    ivec3 pos = ivec3(vec3(wpos - u_bboxMin) / voxelSize);
     vec3 clamped = vec3(pos) / float(u_voxelDim);
 
     bool is_occluded = false;
@@ -144,7 +144,7 @@ bool checkOcclusion(uint maxlevel, vec4 wpos)
         nodePtr = octree[childIdx].id;
 
         // check occlusion
-        if(nodePtr & 0x80000000) 
+        if((nodePtr & 0x80000000) == 1) 
         {
             is_occluded = true;
             return is_occluded;
@@ -190,7 +190,7 @@ void main()
             // trace the cone for each sample
             for(uint s = 0; s < max_samples; ++s)
             {
-                const float d = 17; // has to be smaller than the current voxel size
+                const float d = 0.5; // has to be smaller than the current voxel size
                 const float sample_distance = s * d;
                 const float area = ConeAreaAtDistance(idx, sample_distance);
 
@@ -207,7 +207,7 @@ void main()
                 }*/
 
                 // ambient occlusion
-                vec4 wpos = pos + sample_distance * cone[idx].dir;
+                vec3 wpos = pos.xyz + sample_distance * cone[idx].dir;
                 if(checkOcclusion(level, wpos))
                 {
                     // we are occluded here
@@ -217,5 +217,5 @@ void main()
         }
     }
 
-    out_color = vec4(1, normal.x, normal.y, 1);
+    out_color = vec4(normal, 1);
 }
