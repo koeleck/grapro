@@ -14,6 +14,8 @@ layout(std430, binding = OCTREE_COLOR_BINDING) restrict buffer octreeColorBlock
     octreeColorBuffer octreeColor[];
 };
 
+uniform uint u_voxelDim;
+
 /******************************************************************************/
 
 uniform sampler2D u_pos;
@@ -34,7 +36,7 @@ struct Cone
     vec3 pos;
     vec3 dir;
     float angle;
-} cone[num_sqrt_cones*num_sqrt_cones];
+} cone[num_sqrt_cones * num_sqrt_cones];
 
 float ConeAreaAtDistance(uint idx, float distance)
 {
@@ -112,11 +114,11 @@ void main()
 
     for(uint y = 0; y < num_sqrt_cones; ++y)
     {
-        uy = ( 0.5 * step ) + y * step;
+        uy = (0.5 * step) + y * step;
 
         for(uint x = 0; x < num_sqrt_cones; ++x)
         {
-            ux = ( 0.5 * step ) + x * step;
+            ux = (0.5 * step) + x * step;
 
             // create the cone
             ONB onb = toONB(normal);
@@ -131,6 +133,18 @@ void main()
                 const float d = 17; // has to be smaller than the current voxel size
                 const float sample_distance = s * d;
                 const float area = ConeAreaAtDistance(y * num_sqrt_cones + x, sample_distance);
+
+                // find the corresponding mipmap level.
+                // start at -1: the final level that is found will be 1 level to much,
+                // because we need the first voxel where the area fits and not the first
+                // voxel where the area does not fit anymore
+                uint level = -1;
+                float voxel_size = u_voxelDim;
+                while(voxel_size > area)
+                {
+                    voxel_size = u_voxelDim / 2;
+                    ++level;
+                }
             }
         }
     }
