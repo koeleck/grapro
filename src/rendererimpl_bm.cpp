@@ -497,6 +497,7 @@ void RendererImplBM::renderAmbientOcclusion() const
     /*
      *  Render screen space quad
      */
+    /*
     glUseProgram(m_ssq_ao_prog);
 
     glActiveTexture(GL_TEXTURE0);
@@ -509,16 +510,36 @@ void RendererImplBM::renderAmbientOcclusion() const
     glBindTexture(GL_TEXTURE_2D, m_tex_depth.get());
 
     auto loc = glGetUniformLocation(m_ssq_ao_prog, "u_pos");
-    glUniform1i(loc, m_tex_position.get());
+    glUniform1i(loc, 0);
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_normal");
-    glUniform1i(loc, m_tex_normal.get());
+    glUniform1i(loc, 1);
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_color");
-    glUniform1i(loc, m_tex_color.get());
+    glUniform1i(loc, 2);
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_depth");
-    glUniform1i(loc, m_tex_depth.get());
+    glUniform1i(loc, 3);
 
     glBindVertexArray(m_vao_ssq.get());
     glDrawArrays(GL_TRIANGLES, 0, 6);
+    */
+
+    // debug: check if the gbuffer textures are filled
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, m_gbuffer_FBO);
+    glReadBuffer(GL_COLOR_ATTACHMENT0);
+    glBlitFramebuffer(0, 0, vars.screen_width, vars.screen_height,
+                      0, 0, vars.screen_width/2, vars.screen_height/2,
+                      GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    glReadBuffer(GL_COLOR_ATTACHMENT1);
+    glBlitFramebuffer(0, 0, vars.screen_width, vars.screen_height,
+                      0, vars.screen_height/2, vars.screen_width/2, vars.screen_height,
+                      GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    glReadBuffer(GL_COLOR_ATTACHMENT2);
+    glBlitFramebuffer(0, 0, vars.screen_width, vars.screen_height,
+                      vars.screen_width/2, 0, vars.screen_width, vars.screen_height/2,
+                      GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    glReadBuffer(GL_COLOR_ATTACHMENT3);
+    glBlitFramebuffer(0, 0, vars.screen_width, vars.screen_height,
+                      vars.screen_width/2, vars.screen_height/2, vars.screen_width, vars.screen_height,
+                      GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }
 
 /****************************************************************************/

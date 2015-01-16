@@ -14,5 +14,5 @@ void main()
    float depth = texture(u_color, gl_FragCoord.xy).x;
    vec3 color  = texture(u_depth, gl_FragCoord.xy).xyz;
 
-   out_color = vec4(1, pos.x, pos.y, 1);
+   out_color = vec4(1, normal.x, normal.y, 1);
 }
