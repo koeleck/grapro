@@ -462,8 +462,6 @@ void RendererImplBM::renderAmbientOcclusion() const
     core::res::instances->bind();
     core::res::meshes->bind();
 
-    const auto* cam = core::res::cameras->getDefaultCam();
-
     // bind gbuffer texture
     glBindTexture(GL_TEXTURE_2D, m_tex_position.get());
     glBindTexture(GL_TEXTURE_2D, m_tex_normal.get());
@@ -478,17 +476,11 @@ void RendererImplBM::renderAmbientOcclusion() const
     glBindFramebuffer(GL_FRAMEBUFFER, m_gbuffer_FBO);    
     glViewport(0, 0, vars.screen_width, vars.screen_height);
     GLenum DrawBuffers[4] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3};
-    glDrawBuffers(1, DrawBuffers);
+    glDrawBuffers(4, DrawBuffers);
 
-    for (const auto& cmd : m_drawlist) {
-        // Frustum Culling
-        if (!cam->inFrustum(cmd.instance->getBoundingBox()))
-            continue;
-
-        // bind textures
-        glDrawElementsInstancedBaseVertexBaseInstance(cmd.mode, cmd.count, cmd.type,
-                cmd.indices, 1, 0, cmd.instance->getIndex());
-    }
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+    renderGeometry(m_gbuffer_prog);
 
     // unbind fbo
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -497,6 +489,7 @@ void RendererImplBM::renderAmbientOcclusion() const
     /*
      *  Render screen space quad
      */
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     /*
     glUseProgram(m_ssq_ao_prog);
 
@@ -522,6 +515,9 @@ void RendererImplBM::renderAmbientOcclusion() const
     glDrawArrays(GL_TRIANGLES, 0, 6);
     */
 
+    // TODO: FIX THIS
+    // only the color attachment0 works (position)
+    // all other textures are broken
     // debug: check if the gbuffer textures are filled
     glBindFramebuffer(GL_READ_FRAMEBUFFER, m_gbuffer_FBO);
     glReadBuffer(GL_COLOR_ATTACHMENT0);
