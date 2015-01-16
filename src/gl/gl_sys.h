@@ -13,7 +13,9 @@ namespace gl
 bool initGL();
 std::string enumToString(GLenum e);
 GLenum stringToEnum(const std::string& s);
+bool isSupported(const std::string& ext);
 
+void printInfo();
 
 } // namespace gl
 

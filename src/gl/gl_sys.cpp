@@ -1,6 +1,8 @@
 #include <sstream>
+#include <iomanip>
 #include <algorithm>
 #include <unordered_map>
+#include <unordered_set>
 #include <string>
 
 #include "gl_sys.h"
@@ -13,6 +15,7 @@
 namespace
 {
 
+std::unordered_set<std::string> extensions;
 bool initialized = false;
 
 std::unordered_map<GLenum, std::string> tokens;
@@ -148,6 +151,9 @@ void populateEnumMap()
     ADD_ENUM(GL_DEPTH_COMPONENT24);
     ADD_ENUM(GL_DEPTH_COMPONENT32);
     ADD_ENUM(GL_DEPTH_COMPONENT32F);
+    ADD_ENUM(GL_DEPTH24_STENCIL8);
+    ADD_ENUM(GL_DEPTH32F_STENCIL8);
+    ADD_ENUM(GL_STENCIL_INDEX8);
 }
 
 } // anonymous namespace
@@ -178,13 +184,12 @@ bool initGL()
     // ...
     GLint num_extensions;
     glGetIntegerv(GL_NUM_EXTENSIONS, &num_extensions);
-    std::string available_extensions;
     for (GLint i = 0; i < num_extensions; ++i) {
-        available_extensions += ' ';
-        available_extensions += reinterpret_cast<const char*>(glGetStringi(GL_EXTENSIONS, i));
+        extensions.emplace(reinterpret_cast<const char*>(
+                    glGetStringi(GL_EXTENSIONS, static_cast<GLuint>(i))));
     }
 #define REQUIRES_EXTENSION(EXT)                                 \
-    if (available_extensions.find(#EXT) == std::string::npos) { \
+    if (!isSupported(#EXT)) { \
             LOG_ERROR(logtag::OpenGL, #EXT " not available");   \
             abort();                                            \
     }
@@ -268,6 +273,35 @@ GLenum stringToEnum(const std::string& s)
         return 0;
     }
     return it->first;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+bool isSupported(const std::string& ext)
+{
+    return extensions.find(ext) != extensions.end();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void printInfo()
+{
+    if (!isSupported("GL_NVX_gpu_memory_info")) {
+        LOG_INFO("GL_NVX_gpu_memory_info not available");
+        return;
+    }
+
+    GLint total_mem_kb = 0;
+    glGetIntegerv(GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX, &total_mem_kb);
+
+    GLint cur_avail_kb = 0;
+    glGetIntegerv(GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX, &cur_avail_kb);
+
+    const GLint mem_free_kb = total_mem_kb - cur_avail_kb;
+
+    LOG_INFO(logtag::OpenGL,
+          "\n:: memory usage:     ", std::fixed, std::setprecision(2), static_cast<float>(mem_free_kb) / 1024.f, "MiB",
+          "\n:: memory available: ", std::fixed, std::setprecision(2), static_cast<float>(cur_avail_kb) / 1024.f, "MiB");
 }
 
 //////////////////////////////////////////////////////////////////////////
