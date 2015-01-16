@@ -408,13 +408,24 @@ void RendererImplBM::initAmbientOcclusion()
     m_gbuffer_prog = core::res::shaders->registerProgram("gbuffer_prog", {"vertexpulling_vert", "gbuffer_frag"});
 
     // textures
-    glActiveTexture(GL_TEXTURE0 + m_tex_position.get());
     glBindTexture(GL_TEXTURE_2D, m_tex_position.get());
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, vars.screen_width, vars.screen_height, 0, GL_RGBA, GL_FLOAT, 0);
+
+    glBindTexture(GL_TEXTURE_2D, m_tex_normal.get());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, vars.screen_width, vars.screen_height, 0, GL_RGBA, GL_FLOAT, 0);
+
+    glBindTexture(GL_TEXTURE_2D, m_tex_color.get());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, vars.screen_width, vars.screen_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+
+    glBindTexture(GL_TEXTURE_2D, m_tex_depth.get());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, vars.screen_width, vars.screen_height, 0, GL_RGBA, GL_FLOAT, 0);
 
     // FBO
     glBindFramebuffer(GL_FRAMEBUFFER, m_gbuffer_FBO);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_tex_position, 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, m_tex_normal, 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, m_tex_color, 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, m_tex_depth, 0);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         LOG_ERROR("Empty framebuffer is not complete (WTF?!?)");
     }
@@ -437,14 +448,18 @@ void RendererImplBM::renderAmbientOcclusion() const
 
     // bind gbuffer texture
     glBindTexture(GL_TEXTURE_2D, m_tex_position.get());
+    glBindTexture(GL_TEXTURE_2D, m_tex_normal.get());
+    glBindTexture(GL_TEXTURE_2D, m_tex_color.get());
+    glBindTexture(GL_TEXTURE_2D, m_tex_depth.get());
 
+    // bind shader
     glUseProgram(m_gbuffer_prog);
     glBindVertexArray(m_vertexpulling_vao);
 
     // FBO
     glBindFramebuffer(GL_FRAMEBUFFER, m_gbuffer_FBO);    
     glViewport(0, 0, vars.screen_width, vars.screen_height);
-    GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+    GLenum DrawBuffers[4] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3};
     glDrawBuffers(1, DrawBuffers);
 
     for (const auto& cmd : m_drawlist) {
@@ -458,7 +473,13 @@ void RendererImplBM::renderAmbientOcclusion() const
     }
 
     // unbind fbo
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);    
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+    /*
+     *  Render screen space quad
+     */
+    // TODO
 }
 
 /****************************************************************************/
