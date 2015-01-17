@@ -21,8 +21,8 @@ uniform sampler2D u_depth;
 layout(location = 0) out vec4 out_color;
 
 const float M_PI          = 3.14159265359;
-const uint num_sqrt_cones = 2;   // 2x2 grid
-const uint max_samples    = 3; // how many samples to take along each cone?
+const uint num_sqrt_cones = 2; // 2x2 grid
+const uint max_samples    = 4; // how many samples to take along each cone?
 
 /******************************************************************************/
 
@@ -33,7 +33,7 @@ struct Cone
     float angle;
 } cone[num_sqrt_cones * num_sqrt_cones];
 
-float ConeAreaAtDistance(uint idx, float distance)
+float ConeDiameterAtDistance(uint idx, float distance)
 {
     /*
         http://www.mathematische-basteleien.de/kegel.htm
@@ -45,9 +45,9 @@ float ConeAreaAtDistance(uint idx, float distance)
             /____|____\ <-- angle * 0.5
                    r
     */
-    const float angle  = cone[idx].angle * 0.5 + 90;
-    const float radius = distance / tan(angle);
-    return abs(2 * M_PI * radius);
+    const float angle  = cone[idx].angle * 0.5;
+    const float radius = distance * tan(angle);
+    return abs(2 * radius);
 }
 
 /******************************************************************************/
@@ -115,7 +115,7 @@ bool checkOcclusion(uint maxlevel, vec3 wpos)
         maxlevel = u_maxlevel;
 
     // iterate through all tree levels
-    for (uint i = 0; i < maxlevel - 1; ++i) {
+    for (uint i = 0; i < maxlevel; ++i) {
 
         // go to next dimension
         voxelDim /= 2;
@@ -190,15 +190,15 @@ void main()
             {
                 const float d = 5; // has to be smaller than the current voxel size
                 const float sample_distance = s * d;
-                const float area = ConeAreaAtDistance(idx, sample_distance);
+                const float diameter = ConeDiameterAtDistance(idx, sample_distance);
 
                 // find the corresponding mipmap level.
                 // start at -1: the final level that is found will be 1 level to much,
-                // because we need the first voxel where the area fits and not the first
-                // voxel where the area does not fit anymore
+                // because we need the first voxel where the diameter fits and not the first
+                // voxel where the diameter does not fit anymore
                 uint level = -1;
                 float voxel_size = u_voxelDim;
-                while(voxel_size > area)
+                while(voxel_size > diameter)
                 {
                     voxel_size /= 2;
                     ++level;
@@ -217,8 +217,13 @@ void main()
 
     // AO
     const float ratio = float(occluded_cone) / float(num_sqrt_cones * num_sqrt_cones);
-    out_color = vec4(ratio, 1, 0, 1);
 
     // debug
-    out_color = vec4(normal, 1);
+
+    out_color = vec4(color, 1);
+
+    if(ratio < 0.1f) out_color.r = 1;
+    if(ratio > 0.1f && ratio < 0.3f) out_color.g = 1;
+    if(ratio > 0.3f && ratio < 0.7f) out_color.g = 1;
+    if(ratio > 0.7f) out_color.b = 1;
 }

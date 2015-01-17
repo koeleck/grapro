@@ -209,4 +209,3 @@ void main()
     // debug
     out_color = vec4(normal, 1);
 }
-
