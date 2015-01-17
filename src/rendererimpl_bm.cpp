@@ -522,9 +522,11 @@ void RendererImplBM::renderAmbientOcclusion() const
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_bboxMax");
     glProgramUniform3f(m_ssq_ao_prog, loc, m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z);
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_screenwidth");
-    glProgramUniform1i(m_ssq_ao_prog, loc, vars.screen_width);
+    glProgramUniform1ui(m_ssq_ao_prog, loc, vars.screen_width);
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_screenheight");
-    glProgramUniform1i(m_ssq_ao_prog, loc, vars.screen_height);
+    glProgramUniform1ui(m_ssq_ao_prog, loc, vars.screen_height);
+    loc = glGetUniformLocation(m_ssq_ao_prog, "u_maxlevel");
+    glProgramUniform1ui(m_octreeNodeFlag_prog, loc, m_treeLevels);
 
     glBindVertexArray(m_vao_ssq.get());
     glDrawArrays(GL_TRIANGLES, 0, 6);

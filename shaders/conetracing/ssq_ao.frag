@@ -17,8 +17,9 @@ layout(std430, binding = OCTREE_COLOR_BINDING) restrict buffer octreeColorBlock
 uniform uint u_voxelDim;
 uniform vec3 u_bboxMin;
 uniform vec3 u_bboxMax;
-uniform int u_screenwidth;
-uniform int u_screenheight;
+uniform uint u_screenwidth;
+uniform uint u_screenheight;
+uniform uint u_maxlevel;
 
 /******************************************************************************/
 
@@ -119,6 +120,9 @@ bool checkOcclusion(uint maxlevel, vec3 wpos)
     uint voxelDim = u_voxelDim;
 
     uvec3 umin = uvec3(0);
+
+    if(maxlevel > u_maxlevel)
+        maxlevel = u_maxlevel;
 
     // iterate through all tree levels
     for (uint i = 0; i < maxlevel - 1; ++i) {
