@@ -27,7 +27,6 @@ enum class LightType : char
 class Light
 {
 public:
-    Light();
     virtual ~Light();
 
     bool isShadowcasting() const;
@@ -55,6 +54,7 @@ public:
     void setQuadraticAttenuation(float attenuation);
 
 protected:
+    Light(shader::LightStruct* data, LightType type, int depthTex);
     shader::LightStruct*    m_data;
 
 private:
@@ -81,6 +81,10 @@ public:
     const glm::vec3& getDirection() const;
     void setDirection(const glm::vec3& dir);
 
+protected:
+    friend class LightManager;
+    SpotLight(shader::LightStruct* data, int depthTex);
+
 private:
     glm::vec3               m_direction;
     float                   m_angle_inner_cone;
@@ -102,6 +106,10 @@ public:
     float getSize() const;
     void setSize(float size);
 
+protected:
+    friend class LightManager;
+    DirectionalLight(shader::LightStruct* data, int depthTex);
+
 private:
     glm::vec3               m_direction;
     float                   m_rotation;
@@ -114,6 +122,11 @@ class PointLight
   : public Light
 {
 public:
+
+protected:
+    friend class LightManager;
+    PointLight(shader::LightStruct* data, int depthTex);
+
 private:
 };
 
