@@ -75,7 +75,7 @@ void GraPro::update_gui(const double delta_t)
         ImGui::Checkbox("bounding boxes", &m_render_bboxes);
 
         // octree
-        if (ImGui::CollapsingHeader("Octree", nullptr, false, true)) {
+        if (ImGui::CollapsingHeader("Octree", nullptr, true, true)) {
             if (ImGui::Button("rebuild octree")) {
                 m_renderer->markTreeInvalid();
             }
@@ -89,7 +89,7 @@ void GraPro::update_gui(const double delta_t)
         }
 
         // other
-        if (ImGui::CollapsingHeader("Other", nullptr, false, true)) {
+        if (ImGui::CollapsingHeader("Other", nullptr, true, true)) {
             ImGui::Checkbox("render voxel colors", &m_render_voxelColors);
             if (m_render_voxelColors) {
                 ImGui::SliderInt("voxel color level", &m_voxelColor_level, 1, m_tree_levels);
@@ -97,15 +97,19 @@ void GraPro::update_gui(const double delta_t)
                     m_voxelColor_level = 1;
                 }
             }
-            ImGui::Checkbox("render AO", &m_render_ao);
-            m_renderer->setAO(m_render_ao);
             ImGui::Checkbox("render Indirect", &m_render_indirect);
             m_renderer->setIndirect(m_render_indirect);
         }
 
+        // AO
+        if (ImGui::CollapsingHeader("Ambient Occlusion", nullptr, true, true)) {
+            ImGui::Checkbox("render AO", &m_render_ao);
+            m_renderer->setAO(m_render_ao);
+        }
+
         // Timers: Just create your timer via m_timers and they will
         // appear here
-        if (ImGui::CollapsingHeader("Time", nullptr, false, true)) {
+        if (ImGui::CollapsingHeader("Time", nullptr, true, true)) {
             ImGui::Columns(2, "data", true);
             ImGui::Text("Timer");
             ImGui::NextColumn();
