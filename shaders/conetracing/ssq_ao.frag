@@ -21,7 +21,7 @@ uniform sampler2D u_depth;
 layout(location = 0) out vec4 out_color;
 
 const float M_PI          = 3.14159265359;
-const uint num_sqrt_cones = 2; // 2x2 grid
+const uint num_sqrt_cones = 4; // 2x2 grid
 const uint max_samples    = 5; // how many samples to take along each cone?
 const float sample_interval = 50; // how much space is between the samples?
 
@@ -198,7 +198,7 @@ void main()
                 // voxel where the diameter does not fit anymore
                 uint level = 0;
                 vec3 voxel_size_xyz = (u_bboxMax - u_bboxMin) / float(u_voxelDim);
-                
+
                 // find maximum of x/y/z dimension
                 float voxel_size = max(voxel_size_xyz.x, voxel_size_xyz.y);
                 voxel_size = max(voxel_size_xyz.y, voxel_size_xyz.z);

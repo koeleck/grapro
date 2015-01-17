@@ -33,6 +33,9 @@ public:
     void setGeometry(std::vector<const core::Instance*> geometry);
     void markTreeInvalid() { m_rebuildTree = true; }
 
+    void setAO(bool renderAO) { m_renderAO = renderAO; }
+    void setIndirect(bool renderIndirect) { m_renderIndirect = renderIndirect; }
+
 protected:
     struct DrawCmd;
 
@@ -110,6 +113,9 @@ protected:
     core::Program                       m_colorboxes_prog;
     unsigned int                        m_voxelColorLevel;
     core::Program                       m_indirect_prog;
+
+    bool                                m_renderAO;
+    bool                                m_renderIndirect;
 
 private:
 

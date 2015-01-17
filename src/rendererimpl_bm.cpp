@@ -393,16 +393,18 @@ void RendererImplBM::render(const unsigned int treeLevels, const unsigned int vo
     glEnable(GL_CULL_FACE);
     glDepthFunc(GL_LEQUAL);
 
-    renderAmbientOcclusion();
-    //renderIndirectLighting();
-    /*if (renderVoxColors) {
+    if (m_renderAO) {
+        renderAmbientOcclusion();
+    } else if (m_renderIndirect) {
+        renderIndirectLighting();
+    } else if (renderVoxColors) {
         if (voxelColorLevel != m_voxelColorLevel) {
             m_voxelColorLevel = voxelColorLevel;
         }
         renderVoxelColors();
     } else {
         renderGeometry(m_vertexpulling_prog);
-    }*/
+    }
 
     if (renderBBoxes)
         renderBoundingBoxes();

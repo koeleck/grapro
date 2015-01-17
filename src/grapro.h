@@ -33,6 +33,8 @@ private:
     bool                                m_render_bboxes;
     bool                                m_render_octree;
     bool                                m_render_voxelColors;
+    bool                                m_render_ao;
+    bool                                m_render_indirect;
     bool                                m_debug_output;
     int                                 m_tree_levels;
     int                                 m_voxelColor_level;
