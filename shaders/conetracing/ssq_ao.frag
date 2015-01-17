@@ -4,16 +4,6 @@
 
 /******************************************************************************/
 
-struct octreeColorBuffer
-{
-    vec4    color;
-};
-
-layout(std430, binding = OCTREE_COLOR_BINDING) restrict buffer octreeColorBlock
-{
-    octreeColorBuffer octreeColor[];
-};
-
 uniform uint u_voxelDim;
 uniform vec3 u_bboxMin;
 uniform vec3 u_bboxMax;
@@ -111,7 +101,7 @@ bool checkOcclusion(uint maxlevel, vec3 wpos)
     ivec3 pos = ivec3(vec3(wpos - u_bboxMin) / voxelSize);
     vec3 clamped = vec3(pos) / float(u_voxelDim);
 
-    bool is_occluded = false;
+    bool is_occluded = true;
 
     // local vars
     uint childIdx = 0;
@@ -129,6 +119,13 @@ bool checkOcclusion(uint maxlevel, vec3 wpos)
 
         // go to next dimension
         voxelDim /= 2;
+
+        // check occlusion
+        if((nodePtr & 0x80000000) == 0)
+        {
+            is_occluded = false;
+            return is_occluded;
+        }
 
         // mask out flag bit to get child idx
         childIdx = int(nodePtr & 0x7FFFFFFF);
@@ -148,13 +145,6 @@ bool checkOcclusion(uint maxlevel, vec3 wpos)
 
         // update node
         nodePtr = octree[childIdx].id;
-
-        // check occlusion
-        if((nodePtr & 0x80000000) == 1)
-        {
-            is_occluded = true;
-            return is_occluded;
-        }
     }
 
     return is_occluded;
@@ -191,7 +181,7 @@ void main()
             // create the cone
             ONB onb = toONB(normal);
             vec3 v = UniformHemisphereSampling(ux, uy);
-            cone[idx].dir   = toWorld(onb, v);
+            cone[idx].dir   = normalize(toWorld(onb, v));
             cone[idx].pos   = pos.xyz;
             cone[idx].angle = 180 / num_sqrt_cones;
 
@@ -216,19 +206,19 @@ void main()
 
                 // ambient occlusion
                 vec3 wpos = pos.xyz + sample_distance * cone[idx].dir;
-                /*if(checkOcclusion(level, wpos))
+                if(checkOcclusion(level, wpos))
                 {
                     // we are occluded here
                     ++occluded_cone;
-                }*/
+                }
             }
         }
     }
 
     // AO
-    // const float ratio = float(occlude_cone) / float(num_sqrt_cones * num_sqrt_cones)
-    // out_color = vec4(ratio, 0, 0, 1);
+    const float ratio = float(occluded_cone) / float(num_sqrt_cones * num_sqrt_cones);
+    out_color = vec4(ratio, 1, 0, 1);
 
     // debug
-    out_color = vec4(normal, 1);
+    // out_color = vec4(normal, 1);
 }
