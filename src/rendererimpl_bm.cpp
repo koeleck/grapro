@@ -457,7 +457,7 @@ void RendererImplBM::renderAmbientOcclusion() const
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_depth");
     glUniform1i(loc, 3);
 
-    const auto voxelDim = static_cast<unsigned int>(std::pow(2, m_treeLevels));
+    const auto voxelDim = static_cast<unsigned int>(std::pow(2, m_treeLevels - 1));
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_voxelDim");
     glProgramUniform1ui(m_ssq_ao_prog, loc, voxelDim);
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_bboxMin");
@@ -468,8 +468,8 @@ void RendererImplBM::renderAmbientOcclusion() const
     glProgramUniform1ui(m_ssq_ao_prog, loc, vars.screen_width);
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_screenheight");
     glProgramUniform1ui(m_ssq_ao_prog, loc, vars.screen_height);
-    loc = glGetUniformLocation(m_ssq_ao_prog, "u_maxlevel");
-    glProgramUniform1ui(m_octreeNodeFlag_prog, loc, m_treeLevels);
+    loc = glGetUniformLocation(m_ssq_ao_prog, "u_treelevel");
+    glProgramUniform1ui(m_ssq_ao_prog, loc, m_treeLevels);
 
     glBindVertexArray(m_vao_ssq.get());
     glDrawArrays(GL_TRIANGLES, 0, 6);
