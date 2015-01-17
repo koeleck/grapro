@@ -361,8 +361,8 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
 
 /****************************************************************************/
 
-void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBoxes,
-                            const bool renderOctree, const bool renderVoxColors,
+void RendererImplBM::render(const unsigned int treeLevels, const unsigned int voxelColorLevel,
+                            const bool renderBBoxes, const bool renderOctree, const bool renderVoxColors,
                             const bool debug_output)
 {
     if (m_geometry.empty())
@@ -390,6 +390,9 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
 
     //renderAmbientOcclusion();
     if (renderVoxColors) {
+        if (voxelColorLevel != m_voxelColorLevel) {
+            m_voxelColorLevel = voxelColorLevel;
+        }
         renderVoxelColors();
     } else {
         renderGeometry(m_vertexpulling_prog);

@@ -21,7 +21,7 @@ in vec4 worldPosition;
 uniform vec3 u_bboxMin;
 uniform vec3 u_bboxMax;
 uniform uint u_voxelDim;
-uniform uint u_treeLevels;
+uniform uint u_maxLevel;
 
 void main()
 {
@@ -38,7 +38,7 @@ void main()
     uvec3 umin = uvec3(0);
 
 	// iterate through all tree levels
-    for (uint i = 0; i < u_treeLevels - 1; ++i) {
+    for (uint i = 0; i < u_maxLevel - 1; ++i) {
 
         // go to next dimension
         voxelDim /= 2;
