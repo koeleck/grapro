@@ -447,8 +447,6 @@ void RendererImplBM::renderAmbientOcclusion() const
     glBindTexture(GL_TEXTURE_2D, m_tex_normal.get());
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, m_tex_color.get());
-    glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, m_tex_depth.get());
 
     auto loc = glGetUniformLocation(m_ssq_ao_prog, "u_pos");
     glUniform1i(loc, 0);
@@ -456,8 +454,6 @@ void RendererImplBM::renderAmbientOcclusion() const
     glUniform1i(loc, 1);
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_color");
     glUniform1i(loc, 2);
-    loc = glGetUniformLocation(m_ssq_ao_prog, "u_depth");
-    glUniform1i(loc, 3);
 
     const auto voxelDim = static_cast<unsigned int>(std::pow(2, m_treeLevels - 1));
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_voxelDim");
@@ -470,15 +466,13 @@ void RendererImplBM::renderAmbientOcclusion() const
     glProgramUniform1ui(m_ssq_ao_prog, loc, vars.screen_width);
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_screenheight");
     glProgramUniform1ui(m_ssq_ao_prog, loc, vars.screen_height);
-    loc = glGetUniformLocation(m_ssq_ao_prog, "u_treelevel");
+    loc = glGetUniformLocation(m_ssq_ao_prog, "u_treeLevels");
     glProgramUniform1ui(m_ssq_ao_prog, loc, m_treeLevels);
 
-    loc = glGetUniformLocation(m_ssq_ao_prog, "u_num_sqrt_cones");
+    loc = glGetUniformLocation(m_ssq_ao_prog, "u_coneGridSize");
     glProgramUniform1ui(m_ssq_ao_prog, loc, m_ao_num_cones);
-    loc = glGetUniformLocation(m_ssq_ao_prog, "u_max_samples");
+    loc = glGetUniformLocation(m_ssq_ao_prog, "u_numSteps");
     glProgramUniform1ui(m_ssq_ao_prog, loc, m_ao_max_samples);
-    loc = glGetUniformLocation(m_ssq_ao_prog, "u_sample_interval");
-    glProgramUniform1ui(m_ssq_ao_prog, loc, m_ao_sample_interval);
 
     glBindVertexArray(m_vao_ssq.get());
     glDrawArrays(GL_TRIANGLES, 0, 6);

@@ -13,96 +13,22 @@ uniform vec3 u_bboxMax;
 uniform uint u_screenwidth;
 uniform uint u_screenheight;
 uniform uint u_treeLevels;
-
-/******************************************************************************/
+uniform uint u_coneGridSize;
+uniform uint u_numSteps;
 
 uniform sampler2D u_pos;
 uniform sampler2D u_normal;
-uniform sampler2D u_color;
-uniform sampler2D u_depth;
-
-uniform uint u_coneGridSize;
-uniform uint u_numSteps; // how many samples to take along each cone?
-#define M_PI 3.1415926535897932384626433832795
-
-struct Cone
-{
-    vec3 pos;
-    vec3 dir;
-    float angle; // in degrees
-};
 
 /******************************************************************************/
 
-float degreesToRadians(float deg)
-{
-    return deg * M_PI / 180.f;
-}
-
-/******************************************************************************/
-
-float radiansToDegrees(float rad)
-{
-    return rad * 180.f / M_PI;
-}
-
-/******************************************************************************/
-
-float ConeRadiusAtDistance(Cone cone, float distance)
-{
-    const float angle  = cone.angle * 0.5f;
-    return distance * tan(degreesToRadians(angle));
-}
-
-/******************************************************************************/
-
-vec3 UniformHemisphereSampling(float ux, float uy)
-{
-    const float r = sqrt(1.f - ux * ux);
-    const float phi = 2 * M_PI * uy;
-    return vec3(cos(phi) * r, sin(phi) * r, ux);
-}
-
-/******************************************************************************/
-
-struct ONB
-{
-    vec3 N, S, T;
-};
-
-ONB toONB(vec3 normal)
-{
-    ONB onb;
-    onb.N = normal;
-    if(abs(normal.x) > abs(normal.z))
-    {
-        onb.S.x = -normal.y;
-        onb.S.y = normal.x;
-        onb.S.z = 0;
-    }
-    else
-    {
-        onb.S.x = 0;
-        onb.S.y = -normal.z;
-        onb.S.z = normal.y;
-    }
-
-    onb.S = normalize(onb.S);
-    onb.T = cross(onb.S, onb.N);
-    return onb;
-}
-
-vec3 toWorld(ONB onb, vec3 v)
-{
-    return onb.S * v.x + onb.T * v.y + onb.N * v.z;
-}
+const float voxelSize = (u_bboxMax.x - u_bboxMin.x) / float(u_voxelDim);
 
 /******************************************************************************/
 
 vec4 getColor(uint maxlevel, vec3 wpos)
 {
-    vec3 voxelSize = (u_bboxMax - u_bboxMin) / float(u_voxelDim);
-    ivec3 pos = ivec3(vec3(wpos - u_bboxMin) / voxelSize);
+
+    const ivec3 pos = ivec3(vec3(wpos - u_bboxMin) / voxelSize);
 
     // local vars
     uint childIdx = 0;
@@ -156,57 +82,47 @@ vec4 getColor(uint maxlevel, vec3 wpos)
 void main()
 {
 
-    vec2 uv = gl_FragCoord.xy / vec2(u_screenwidth, u_screenheight);
-
-    vec4 pos    = texture(u_pos, uv);
-    vec3 normal = texture(u_normal, uv).xyz;
-    float depth = texture(u_depth, uv).x;
-    vec3 color  = texture(u_color, uv).xyz;
+    const vec2 uv = gl_FragCoord.xy / vec2(u_screenwidth, u_screenheight);
+    const vec3 normal = texture(u_normal, uv).xyz;
     if (normal == 0) return;
+    const vec3 pos = texture(u_pos, uv).xyz;
 
-    // cone tracing
     const float step = (1.f / float(u_coneGridSize));
-    float ux = 0.f;
-    float uy = 0.f;
-
-    float voxelSize = (u_bboxMax.x - u_bboxMin.x) / float(u_voxelDim);
-
     vec4 totalColor = vec4(0);
 
-    for(int y = 0; y < u_coneGridSize; ++y) {
+    for (uint y = 0; y < u_coneGridSize; ++y) {
 
-        uy = (0.5f + y) * step;
+        float uy = (0.5f + float(y)) * step;
 
-        for(int x = 0; x < u_coneGridSize; ++x) {
+        for (uint x = 0; x < u_coneGridSize; ++x) {
 
-            ux = (0.5f + x) * step;
+            float ux = (0.5f + float(x)) * step;
 
             // create the cone
             ONB onb = toONB(normal);
-            vec3 v = UniformHemisphereSampling(ux, uy);
+            vec3 v = uniformHemisphereSampling(ux, uy);
             Cone cone;
             cone.dir   = normalize(toWorld(onb, v));
-            cone.pos   = pos.xyz;
             cone.angle = 180.f / float(u_coneGridSize);
 
             // trace the cone for each sample
-            for(int step = 1; step <= u_numSteps; ++step) {
+            for (uint step = 1; step <= u_numSteps; ++step) {
 
                 const float totalDist = step * voxelSize;
-                const float diameter = 2 * ConeRadiusAtDistance(cone, totalDist);
+                const float diameter = 2 * coneRadiusAtDistance(cone, totalDist);
                 if (diameter <= 0.f) continue; // some error (angle < 0 || angle > 90)
 
+                // calculate mipmap level
                 int level = int(u_treeLevels);
                 float voxel_size = voxelSize;
-
-                while(voxel_size < diameter && level > 0) {
+                while (voxel_size < diameter && level > 0) {
                     voxel_size *= 2;
                     --level;
                 }
 
                 // get indirect color
-                vec3 wpos = pos.xyz + totalDist * cone.dir;
-                vec4 color = getColor(level, wpos);
+                const vec3 wpos = pos + totalDist * cone.dir;
+                const vec4 color = getColor(level, wpos);
                 if (color.w > 0) {
                     // color found -> stop walking!
                     totalColor += color;
@@ -216,14 +132,15 @@ void main()
             }
 
         }
+
     }
 
     if (totalColor.w > 0) {
         totalColor /= totalColor.w;
     }
+
     out_color = totalColor;
 
-    // debug
-    //out_color = vec4(normal, 1);
-    //out_color = vec4(1, vec3(0));
 }
+
+/******************************************************************************/

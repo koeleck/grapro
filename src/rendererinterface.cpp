@@ -266,8 +266,6 @@ void RendererInterface::renderVoxelBoundingBoxes() const
     glUseProgram(m_voxel_bbox_prog);
     glBindVertexArray(m_bbox_vao);
 
-    //const auto loc = glGetUniformLocation(m_voxel_bbox_prog, "u_color");
-
     glEnable(GL_DEPTH_TEST);
 
     for (auto i = 0u; i < m_voxel_bboxes.size(); ++i) {
@@ -275,11 +273,8 @@ void RendererInterface::renderVoxelBoundingBoxes() const
         float data[6] = {bbox.pmin.x, bbox.pmin.y, bbox.pmin.z,
                          bbox.pmax.x, bbox.pmax.y, bbox.pmax.z};
         glUniform3fv(0, 2, data);
-        //glUniform4f(loc, m_voxel_bboxes_color[i][0], m_voxel_bboxes_color[i][1],
-        //                 m_voxel_bboxes_color[i][2], m_voxel_bboxes_color[i][3]);
         glDrawElements(GL_LINES, 24, GL_UNSIGNED_BYTE, nullptr);
     }
-
 }
 
 /****************************************************************************/
@@ -507,19 +502,11 @@ void RendererInterface::renderIndirectLighting() const
     glBindTexture(GL_TEXTURE_2D, m_tex_position.get());
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, m_tex_normal.get());
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, m_tex_color.get());
-    glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, m_tex_depth.get());
 
     auto loc = glGetUniformLocation(m_indirect_prog, "u_pos");
     glUniform1i(loc, 0);
     loc = glGetUniformLocation(m_indirect_prog, "u_normal");
     glUniform1i(loc, 1);
-    loc = glGetUniformLocation(m_indirect_prog, "u_color");
-    glUniform1i(loc, 2);
-    loc = glGetUniformLocation(m_indirect_prog, "u_depth");
-    glUniform1i(loc, 3);
 
     const auto voxelDim = static_cast<unsigned int>(std::pow(2, m_treeLevels - 1));
     loc = glGetUniformLocation(m_indirect_prog, "u_voxelDim");
