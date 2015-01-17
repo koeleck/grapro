@@ -198,7 +198,7 @@ void main()
                 // voxel where the diameter does not fit anymore
                 uint level = 0;
                 vec3 voxel_size_xyz = (u_bboxMax - u_bboxMin) / float(u_voxelDim);
-                
+
                 // find maximum of x/y/z dimension
                 float voxel_size = max(voxel_size_xyz.x, voxel_size_xyz.y);
                 voxel_size = max(voxel_size_xyz.y, voxel_size_xyz.z);

@@ -207,5 +207,5 @@ void main()
     out_color = totalColor;
 
     // debug
-    out_color = vec4(normal, 1);
+    //out_color = vec4(normal, 1);
 }
