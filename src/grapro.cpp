@@ -30,8 +30,8 @@ GraPro::GraPro(GLFWwindow* window)
     m_debug_output{false},
     m_tree_levels{static_cast<int>(vars.voxel_octree_levels)},
     m_voxelColor_level{m_tree_levels},
-    m_coneGridSize{2},
-    m_coneSteps{3},
+    m_coneGridSize{10},
+    m_coneSteps{1},
     m_renderer{new RendererImplBM(m_timers, m_tree_levels)}
     //m_renderer{new RendererImplPK(m_timers, m_tree_levels)}
 {
@@ -110,9 +110,9 @@ void GraPro::update_gui(const double delta_t)
             ImGui::Checkbox("render Indirect", &m_render_indirect);
             m_renderer->setIndirect(m_render_indirect);
             if (m_render_indirect) {
-                ImGui::SliderInt("cone grid size", &m_coneGridSize, 2, 3);
+                ImGui::SliderInt("cone grid size", &m_coneGridSize, 1, 32);
                 m_renderer->setConeGridSize(m_coneGridSize);
-                ImGui::SliderInt("cone steps", &m_coneSteps, 1, 10);
+                ImGui::SliderInt("cone steps", &m_coneSteps, 1, 5);
                 m_renderer->setConeSteps(m_coneSteps);
             }
         }

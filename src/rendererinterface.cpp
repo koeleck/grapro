@@ -532,7 +532,7 @@ void RendererInterface::renderIndirectLighting() const
     glUniform1ui(loc, vars.screen_width);
     loc = glGetUniformLocation(m_indirect_prog, "u_screenheight");
     glUniform1ui(loc, vars.screen_height);
-    loc = glGetUniformLocation(m_indirect_prog, "u_maxlevel");
+    loc = glGetUniformLocation(m_indirect_prog, "u_treeLevels");
     glUniform1ui(loc, m_treeLevels);
     loc = glGetUniformLocation(m_indirect_prog, "u_coneGridSize");
     glUniform1ui(loc, m_coneGridSize);

@@ -12,7 +12,7 @@ uniform vec3 u_bboxMin;
 uniform vec3 u_bboxMax;
 uniform uint u_screenwidth;
 uniform uint u_screenheight;
-uniform uint u_maxlevel;
+uniform uint u_treeLevels;
 
 /******************************************************************************/
 
@@ -29,15 +29,29 @@ struct Cone
 {
     vec3 pos;
     vec3 dir;
-    float angle;
+    float angle; // in degrees
 };
+
+/******************************************************************************/
+
+float degreesToRadians(float deg)
+{
+    return deg * M_PI / 180.f;
+}
+
+/******************************************************************************/
+
+float radiansToDegrees(float rad)
+{
+    return rad * 180.f / M_PI;
+}
 
 /******************************************************************************/
 
 float ConeRadiusAtDistance(Cone cone, float distance)
 {
-    const float angle  = cone.angle * 0.5;
-    return distance * tan(angle);
+    const float angle  = cone.angle * 0.5f;
+    return distance * tan(degreesToRadians(angle));
 }
 
 /******************************************************************************/
@@ -99,10 +113,10 @@ vec4 getColor(uint maxlevel, vec3 wpos)
     uvec3 umin = uvec3(0);
 
     // iterate through all tree levels
-    for (uint i = 0; i < maxlevel; ++i) {
+    for (uint i = 0; i < maxlevel - 1; ++i) {
 
         if ((nodePtr & 0x80000000) == 0) {
-            // no flag set -> no child node
+            // no flag set -> no child nodes
             return vec4(0);
         }
 
@@ -131,6 +145,7 @@ vec4 getColor(uint maxlevel, vec3 wpos)
     }
 
     vec4 col = octreeColor[childIdx].color;
+    if (col.w == 0.f) return vec4(0);
     col /= col.w;
     return col;
 
@@ -147,25 +162,14 @@ void main()
     vec3 normal = texture(u_normal, uv).xyz;
     float depth = texture(u_depth, uv).x;
     vec3 color  = texture(u_color, uv).xyz;
-
     if (normal == 0) return;
 
-    // debug:
-    int s = 0;
-    for (; s < u_numSteps; ++s) {
-        vec3 wpos = pos.xyz + s * normalize(normal);
-        vec4 color = getColor(u_maxlevel, wpos);
-        if (color.w > 0) {
-            // color found -> stop walking!
-            break;
-        }
-    }
-    out_color = vec4(float(s) / float(u_numSteps));
-
     // cone tracing
-    /*const float step = (1.f / float(u_coneGridSize));
+    const float step = (1.f / float(u_coneGridSize));
     float ux = 0.f;
     float uy = 0.f;
+
+    float voxelSize = (u_bboxMax.x - u_bboxMin.x) / float(u_voxelDim);
 
     vec4 totalColor = vec4(0);
 
@@ -176,44 +180,33 @@ void main()
         for(int x = 0; x < u_coneGridSize; ++x) {
 
             ux = (0.5f + x) * step;
-            const uint idx = y * u_coneGridSize + x;
 
             // create the cone
             ONB onb = toONB(normal);
             vec3 v = UniformHemisphereSampling(ux, uy);
             Cone cone;
-            cone.dir   = toWorld(onb, v);
+            cone.dir   = normalize(toWorld(onb, v));
             cone.pos   = pos.xyz;
-            cone.angle = 180 / u_coneGridSize;
+            cone.angle = 180.f / float(u_coneGridSize);
 
             // trace the cone for each sample
-            for(int s = 0; s < u_numSteps; ++s) {
+            for(int step = 1; step <= u_numSteps; ++step) {
 
-                const float d = 5; // has to be smaller than the current voxel size
-                const float sample_distance = s * d;
-                const float diameter = 2 * ConeRadiusAtDistance(cone, sample_distance);
-                if (diameter <= 0.f) continue;
+                const float totalDist = step * voxelSize;
+                const float diameter = 2 * ConeRadiusAtDistance(cone, totalDist);
+                if (diameter <= 0.f) continue; // some error (angle < 0 || angle > 90)
 
-                // find the corresponding mipmap level.
-                // start at 0: the final level that is found will be 1 level too much,
-                // because we need the first voxel where the diameter fits and not the first
-                // voxel where the diameter does not fit anymore
-                uint level = 0;
-                vec3 voxel_size_xyz = (u_bboxMax - u_bboxMin) / float(u_voxelDim);
+                int level = int(u_treeLevels);
+                float voxel_size = voxelSize;
 
-                // find maximum of x/y/z dimension
-                float voxel_size = max(voxel_size_xyz.x, voxel_size_xyz.y);
-                voxel_size = max(voxel_size_xyz.y, voxel_size_xyz.z);
-                voxel_size = max(voxel_size_xyz.x, voxel_size_xyz.z);
-
-                while(voxel_size > diameter) {
-                    voxel_size /= 2;
-                    ++level;
+                while(voxel_size < diameter && level > 0) {
+                    voxel_size *= 2;
+                    --level;
                 }
 
                 // get indirect color
-                vec3 wpos = pos.xyz + sample_distance * cone.dir;
-                vec4 color = getColor(level - 1, wpos);
+                vec3 wpos = pos.xyz + totalDist * cone.dir;
+                vec4 color = getColor(level, wpos);
                 if (color.w > 0) {
                     // color found -> stop walking!
                     totalColor += color;
@@ -228,7 +221,7 @@ void main()
     if (totalColor.w > 0) {
         totalColor /= totalColor.w;
     }
-    out_color = totalColor;*/
+    out_color = totalColor;
 
     // debug
     //out_color = vec4(normal, 1);
