@@ -1,10 +1,18 @@
 #include <limits>
 #include <glm/gtc/constants.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include "light.h"
 #include "shader_interface.h"
+#include "log/log.h"
 
 namespace core
 {
+
+namespace
+{
+constexpr auto NEAR_PLANE = .1f;
+} // anonymous namespace
 
 /*****************************************************************************
  *
@@ -20,10 +28,38 @@ Light::Light(shader::LightStruct* const data, const LightType type,
     m_constant_attenuation{.0f},
     m_linear_attenuation{.0f},
     m_quadratic_attenuation{.0f},
-    m_max_distance{std::numeric_limits<float>::infinity()},
+    m_max_distance{1.f},
     m_type{type},
     m_depth_tex{depthTex}
 {
+    m_data->projViewMatrix = glm::mat4();
+    m_data->position = m_position;
+    m_data->intensity = m_intensity;
+    m_data->maxDistance = m_max_distance;
+    m_data->constantAttenuation = m_constant_attenuation;
+    m_data->linearAttenuation = m_linear_attenuation;
+    m_data->quadraticAttenuation = m_quadratic_attenuation;
+
+    GLint type_texid = 0;
+    switch (type) {
+    case LightType::SPOT:
+        type_texid = shader::LightStruct::Type::SPOT;
+        break;
+    case LightType::DIRECTIONAL:
+        type_texid = shader::LightStruct::Type::DIRECTIONAL;
+        break;
+    case LightType::POINT:
+        type_texid = shader::LightStruct::Type::POINT;
+        break;
+    default:
+        abort();
+    }
+    if (depthTex != -1) {
+        type_texid |= 0x80000000;
+        assert(depthTex <= 0x1fffffff);
+        type_texid |= depthTex;
+    }
+    m_data->type_texid = type_texid;
 }
 
 /****************************************************************************/
@@ -42,7 +78,8 @@ const glm::vec3& Light::getPosition() const
 void Light::setPosition(const glm::vec3& position)
 {
     m_position = position;
-    // TODO
+    m_data->position = position;
+    updateMatrix();
 }
 
 /****************************************************************************/
@@ -57,7 +94,7 @@ const glm::vec3& Light::getIntensity() const
 void Light::setIntensity(const glm::vec3& intensity)
 {
     m_intensity = intensity;
-    // TODO
+    m_data->intensity = intensity;
 }
 
 /****************************************************************************/
@@ -72,7 +109,8 @@ float Light::getMaxDistance() const
 void Light::setMaxDistance(const float dist)
 {
     m_max_distance = dist;
-    // TODO
+    m_data->maxDistance = dist;
+    updateMatrix();
 }
 
 /****************************************************************************/
@@ -101,7 +139,7 @@ float Light::getConstantAttenuation() const
 void Light::setConstantAttenuation(const float attenuation)
 {
     m_constant_attenuation = attenuation;
-    // TODO
+    m_data->constantAttenuation = attenuation;
 }
 
 /****************************************************************************/
@@ -116,7 +154,7 @@ float Light::getLinearAttenuation() const
 void Light::setLinearAttenuation(const float attenuation)
 {
     m_linear_attenuation = attenuation;
-    // TODO
+    m_data->linearAttenuation = attenuation;
 }
 
 /****************************************************************************/
@@ -131,7 +169,7 @@ float Light::getQuadraticAttenuation() const
 void Light::setQuadraticAttenuation(const float attenuation)
 {
     m_quadratic_attenuation = attenuation;
-    // TODO
+    m_data->quadraticAttenuation = attenuation;
 }
 
 /****************************************************************************/
@@ -156,6 +194,11 @@ SpotLight::SpotLight(shader::LightStruct* const data, const int depthTex)
     m_angle_inner_cone{glm::pi<float>()},
     m_angle_outer_cone{glm::pi<float>()}
 {
+    m_data->direction = m_direction;
+    m_data->angleInnerCone = m_angle_inner_cone;
+    m_data->angleOuterCone = m_angle_outer_cone;
+
+    updateMatrix();
 }
 
 /****************************************************************************/
@@ -170,7 +213,7 @@ float SpotLight::getAngleInnerCone() const
 void SpotLight::setAngleInnerCone(const float angle)
 {
     m_angle_inner_cone = angle;
-    // TODO
+    m_data->angleInnerCone = angle;
 }
 
 /****************************************************************************/
@@ -185,7 +228,7 @@ float SpotLight::getAngleOuterCone() const
 void SpotLight::setAngleOuterCone(const float angle)
 {
     m_angle_outer_cone = angle;
-    // TODO
+    m_data->angleOuterCone = angle;
 }
 
 /****************************************************************************/
@@ -200,7 +243,25 @@ const glm::vec3& SpotLight::getDirection() const
 void SpotLight::setDirection(const glm::vec3& dir)
 {
     m_direction = dir;
-    // TODO
+    m_data->direction = dir;
+    updateMatrix();
+}
+
+/****************************************************************************/
+
+void SpotLight::updateMatrix()
+{
+    glm::dmat4 projmat;
+    if (getMaxDistance() == std::numeric_limits<float>::infinity()) {
+        projmat = glm::infinitePerspective<double>(getAngleOuterCone(), 1.f, NEAR_PLANE);
+    } else {
+        projmat = glm::perspective<double>(getAngleOuterCone(), 1.f, NEAR_PLANE,
+                getMaxDistance());
+    }
+    glm::dmat4 viewmat = glm::lookAt<double, glm::defaultp>(getPosition(),
+            getPosition() + getDirection(), glm::vec3(.0f, .0f, 1.f));
+
+    m_data->projViewMatrix = glm::mat4(projmat * viewmat);
 }
 
 /****************************************************************************/
@@ -219,6 +280,9 @@ DirectionalLight::DirectionalLight(shader::LightStruct* const data,
     m_rotation{.0f},
     m_size{1.f}
 {
+    m_data->direction = m_direction;
+
+    updateMatrix();
 }
 
 /****************************************************************************/
@@ -233,7 +297,8 @@ const glm::vec3& DirectionalLight::getDirection() const
 void DirectionalLight::setDirection(const glm::vec3& dir)
 {
     m_direction = dir;
-    // TODO
+    m_data->direction = dir;
+    updateMatrix();
 }
 
 /****************************************************************************/
@@ -248,7 +313,7 @@ float DirectionalLight::getRotation() const
 void DirectionalLight::setRotation(const float angle)
 {
     m_rotation = angle;
-    // TODO
+    updateMatrix();
 }
 
 /****************************************************************************/
@@ -263,7 +328,30 @@ float DirectionalLight::getSize() const
 void DirectionalLight::setSize(const float size)
 {
     m_size = size;
-    // TODO
+    updateMatrix();
+}
+
+/****************************************************************************/
+
+void DirectionalLight::updateMatrix()
+{
+    if (getMaxDistance() == std::numeric_limits<float>::infinity()) {
+        LOG_ERROR("Directional light can't have max distance = infinity! "
+                "Clamping to 100.0, you idiot!");
+        setMaxDistance(100.f); // this will call updateMatrix() again
+        return;
+    }
+    const double dist = m_size / 2.f;
+    glm::dmat4 projmat = glm::ortho<double>(-dist, dist, -dist, dist,
+            -NEAR_PLANE, -getMaxDistance());
+
+    glm::dmat4 translation(1.0);
+    translation[3] = glm::dvec4(-getPosition(), 1.0);
+    glm::dquat orientation = glm::angleAxis<double, glm::defaultp>(m_rotation,
+            getDirection());
+    glm::dmat4 viewmat = glm::mat4_cast(glm::conjugate(orientation)) * translation;
+
+    m_data->projViewMatrix = glm::mat4(projmat * viewmat);
 }
 
 /*****************************************************************************
@@ -275,6 +363,23 @@ void DirectionalLight::setSize(const float size)
 PointLight::PointLight(shader::LightStruct* const data, const int depthTex)
   : Light(data, LightType::POINT, depthTex)
 {
+    updateMatrix();
+}
+
+/****************************************************************************/
+
+void PointLight::updateMatrix()
+{
+    double angle = glm::pi<double>() / 2.0; // 90 degrees
+    glm::dmat4 projmat;
+    if (getMaxDistance() == std::numeric_limits<float>::infinity()) {
+        projmat = glm::infinitePerspective<double>(angle, 1.f, NEAR_PLANE);
+    } else {
+        projmat = glm::perspective<double>(angle, 1.f, NEAR_PLANE,
+                getMaxDistance());
+    }
+    // view transformation will be done in the shaders
+    m_data->projViewMatrix = glm::mat4(projmat);
 }
 
 /****************************************************************************/

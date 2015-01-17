@@ -11,7 +11,6 @@
 
 struct Light
 {
-    mat4    lightMatrix;
     mat4    projViewMatrix;
 
     vec3    position;

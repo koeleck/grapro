@@ -120,7 +120,10 @@ static_assert(sizeof(MeshStruct) == 12 &&
 struct LightStruct
 {
     static constexpr int alignment() {return 16;} // vec4
-    glm::mat4                       lightMatrix;
+    enum Type : GLint {SPOT        = 0x00000000,
+                       DIRECTIONAL = 0x20000000,
+                       POINT       = 0x60000000};
+
     glm::mat4                       projViewMatrix;
 
     glm::vec3                       position;
@@ -139,7 +142,7 @@ struct LightStruct
                                                 // [30:29]: type
                                                 // [28:0]:  depth texture index
 };
-static_assert(sizeof(LightStruct) == 192 &&
+static_assert(sizeof(LightStruct) == 128 &&
         sizeof(LightStruct) % LightStruct::alignment() == 0, "");
 
 } // namespace shader
