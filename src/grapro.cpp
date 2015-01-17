@@ -27,6 +27,10 @@ GraPro::GraPro(GLFWwindow* window)
     m_cam->setFixedYawAxis(true, up);
 
     m_render_timer = m_timers.addGPUTimer("Render");
+
+
+    // done. print gpu mem usage
+    gl::printInfo();
 }
 
 /****************************************************************************/

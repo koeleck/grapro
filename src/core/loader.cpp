@@ -8,6 +8,7 @@
 #include "material_manager.h"
 #include "mesh_manager.h"
 #include "instance_manager.h"
+#include "light_manager.h"
 #include "aabb.h"
 
 #include "log/log.h"
@@ -68,7 +69,47 @@ bool loadScenefiles(const std::string& scenefiles)
         }
 
         for (unsigned int i = 0; i < scene->num_lights; ++i) {
-            // TODO
+            Light* newLight = nullptr;
+            const auto* light = scene->lights[i];
+            const bool isShadowcasting = false; // TODO
+            switch (light->type) {
+            case import::LightType::SPOT:
+            {
+                auto* l = core::res::lights->createSpotlight(isShadowcasting);
+                l->setDirection(light->direction);
+                l->setAngleInnerCone(light->angle_inner_cone);
+                l->setAngleOuterCone(light->angle_outer_cone);
+                newLight = l;
+                break;
+            }
+            case import::LightType::DIRECTIONAL:
+            {
+                auto* l = core::res::lights->createDirectionalLight(isShadowcasting);
+                l->setDirection(light->direction);
+                l->setSize(100.f); // TODO
+                l->setRotation(.0f); // TODO
+                newLight = l;
+                break;
+            }
+            case import::LightType::POINT:
+            {
+                auto* l = core::res::lights->createPointLight(isShadowcasting);
+                newLight = l;
+                break;
+            }
+            default:
+                LOG_INFO("Unsupported light type for light'",
+                        light->name, '\'');
+                break;
+            }
+            if (newLight != nullptr) {
+                newLight->setPosition(light->position);
+                newLight->setIntensity(light->color);
+                newLight->setMaxDistance(light->max_distance);
+                newLight->setLinearAttenuation(light->linear_attenuation);
+                newLight->setConstantAttenuation(light->constant_attenuation);
+                newLight->setQuadraticAttenuation(light->quadratic_attenuation);
+            }
         }
     }
 
