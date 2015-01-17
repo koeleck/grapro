@@ -17,6 +17,8 @@ layout(std430, binding = OCTREE_COLOR_BINDING) restrict buffer octreeColorBlock
 uniform uint u_voxelDim;
 uniform vec3 u_bboxMin;
 uniform vec3 u_bboxMax;
+uniform int u_screenwidth;
+uniform int u_screenheight;
 
 /******************************************************************************/
 
@@ -158,10 +160,12 @@ bool checkOcclusion(uint maxlevel, vec3 wpos)
 
 void main()
 {
-    vec4 pos    = texture(u_pos, gl_FragCoord.xy);
-    vec3 normal = texture(u_normal, gl_FragCoord.xy).xyz;
-    float depth = texture(u_color, gl_FragCoord.xy).x;
-    vec3 color  = texture(u_depth, gl_FragCoord.xy).xyz;
+    vec2 tex_coord = gl_FragCoord.xy / vec2(u_screenwidth, u_screenheight);
+
+    vec4 pos    = texture(u_pos, tex_coord);
+    vec3 normal = texture(u_normal, tex_coord).xyz;
+    float depth = texture(u_color, tex_coord).x;
+    vec3 color  = texture(u_depth, tex_coord).xyz;
 
     // AO: count number of occluded cones
     uint occluded_cone = 0;
