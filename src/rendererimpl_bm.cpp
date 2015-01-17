@@ -388,12 +388,12 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
     glEnable(GL_CULL_FACE);
     glDepthFunc(GL_LEQUAL);
 
-    renderAmbientOcclusion();
-    /*if (renderVoxColors) {
+    //renderAmbientOcclusion();
+    if (renderVoxColors) {
         renderVoxelColors();
     } else {
         renderGeometry(m_vertexpulling_prog);
-    }*/
+    }
 
     if (renderBBoxes)
         renderBoundingBoxes();
@@ -510,10 +510,14 @@ void RendererImplBM::renderAmbientOcclusion() const
     const auto voxelDim = static_cast<unsigned int>(std::pow(2, m_treeLevels));
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_voxelDim");
     glProgramUniform1ui(m_ssq_ao_prog, loc, voxelDim);
-    loc = glGetUniformLocation(m_colorboxes_prog, "u_bboxMin");
+    loc = glGetUniformLocation(m_ssq_ao_prog, "u_bboxMin");
     glProgramUniform3f(m_ssq_ao_prog, loc, m_scene_bbox.pmin.x, m_scene_bbox.pmin.y, m_scene_bbox.pmin.z);
-    loc = glGetUniformLocation(m_colorboxes_prog, "u_bboxMax");
+    loc = glGetUniformLocation(m_ssq_ao_prog, "u_bboxMax");
     glProgramUniform3f(m_ssq_ao_prog, loc, m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z);
+    loc = glGetUniformLocation(m_ssq_ao_prog, "u_screenwidth");
+    glProgramUniform1i(m_ssq_ao_prog, loc, vars.screen_width);
+    loc = glGetUniformLocation(m_ssq_ao_prog, "u_screenheight");
+    glProgramUniform1i(m_ssq_ao_prog, loc, vars.screen_height);
 
     glBindVertexArray(m_vao_ssq.get());
     glDrawArrays(GL_TRIANGLES, 0, 6);
