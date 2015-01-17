@@ -117,7 +117,7 @@ PointLight* LightManager::createPointLight(const bool isShadowcasting)
             LOG_ERROR("Maximum number of cube shadowmaps reached! "
                     "Created light will not cast shadows.");
         } else {
-            depthTex = m_num_shadowcubemaps++;
+            depthTex = 6 * m_num_shadowcubemaps++;
         }
     }
 
