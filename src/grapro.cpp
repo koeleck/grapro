@@ -99,18 +99,6 @@ void GraPro::update_gui(const double delta_t)
                     m_voxelColor_level = 1;
                 }
             }
-            ImGui::Checkbox("render Indirect", &m_render_indirect);
-            m_renderer->setIndirect(m_render_indirect);
-            if (m_render_indirect) {
-                ImGui::SliderInt("cone grid size", &m_coneGridSize, 2, 3);
-                m_renderer->setConeGridSize(m_coneGridSize);
-                ImGui::SliderInt("cone steps", &m_coneSteps, 1, 10);
-                m_renderer->setConeSteps(m_coneSteps);
-            }
-        }
-
-        // AO
-        if (ImGui::CollapsingHeader("Ambient Occlusion", nullptr, true, true)) {
             ImGui::Checkbox("render AO", &m_render_ao);
             if(m_render_ao)
             {
@@ -119,6 +107,14 @@ void GraPro::update_gui(const double delta_t)
                 ImGui::SliderInt("sample interval", &m_ao_sample_interval, 1, 100);
             }
             m_renderer->setAO(m_render_ao, m_ao_num_cones, m_ao_max_samples, m_ao_sample_interval);
+            ImGui::Checkbox("render Indirect", &m_render_indirect);
+            m_renderer->setIndirect(m_render_indirect);
+            if (m_render_indirect) {
+                ImGui::SliderInt("cone grid size", &m_coneGridSize, 2, 3);
+                m_renderer->setConeGridSize(m_coneGridSize);
+                ImGui::SliderInt("cone steps", &m_coneSteps, 1, 10);
+                m_renderer->setConeSteps(m_coneSteps);
+            }
         }
 
         // Timers: Just create your timer via m_timers and they will

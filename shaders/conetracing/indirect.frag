@@ -102,8 +102,8 @@ vec4 getColor(uint maxlevel, vec3 wpos)
     for (uint i = 0; i < maxlevel; ++i) {
 
         if ((nodePtr & 0x80000000) == 0) {
-        	// no flag set -> no child node
-        	return vec4(0);
+            // no flag set -> no child node
+            return vec4(0);
         }
 
         // go to next dimension
@@ -148,8 +148,22 @@ void main()
     float depth = texture(u_depth, uv).x;
     vec3 color  = texture(u_color, uv).xyz;
 
+    if (normal == 0) return;
+
+    // debug:
+    int s = 0;
+    for (; s < u_numSteps; ++s) {
+        vec3 wpos = pos.xyz + s * normalize(normal);
+        vec4 color = getColor(u_maxlevel, wpos);
+        if (color.w > 0) {
+            // color found -> stop walking!
+            break;
+        }
+    }
+    out_color = vec4(float(s) / float(u_numSteps));
+
     // cone tracing
-    const float step = (1.f / float(u_coneGridSize));
+    /*const float step = (1.f / float(u_coneGridSize));
     float ux = 0.f;
     float uy = 0.f;
 
@@ -179,6 +193,7 @@ void main()
                 const float sample_distance = s * d;
                 const float diameter = 2 * ConeRadiusAtDistance(cone, sample_distance);
                 if (diameter <= 0.f) continue;
+
                 // find the corresponding mipmap level.
                 // start at 0: the final level that is found will be 1 level too much,
                 // because we need the first voxel where the diameter fits and not the first
@@ -196,10 +211,14 @@ void main()
                     ++level;
                 }
 
-                // ambient occlusion
+                // get indirect color
                 vec3 wpos = pos.xyz + sample_distance * cone.dir;
-                vec4 color = getColor(level, wpos);
-                totalColor += color;
+                vec4 color = getColor(level - 1, wpos);
+                if (color.w > 0) {
+                    // color found -> stop walking!
+                    totalColor += color;
+                    break;
+                }
 
             }
 
@@ -207,9 +226,9 @@ void main()
     }
 
     if (totalColor.w > 0) {
-    	totalColor /= totalColor.w;
+        totalColor /= totalColor.w;
     }
-    out_color = totalColor;
+    out_color = totalColor;*/
 
     // debug
     //out_color = vec4(normal, 1);
