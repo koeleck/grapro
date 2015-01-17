@@ -26,6 +26,10 @@ uniform uint u_sample_interval;
 
 const float M_PI            = 3.14159265359;
 
+const vec3 axes[3] = vec3[3](vec3(1.0, 0.0, 0.0),
+                             vec3(0.0, 1.0, 0.0),
+                             vec3(0.0, 0.0, 1.0));
+
 /******************************************************************************/
 
 const uint max_num_sqrt_cones = 4;
@@ -189,7 +193,8 @@ void main()
             cone[idx].angle = 180 / u_num_sqrt_cones;
 
             // trace the cone for each sample
-            for(uint s = 0; s < u_max_samples; ++s)
+            bool found_occlusion = false;
+            for(uint s = 0; s < u_max_samples && !found_occlusion; ++s)
             {
                 const float sample_distance = s * u_sample_interval;
                 const float diameter = ConeDiameterAtDistance(idx, sample_distance);
@@ -199,12 +204,17 @@ void main()
                 // because we need the first voxel where the diameter fits and not the first
                 // voxel where the diameter does not fit anymore
                 uint level = 0;
+                float voxel_size = 0.f;
                 vec3 voxel_size_xyz = (u_bboxMax - u_bboxMin) / float(u_voxelDim);
 
                 // find maximum of x/y/z dimension
-                float voxel_size = max(voxel_size_xyz.x, voxel_size_xyz.y);
-                voxel_size = max(voxel_size_xyz.y, voxel_size_xyz.z);
-                voxel_size = max(voxel_size_xyz.x, voxel_size_xyz.z);
+                float d0 = abs(dot(cone[idx].dir, axes[0]));
+                float d1 = abs(dot(cone[idx].dir, axes[1]));
+                float d2 = abs(dot(cone[idx].dir, axes[2]));
+
+                if(d0 >= d1 && d0 >= d2)      voxel_size = d0;
+                else if(d1 >= d0 && d1 >= d2) voxel_size = d1;
+                else if(d2 >= d0 && d2 >= d1) voxel_size = d2;
 
                 while(voxel_size > diameter)
                 {
@@ -218,6 +228,7 @@ void main()
                 {
                     // we are occluded here
                     ++occluded_cones;
+                    //found_occlusion = true;
                 }
             }
         }
