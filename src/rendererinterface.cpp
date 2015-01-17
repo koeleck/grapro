@@ -285,14 +285,8 @@ void RendererInterface::createVoxelBBoxes(const unsigned int num)
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
     glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num * sizeof(OctreeNodeStruct), nodes.data());
 
-    /*std::vector<OctreeNodeColorStruct> nodesColor(num);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeColorBuffer);
-    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num * sizeof(OctreeNodeColorStruct), nodesColor.data());*/
-
     m_voxel_bboxes.clear();
     m_voxel_bboxes.reserve(num);
-    //m_voxel_bboxes_color.clear();
-    //m_voxel_bboxes_color.reserve(num);
     std::pair<GLuint, core::AABB> stack[128];
     stack[0] = std::make_pair(0u, m_scene_bbox);
     std::size_t top {1};
@@ -300,16 +294,9 @@ void RendererInterface::createVoxelBBoxes(const unsigned int num)
         top--;
         const auto idx = stack[top].first;
         const auto bbox = stack[top].second;
-/*LOG_INFO("idx: ", idx, ", childidx: ", nodes[idx].id & 0x7FFFFFFF);
-LOG_INFO("color: (", nodesColor[idx].color[0] / nodesColor[idx].color[3], "|",
-                     nodesColor[idx].color[1] / nodesColor[idx].color[3], "|",
-                     nodesColor[idx].color[2] / nodesColor[idx].color[3], "|",
-                     nodesColor[idx].color[3], ")");*/
         const auto childidx = nodes[idx].id;
         if (childidx == 0x80000000) {
             m_voxel_bboxes.emplace_back(bbox);
-            //m_voxel_bboxes_color.emplace_back(nodesColor[idx].color);
-
         } else if ((childidx & 0x80000000) != 0) {
             const auto baseidx = uint(childidx & 0x7FFFFFFFu);
             const auto c = bbox.center();
@@ -494,14 +481,15 @@ void RendererInterface::renderIndirectLighting() const
     /*
      *  Render screen space quad
      */
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(m_indirect_prog);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_tex_position.get());
+    glBindTexture(GL_TEXTURE_2D, m_tex_position);
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, m_tex_normal.get());
+    glBindTexture(GL_TEXTURE_2D, m_tex_normal);
 
     auto loc = glGetUniformLocation(m_indirect_prog, "u_pos");
     glUniform1i(loc, 0);

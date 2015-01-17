@@ -79,7 +79,6 @@ protected:
 
     // voxel bboxes for debugging
     std::vector<core::AABB>             m_voxel_bboxes;
-    std::vector<glm::vec4>              m_voxel_bboxes_color;
     core::Program                       m_voxel_bbox_prog;
 
     // voxelization & octree

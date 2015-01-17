@@ -437,6 +437,7 @@ void RendererImplBM::renderAmbientOcclusion() const
     /*
      *  Render screen space quad
      */
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(m_ssq_ao_prog);
@@ -457,22 +458,22 @@ void RendererImplBM::renderAmbientOcclusion() const
 
     const auto voxelDim = static_cast<unsigned int>(std::pow(2, m_treeLevels - 1));
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_voxelDim");
-    glProgramUniform1ui(m_ssq_ao_prog, loc, voxelDim);
+    glUniform1ui(loc, voxelDim);
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_bboxMin");
-    glProgramUniform3f(m_ssq_ao_prog, loc, m_scene_bbox.pmin.x, m_scene_bbox.pmin.y, m_scene_bbox.pmin.z);
+    glUniform3f(loc, m_scene_bbox.pmin.x, m_scene_bbox.pmin.y, m_scene_bbox.pmin.z);
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_bboxMax");
-    glProgramUniform3f(m_ssq_ao_prog, loc, m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z);
+    glUniform3f(loc, m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z);
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_screenwidth");
-    glProgramUniform1ui(m_ssq_ao_prog, loc, vars.screen_width);
+    glUniform1ui(loc, vars.screen_width);
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_screenheight");
-    glProgramUniform1ui(m_ssq_ao_prog, loc, vars.screen_height);
+    glUniform1ui(loc, vars.screen_height);
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_treeLevels");
-    glProgramUniform1ui(m_ssq_ao_prog, loc, m_treeLevels);
+    glUniform1ui(loc, m_treeLevels);
 
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_coneGridSize");
-    glProgramUniform1ui(m_ssq_ao_prog, loc, m_ao_num_cones);
+    glUniform1ui(loc, m_ao_num_cones);
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_numSteps");
-    glProgramUniform1ui(m_ssq_ao_prog, loc, m_ao_max_samples);
+    glUniform1ui(loc, m_ao_max_samples);
 
     glBindVertexArray(m_vao_ssq.get());
     glDrawArrays(GL_TRIANGLES, 0, 6);

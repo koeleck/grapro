@@ -102,7 +102,7 @@ void GraPro::update_gui(const double delta_t)
             ImGui::Checkbox("render AO", &m_render_ao);
             if(m_render_ao)
             {
-                ImGui::SliderInt("#cones", &m_ao_num_cones, 1, 32);
+                ImGui::SliderInt("#cones", &m_ao_num_cones, 2, 32);
                 ImGui::SliderInt("max samples", &m_ao_max_samples, 1, 5);
                 ImGui::SliderInt("sample interval", &m_ao_sample_interval, 1, 100);
             }
@@ -110,7 +110,7 @@ void GraPro::update_gui(const double delta_t)
             ImGui::Checkbox("render Indirect", &m_render_indirect);
             m_renderer->setIndirect(m_render_indirect);
             if (m_render_indirect) {
-                ImGui::SliderInt("cone grid size", &m_coneGridSize, 1, 32);
+                ImGui::SliderInt("cone grid size", &m_coneGridSize, 2, 32);
                 m_renderer->setConeGridSize(m_coneGridSize);
                 ImGui::SliderInt("cone steps", &m_coneSteps, 1, 5);
                 m_renderer->setConeSteps(m_coneSteps);

@@ -28,7 +28,7 @@ const float voxelSize = (u_bboxMax.x - u_bboxMin.x) / float(u_voxelDim);
 vec4 getColor(uint maxlevel, vec3 wpos)
 {
 
-    const ivec3 pos = ivec3(vec3(wpos - u_bboxMin) / voxelSize);
+    const ivec3 pos = ivec3((wpos - u_bboxMin) / voxelSize);
 
     // local vars
     uint childIdx = 0;
@@ -105,6 +105,9 @@ void main()
             cone.dir   = normalize(toWorld(onb, v));
             cone.angle = 180.f / float(u_coneGridSize);
 
+            // calculate weight
+            float d = abs(dot(normalize(normal), cone.dir));
+
             // trace the cone for each sample
             for (uint step = 1; step <= u_numSteps; ++step) {
 
@@ -122,9 +125,10 @@ void main()
 
                 // get indirect color
                 const vec3 wpos = pos + totalDist * cone.dir;
-                const vec4 color = getColor(level, wpos);
+                vec4 color = getColor(level, wpos);
                 if (color.w > 0) {
                     // color found -> stop walking!
+                    color.xyz *= d*d;
                     totalColor += color;
                     break;
                 }

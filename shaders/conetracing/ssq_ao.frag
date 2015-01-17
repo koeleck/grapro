@@ -29,7 +29,7 @@ const float voxelSize = (u_bboxMax.x - u_bboxMin.x) / float(u_voxelDim);
 bool isOccluded(uint maxlevel, vec3 wpos)
 {
 
-    const ivec3 pos = ivec3(vec3(wpos - u_bboxMin) / voxelSize);
+    const ivec3 pos = ivec3((wpos - u_bboxMin) / voxelSize);
 
     // local vars
     uint childIdx = 0;
@@ -101,7 +101,7 @@ void main()
             float ux = (0.5f + float(x)) * step;
 
             // create the cone
-            ONB onb = toONB(normal);
+            ONB onb = toONB(normalize(normal));
             vec3 v = uniformHemisphereSampling(ux, uy);
             Cone cone;
             cone.dir   = normalize(toWorld(onb, v));
