@@ -112,7 +112,8 @@ enum { HAVE_TRAP_INSTRUCTION = 0, };
 __attribute__((gnu_inline, always_inline))
 static void __inline__ debug_break(void)
 {
-    if (debugger_is_present) {
+    //if (debugger_is_present) {
+    {
         if (HAVE_TRAP_INSTRUCTION) {
             trap_instruction();
         } else if (DEBUG_BREAK_PREFER_BUILTIN_TRAP_TO_SIGTRAP) {

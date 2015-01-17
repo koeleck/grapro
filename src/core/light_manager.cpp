@@ -136,5 +136,13 @@ const LightManager::LightList& LightManager::getLights() const
 
 /****************************************************************************/
 
+void LightManager::bind() const
+{
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindings::LIGHT,
+            m_light_buffer.buffer());
+}
+
+/****************************************************************************/
+
 } // namespace core
 

@@ -8,6 +8,7 @@
 
 out VertexData
 {
+    vec3 wpos;
     vec3 viewdir;
     vec3 normal;
     vec2 uv;
@@ -33,6 +34,7 @@ void main()
     value.z = vertexData[idx++];
 
     const vec4 worldPos = modelMatrix* vec4(value, 1.0);
+    outData.wpos = worldPos.xyz;
 
     outData.viewdir = normalize(cam.Position.xyz - worldPos.xyz);
 

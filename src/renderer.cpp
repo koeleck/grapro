@@ -12,6 +12,7 @@
 #include "core/camera_manager.h"
 #include "core/material_manager.h"
 #include "core/shader_interface.h"
+#include "core/light_manager.h"
 #include "core/texture.h"
 #include "log/log.h"
 #include "framework/vars.h"
@@ -502,6 +503,7 @@ void Renderer::renderGeometry(const GLuint prog)
     core::res::materials->bind();
     core::res::instances->bind();
     core::res::meshes->bind();
+    core::res::lights->bind();
 
     const auto* cam = core::res::cameras->getDefaultCam();
 

@@ -56,7 +56,7 @@ Light::Light(shader::LightStruct* const data, const LightType type,
     }
     if (depthTex != -1) {
         type_texid |= 0x80000000;
-        assert(depthTex <= 0x1fffffff);
+        assert(depthTex <= 0x0fffffff);
         type_texid |= depthTex;
     }
     m_data->type_texid = type_texid;
@@ -191,12 +191,12 @@ bool Light::isShadowcasting() const
 SpotLight::SpotLight(shader::LightStruct* const data, const int depthTex)
   : Light(data, LightType::SPOT, depthTex),
     m_direction{.0f, -1.f, .0f},
-    m_angle_inner_cone{glm::pi<float>()},
-    m_angle_outer_cone{glm::pi<float>()}
+    m_angle_inner_cone{glm::pi<float>() / 2.f},
+    m_angle_outer_cone{glm::pi<float>() / 2.f}
 {
     m_data->direction = m_direction;
-    m_data->angleInnerCone = m_angle_inner_cone;
-    m_data->angleOuterCone = m_angle_outer_cone;
+    m_data->angleInnerCone = std::cos(m_angle_inner_cone / 2.f);
+    m_data->angleOuterCone = std::cos(m_angle_outer_cone / 2.f);
 
     updateMatrix();
 }
@@ -213,7 +213,7 @@ float SpotLight::getAngleInnerCone() const
 void SpotLight::setAngleInnerCone(const float angle)
 {
     m_angle_inner_cone = angle;
-    m_data->angleInnerCone = angle;
+    m_data->angleInnerCone = std::cos(angle / 2.f);
 }
 
 /****************************************************************************/
@@ -228,7 +228,7 @@ float SpotLight::getAngleOuterCone() const
 void SpotLight::setAngleOuterCone(const float angle)
 {
     m_angle_outer_cone = angle;
-    m_data->angleOuterCone = angle;
+    m_data->angleOuterCone = std::cos(angle / 2.f);
 }
 
 /****************************************************************************/
@@ -242,8 +242,8 @@ const glm::vec3& SpotLight::getDirection() const
 
 void SpotLight::setDirection(const glm::vec3& dir)
 {
-    m_direction = dir;
-    m_data->direction = dir;
+    m_direction = glm::normalize(dir);
+    m_data->direction = m_direction;
     updateMatrix();
 }
 

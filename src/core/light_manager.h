@@ -25,6 +25,7 @@ public:
     PointLight* createPointLight(bool isShadowcasting);
 
     const LightList& getLights() const;
+    void bind() const;
 
 private:
     using LightPool = BufferStoragePool<shader::LightStruct>;
