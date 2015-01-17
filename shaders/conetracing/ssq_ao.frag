@@ -28,7 +28,7 @@ uniform sampler2D u_depth;
 layout(location = 0) out vec4 out_color;
 
 const float M_PI          = 3.14159265359;
-const uint num_sqrt_cones = 2;   // 2x2 grid 
+const uint num_sqrt_cones = 2;   // 2x2 grid
 const uint max_samples    = 3; // how many samples to take along each cone?
 
 /******************************************************************************/
@@ -44,12 +44,12 @@ float ConeAreaAtDistance(uint idx, float distance)
 {
     /*
         http://www.mathematische-basteleien.de/kegel.htm
-                 ^ 
+                 ^
                 /|\  <-- angle * 0.5 + 90
-               / | \ 
+               / | \
               / d|  \
              /   |   \
-            /____|____\ <-- angle * 0.5 
+            /____|____\ <-- angle * 0.5
                    r
     */
     const float angle  = cone[idx].angle * 0.5 + 90;
@@ -87,7 +87,7 @@ ONB toONB(vec3 normal)
     {
         onb.S.x = 0;
         onb.S.y = -normal.z;
-        onb.S.z = normal.y; 
+        onb.S.z = normal.y;
     }
 
     onb.S = normalize(onb.S);
@@ -144,7 +144,7 @@ bool checkOcclusion(uint maxlevel, vec3 wpos)
         nodePtr = octree[childIdx].id;
 
         // check occlusion
-        if((nodePtr & 0x80000000) == 1) 
+        if((nodePtr & 0x80000000) == 1)
         {
             is_occluded = true;
             return is_occluded;

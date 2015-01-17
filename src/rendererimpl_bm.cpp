@@ -388,12 +388,12 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
     glEnable(GL_CULL_FACE);
     glDepthFunc(GL_LEQUAL);
 
-    //renderAmbientOcclusion();
-    if (renderVoxColors) {
+    renderAmbientOcclusion();
+    /*if (renderVoxColors) {
         renderVoxelColors();
     } else {
         renderGeometry(m_vertexpulling_prog);
-    }
+    }*/
 
     if (renderBBoxes)
         renderBoundingBoxes();
