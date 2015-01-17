@@ -20,10 +20,10 @@ uniform sampler2D u_depth;
 
 layout(location = 0) out vec4 out_color;
 
-const float M_PI          = 3.14159265359;
-const uint num_sqrt_cones = 2; // 2x2 grid
-const uint max_samples    = 5; // how many samples to take along each cone?
-const float sample_interval = 50; // how much space is between the samples?
+const float M_PI            = 3.14159265359;
+const uint num_sqrt_cones   = 2; // 2x2 grid
+const uint max_samples      = 5; // how many samples to take along each cone?
+const float sample_interval = 8; // how much space is between the samples?
 
 /******************************************************************************/
 
@@ -222,7 +222,7 @@ void main()
     }
 
     // AO
-    const float ratio = float(occluded_cones) / float(num_sqrt_cones * num_sqrt_cones);
+    const float ratio = float(occluded_cones) / (float(max_samples) * float(num_sqrt_cones * num_sqrt_cones));
 
     out_color = vec4(color, 1);
     out_color *= ratio;
