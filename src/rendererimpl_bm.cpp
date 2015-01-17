@@ -420,26 +420,32 @@ void RendererImplBM::initAmbientOcclusion()
 
     // textures
     glBindTexture(GL_TEXTURE_2D, m_tex_position.get());
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, vars.screen_width, vars.screen_height, 0, GL_RGBA, GL_FLOAT, 0);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, vars.screen_width, vars.screen_height);
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, vars.screen_width, vars.screen_height, 0, GL_RGBA, GL_FLOAT, 0);
 
     glBindTexture(GL_TEXTURE_2D, m_tex_normal.get());
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, vars.screen_width, vars.screen_height, 0, GL_RGBA, GL_FLOAT, 0);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, vars.screen_width, vars.screen_height);
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, vars.screen_width, vars.screen_height, 0, GL_RGBA, GL_FLOAT, 0);
 
     glBindTexture(GL_TEXTURE_2D, m_tex_color.get());
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, vars.screen_width, vars.screen_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, vars.screen_width, vars.screen_height);
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, vars.screen_width, vars.screen_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
     glBindTexture(GL_TEXTURE_2D, m_tex_depth.get());
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, vars.screen_width, vars.screen_height, 0, GL_RGBA, GL_FLOAT, 0);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT32F, vars.screen_width, vars.screen_height);
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, vars.screen_width, vars.screen_height, 0, GL_RGBA, GL_FLOAT, 0);
 
     // FBO
     glBindFramebuffer(GL_FRAMEBUFFER, m_gbuffer_FBO);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, m_tex_depth, 0);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_tex_position, 0);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, m_tex_normal, 0);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, m_tex_color, 0);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, m_tex_depth, 0);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         LOG_ERROR("Empty framebuffer is not complete (WTF?!?)");
     }
+    GLenum DrawBuffers[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+    glDrawBuffers(3, DrawBuffers);
 
     // screen space quad
     glBindVertexArray(m_vao_ssq.get());
@@ -475,8 +481,6 @@ void RendererImplBM::renderAmbientOcclusion() const
     // FBO
     glBindFramebuffer(GL_FRAMEBUFFER, m_gbuffer_FBO);
     glViewport(0, 0, vars.screen_width, vars.screen_height);
-    GLenum DrawBuffers[4] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3};
-    glDrawBuffers(4, DrawBuffers);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     renderGeometry(m_gbuffer_prog);
@@ -528,7 +532,8 @@ void RendererImplBM::renderAmbientOcclusion() const
 
     // TODO: FIX THIS
     // debug: check if the gbuffer textures are filled
-    /*glBindFramebuffer(GL_READ_FRAMEBUFFER, m_gbuffer_FBO);
+    /*
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, m_gbuffer_FBO);
     glReadBuffer(GL_COLOR_ATTACHMENT0);
     glBlitFramebuffer(0, 0, vars.screen_width, vars.screen_height,
                       0, 0, vars.screen_width/2, vars.screen_height/2,
@@ -541,10 +546,7 @@ void RendererImplBM::renderAmbientOcclusion() const
     glBlitFramebuffer(0, 0, vars.screen_width, vars.screen_height,
                       vars.screen_width/2, 0, vars.screen_width, vars.screen_height/2,
                       GL_COLOR_BUFFER_BIT, GL_LINEAR);
-    glReadBuffer(GL_COLOR_ATTACHMENT3);
-    glBlitFramebuffer(0, 0, vars.screen_width, vars.screen_height,
-                      vars.screen_width/2, vars.screen_height/2, vars.screen_width, vars.screen_height,
-                      GL_COLOR_BUFFER_BIT, GL_LINEAR);*/
+    */
 }
 
 /****************************************************************************/

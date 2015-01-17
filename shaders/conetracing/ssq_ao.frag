@@ -164,8 +164,8 @@ void main()
 
     vec4 pos    = texture(u_pos, tex_coord);
     vec3 normal = texture(u_normal, tex_coord).xyz;
-    float depth = texture(u_color, tex_coord).x;
-    vec3 color  = texture(u_depth, tex_coord).xyz;
+    float depth = texture(u_depth, tex_coord).x;
+    vec3 color  = texture(u_color, tex_coord).xyz;
 
     // AO: count number of occluded cones
     uint occluded_cone = 0;
@@ -226,5 +226,5 @@ void main()
     // out_color = vec4(ratio, 0, 0, 1);
 
     // debug
-    out_color = vec4(normal, 1);
+    out_color = vec4(color, 1);
 }
