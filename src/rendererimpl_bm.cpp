@@ -382,6 +382,7 @@ void RendererImplBM::render(const unsigned int treeLevels, const unsigned int vo
         createVoxelList(debug_output);
         buildVoxelTree(debug_output);
         m_rebuildTree = false;
+        gl::printInfo();
     }
 
     glEnable(GL_DEPTH_TEST);
@@ -389,14 +390,14 @@ void RendererImplBM::render(const unsigned int treeLevels, const unsigned int vo
     glDepthFunc(GL_LEQUAL);
 
     renderAmbientOcclusion();
-    if (renderVoxColors) {
+    /*if (renderVoxColors) {
         if (voxelColorLevel != m_voxelColorLevel) {
             m_voxelColorLevel = voxelColorLevel;
         }
         renderVoxelColors();
     } else {
         renderGeometry(m_vertexpulling_prog);
-    }
+    }*/
 
     if (renderBBoxes)
         renderBoundingBoxes();
