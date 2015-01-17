@@ -33,13 +33,15 @@ public:
     void setGeometry(std::vector<const core::Instance*> geometry);
     void markTreeInvalid() { m_rebuildTree = true; }
 
-    void setAO(bool renderAO, unsigned int num_cones, unsigned int max_samples, unsigned int sample_interval) { 
-        m_renderAO = renderAO; 
+    void setAO(bool renderAO, unsigned int num_cones, unsigned int max_samples, unsigned int sample_interval) {
+        m_renderAO = renderAO;
         m_ao_num_cones = num_cones;
         m_ao_max_samples = max_samples;
         m_ao_sample_interval = sample_interval;
     }
     void setIndirect(bool renderIndirect) { m_renderIndirect = renderIndirect; }
+    void setConeGridSize(unsigned int size) { m_coneGridSize = size; }
+    void setConeSteps(unsigned int steps) { m_coneSteps = steps; }
 
 protected:
     struct DrawCmd;
@@ -113,6 +115,11 @@ protected:
     gl::VertexArray                     m_vao_ssq;
     gl::Buffer                          m_vbo_ssq;
 
+    // indirect
+    bool                                m_renderIndirect;
+    unsigned int                        m_coneGridSize = 2;
+    unsigned int                        m_coneSteps = 3;
+
     // other
     gl::Buffer                          m_atomicCounterBuffer;
     core::Program                       m_colorboxes_prog;
@@ -124,9 +131,6 @@ protected:
     unsigned int                        m_ao_num_cones;
     unsigned int                        m_ao_max_samples;
     unsigned int                        m_ao_sample_interval;
-
-    // indirect light
-    bool                                m_renderIndirect;
 
 private:
 

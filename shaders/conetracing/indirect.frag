@@ -3,6 +3,8 @@
 #include "common/extensions.glsl"
 #include "common/voxel.glsl"
 
+layout(location = 0) out vec4 out_color;
+
 /******************************************************************************/
 
 uniform uint u_voxelDim;
@@ -19,10 +21,8 @@ uniform sampler2D u_normal;
 uniform sampler2D u_color;
 uniform sampler2D u_depth;
 
-layout(location = 0) out vec4 out_color;
-
-const uint num_sqrt_cones = 2;   // 2x2 grid
-const uint max_samples    = 3; // how many samples to take along each cone?
+uniform uint u_coneGridSize;
+uniform uint u_numSteps; // how many samples to take along each cone?
 #define M_PI 3.1415926535897932384626433832795
 
 struct Cone
@@ -30,13 +30,13 @@ struct Cone
     vec3 pos;
     vec3 dir;
     float angle;
-} cone[num_sqrt_cones * num_sqrt_cones];
+};
 
 /******************************************************************************/
 
-float ConeRadiusAtDistance(uint idx, float distance)
+float ConeRadiusAtDistance(Cone cone, float distance)
 {
-    const float angle  = cone[idx].angle * 0.5;
+    const float angle  = cone.angle * 0.5;
     return distance * tan(angle);
 }
 
@@ -148,56 +148,61 @@ void main()
     float depth = texture(u_depth, uv).x;
     vec3 color  = texture(u_color, uv).xyz;
 
-    // AO: count number of occluded cones
-    uint occluded_cone = 0;
-
     // cone tracing
-    const float step = (1.f / float(num_sqrt_cones));
+    const float step = (1.f / float(u_coneGridSize));
     float ux = 0.f;
     float uy = 0.f;
 
     vec4 totalColor = vec4(0);
 
-    for(uint y = 0; y < num_sqrt_cones; ++y) {
+    for(int y = 0; y < u_coneGridSize; ++y) {
 
         uy = (0.5f + y) * step;
 
-        for(uint x = 0; x < num_sqrt_cones; ++x) {
+        for(int x = 0; x < u_coneGridSize; ++x) {
 
             ux = (0.5f + x) * step;
-            const uint idx = y * num_sqrt_cones + x;
+            const uint idx = y * u_coneGridSize + x;
 
             // create the cone
             ONB onb = toONB(normal);
             vec3 v = UniformHemisphereSampling(ux, uy);
-            cone[idx].dir   = toWorld(onb, v);
-            cone[idx].pos   = pos.xyz;
-            cone[idx].angle = 180 / num_sqrt_cones;
+            Cone cone;
+            cone.dir   = toWorld(onb, v);
+            cone.pos   = pos.xyz;
+            cone.angle = 180 / u_coneGridSize;
 
             // trace the cone for each sample
-            for(uint s = 0; s < max_samples; ++s) {
+            for(int s = 0; s < u_numSteps; ++s) {
 
                 const float d = 5; // has to be smaller than the current voxel size
                 const float sample_distance = s * d;
-                const float diameter = 2 * ConeRadiusAtDistance(idx, sample_distance);
-
+                const float diameter = 2 * ConeRadiusAtDistance(cone, sample_distance);
+                if (diameter <= 0.f) continue;
                 // find the corresponding mipmap level.
                 // start at 0: the final level that is found will be 1 level too much,
                 // because we need the first voxel where the diameter fits and not the first
                 // voxel where the diameter does not fit anymore
                 uint level = 0;
-                vec3 voxel_size = (u_bboxMax - u_bboxMin) / float(u_voxelDim);
-                while(voxel_size.x > diameter) {
-                    voxel_size /= 2.f;
+                vec3 voxel_size_xyz = (u_bboxMax - u_bboxMin) / float(u_voxelDim);
+
+                // find maximum of x/y/z dimension
+                float voxel_size = max(voxel_size_xyz.x, voxel_size_xyz.y);
+                voxel_size = max(voxel_size_xyz.y, voxel_size_xyz.z);
+                voxel_size = max(voxel_size_xyz.x, voxel_size_xyz.z);
+
+                while(voxel_size > diameter) {
+                    voxel_size /= 2;
                     ++level;
                 }
 
                 // ambient occlusion
-                vec3 wpos = pos.xyz + sample_distance * cone[idx].dir;
+                vec3 wpos = pos.xyz + sample_distance * cone.dir;
                 vec4 color = getColor(level, wpos);
                 totalColor += color;
 
             }
+
         }
     }
 
@@ -208,4 +213,5 @@ void main()
 
     // debug
     //out_color = vec4(normal, 1);
+    //out_color = vec4(1, vec3(0));
 }
