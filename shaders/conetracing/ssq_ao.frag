@@ -22,7 +22,8 @@ layout(location = 0) out vec4 out_color;
 
 const float M_PI          = 3.14159265359;
 const uint num_sqrt_cones = 2; // 2x2 grid
-const uint max_samples    = 4; // how many samples to take along each cone?
+const uint max_samples    = 5; // how many samples to take along each cone?
+const float sample_interval = 50; // how much space is between the samples?
 
 /******************************************************************************/
 
@@ -188,8 +189,7 @@ void main()
             // trace the cone for each sample
             for(uint s = 0; s < max_samples; ++s)
             {
-                const float d = 50; // has to be smaller than the current voxel size
-                const float sample_distance = s * d;
+                const float sample_distance = s * sample_interval;
                 const float diameter = ConeDiameterAtDistance(idx, sample_distance);
 
                 // find the corresponding mipmap level.
@@ -223,8 +223,6 @@ void main()
 
     // AO
     const float ratio = float(occluded_cones) / float(num_sqrt_cones * num_sqrt_cones);
-
-    // debug
 
     out_color = vec4(color, 1);
     out_color *= ratio;
