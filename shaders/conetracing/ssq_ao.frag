@@ -194,7 +194,7 @@ void main()
             // trace the cone for each sample
             for(uint s = 0; s < max_samples; ++s)
             {
-                const float d = 0.5; // has to be smaller than the current voxel size
+                const float d = 5; // has to be smaller than the current voxel size
                 const float sample_distance = s * d;
                 const float area = ConeAreaAtDistance(idx, sample_distance);
 
@@ -226,5 +226,5 @@ void main()
     // out_color = vec4(ratio, 0, 0, 1);
 
     // debug
-    out_color = vec4(color, 1);
+    out_color = vec4(normal, 1);
 }
