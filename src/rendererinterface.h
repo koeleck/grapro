@@ -44,6 +44,8 @@ protected:
     void renderBoundingBoxes() const;
     void renderVoxelBoundingBoxes() const;
     void renderVoxelColors() const;
+    void renderToGBuffer() const;
+    void renderIndirectLighting() const;
 
     void createVoxelBBoxes(unsigned int num);
     void resizeFBO() const;
@@ -93,10 +95,21 @@ protected:
     core::GPUTimer*                     m_tree_timer;
     core::GPUTimer*                     m_mipmap_timer;
 
+    // gbuffer
+    core::Program                       m_gbuffer_prog;
+    gl::Framebuffer                     m_gbuffer_FBO;
+    gl::Texture                         m_tex_position; // 0
+    gl::Texture                         m_tex_normal;   // 1
+    gl::Texture                         m_tex_color;    // 2
+    gl::Texture                         m_tex_depth;    // 3
+    gl::VertexArray                     m_vao_ssq;
+    gl::Buffer                          m_vbo_ssq;
+
     // other
     gl::Buffer                          m_atomicCounterBuffer;
     core::Program                       m_colorboxes_prog;
     unsigned int                        m_voxelColorLevel;
+    core::Program                       m_indirect_prog;
 
 private:
 
@@ -105,6 +118,7 @@ private:
     void initVoxelization();
     void initVoxelBBoxes();
     void initVoxelColors();
+    void initGBuffer();
 
 };
 

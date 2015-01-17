@@ -1,5 +1,6 @@
 #version 440 core
 
+#include "common/extensions.glsl"
 #include "common/voxel.glsl"
 
 /******************************************************************************/
@@ -20,11 +21,9 @@ uniform sampler2D u_depth;
 
 layout(location = 0) out vec4 out_color;
 
-const float M_PI          = 3.14159265359;
 const uint num_sqrt_cones = 2;   // 2x2 grid
 const uint max_samples    = 3; // how many samples to take along each cone?
-
-/******************************************************************************/
+#define M_PI 3.1415926535897932384626433832795
 
 struct Cone
 {
@@ -33,21 +32,12 @@ struct Cone
     float angle;
 } cone[num_sqrt_cones * num_sqrt_cones];
 
-float ConeAreaAtDistance(uint idx, float distance)
+/******************************************************************************/
+
+float ConeRadiusAtDistance(uint idx, float distance)
 {
-    /*
-        http://www.mathematische-basteleien.de/kegel.htm
-                 ^
-                /|\  <-- angle * 0.5 + 90
-               / | \
-              / d|  \
-             /   |   \
-            /____|____\ <-- angle * 0.5
-                   r
-    */
-    const float angle  = cone[idx].angle * 0.5 + 90;
-    const float radius = distance / tan(angle);
-    return abs(2 * M_PI * radius);
+    const float angle  = cone[idx].angle * 0.5;
+    return distance * tan(angle);
 }
 
 /******************************************************************************/
@@ -95,13 +85,10 @@ vec3 toWorld(ONB onb, vec3 v)
 
 /******************************************************************************/
 
-bool checkOcclusion(uint maxlevel, vec3 wpos)
+vec4 getColor(uint maxlevel, vec3 wpos)
 {
     vec3 voxelSize = (u_bboxMax - u_bboxMin) / float(u_voxelDim);
     ivec3 pos = ivec3(vec3(wpos - u_bboxMin) / voxelSize);
-    vec3 clamped = vec3(pos) / float(u_voxelDim);
-
-    bool is_occluded = true;
 
     // local vars
     uint childIdx = 0;
@@ -111,21 +98,16 @@ bool checkOcclusion(uint maxlevel, vec3 wpos)
 
     uvec3 umin = uvec3(0);
 
-    if(maxlevel > u_maxlevel)
-        maxlevel = u_maxlevel;
-
     // iterate through all tree levels
-    for (uint i = 0; i < maxlevel - 1; ++i) {
+    for (uint i = 0; i < maxlevel; ++i) {
+
+        if ((nodePtr & 0x80000000) == 0) {
+        	// no flag set -> no child node
+        	return vec4(0);
+        }
 
         // go to next dimension
         voxelDim /= 2;
-
-        // check occlusion
-        if((nodePtr & 0x80000000) == 0)
-        {
-            is_occluded = false;
-            return is_occluded;
-        }
 
         // mask out flag bit to get child idx
         childIdx = int(nodePtr & 0x7FFFFFFF);
@@ -145,21 +127,26 @@ bool checkOcclusion(uint maxlevel, vec3 wpos)
 
         // update node
         nodePtr = octree[childIdx].id;
+
     }
 
-    return is_occluded;
+    vec4 col = octreeColor[childIdx].color;
+    col /= col.w;
+    return col;
+
 }
 
 /******************************************************************************/
 
 void main()
 {
-    vec2 tex_coord = gl_FragCoord.xy / vec2(u_screenwidth, u_screenheight);
 
-    vec4 pos    = texture(u_pos, tex_coord);
-    vec3 normal = texture(u_normal, tex_coord).xyz;
-    float depth = texture(u_depth, tex_coord).x;
-    vec3 color  = texture(u_color, tex_coord).xyz;
+    vec2 uv = gl_FragCoord.xy / vec2(u_screenwidth, u_screenheight);
+
+    vec4 pos    = texture(u_pos, uv);
+    vec3 normal = texture(u_normal, uv).xyz;
+    float depth = texture(u_depth, uv).x;
+    vec3 color  = texture(u_color, uv).xyz;
 
     // AO: count number of occluded cones
     uint occluded_cone = 0;
@@ -169,56 +156,57 @@ void main()
     float ux = 0.f;
     float uy = 0.f;
 
-    for(uint y = 0; y < num_sqrt_cones; ++y)
-    {
-        uy = (0.5 * step) + y * step;
+    vec4 totalColor = vec4(0);
 
-        for(uint x = 0; x < num_sqrt_cones; ++x)
-        {
-            ux = (0.5 * step) + x * step;
+    for(uint y = 0; y < num_sqrt_cones; ++y) {
+
+        uy = (0.5f + y) * step;
+
+        for(uint x = 0; x < num_sqrt_cones; ++x) {
+
+            ux = (0.5f + x) * step;
             const uint idx = y * num_sqrt_cones + x;
 
             // create the cone
             ONB onb = toONB(normal);
             vec3 v = UniformHemisphereSampling(ux, uy);
-            cone[idx].dir   = normalize(toWorld(onb, v));
+            cone[idx].dir   = toWorld(onb, v);
             cone[idx].pos   = pos.xyz;
             cone[idx].angle = 180 / num_sqrt_cones;
 
             // trace the cone for each sample
-            for(uint s = 0; s < max_samples; ++s)
-            {
+            for(uint s = 0; s < max_samples; ++s) {
+
                 const float d = 5; // has to be smaller than the current voxel size
                 const float sample_distance = s * d;
-                const float area = ConeAreaAtDistance(idx, sample_distance);
+                const float diameter = 2 * ConeRadiusAtDistance(idx, sample_distance);
 
                 // find the corresponding mipmap level.
-                // start at -1: the final level that is found will be 1 level to much,
-                // because we need the first voxel where the area fits and not the first
-                // voxel where the area does not fit anymore
+                // start at -1: the final level that is found will be 1 level too much,
+                // because we need the first voxel where the diameter fits and not the first
+                // voxel where the diameter does not fit anymore
                 uint level = -1;
                 float voxel_size = u_voxelDim;
-                while(voxel_size > area)
-                {
+                while(voxel_size > diameter) {
                     voxel_size /= 2;
                     ++level;
                 }
 
                 // ambient occlusion
                 vec3 wpos = pos.xyz + sample_distance * cone[idx].dir;
-                if(checkOcclusion(level, wpos))
-                {
-                    // we are occluded here
-                    ++occluded_cone;
-                }
+                vec4 color = getColor(level, wpos);
+                totalColor += color;
+
             }
         }
     }
 
-    // AO
-    const float ratio = float(occluded_cone) / float(num_sqrt_cones * num_sqrt_cones);
-    out_color = vec4(ratio, 1, 0, 1);
+    if (totalColor.w > 0) {
+    	totalColor /= totalColor.w;
+    }
+    out_color = totalColor;
 
     // debug
     out_color = vec4(normal, 1);
 }
+

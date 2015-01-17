@@ -29,6 +29,7 @@ RendererInterface::RendererInterface(core::TimerArray& timer_array, unsigned int
 	initVoxelization();
 	initVoxelBBoxes();
     initVoxelColors();
+    initGBuffer();
 
 }
 
@@ -170,6 +171,57 @@ void RendererInterface::initVoxelColors()
             GL_FRAGMENT_SHADER);
     m_colorboxes_prog = core::res::shaders->registerProgram("colorboxes_prog",
             {"vertexpulling_vert", "colorboxes_frag"});
+}
+
+/****************************************************************************/
+
+void RendererInterface::initGBuffer()
+{
+    core::res::shaders->registerShader("vertexpulling_vert", "basic/vertexpulling.vert", GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("gbuffer_frag", "conetracing/gbuffer.frag", GL_FRAGMENT_SHADER);
+    m_gbuffer_prog = core::res::shaders->registerProgram("gbuffer_prog", {"vertexpulling_vert", "gbuffer_frag"});
+
+    // textures
+    glBindTexture(GL_TEXTURE_2D, m_tex_position);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, vars.screen_width, vars.screen_height);
+
+    glBindTexture(GL_TEXTURE_2D, m_tex_normal);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, vars.screen_width, vars.screen_height);
+
+    glBindTexture(GL_TEXTURE_2D, m_tex_color);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, vars.screen_width, vars.screen_height);
+
+    glBindTexture(GL_TEXTURE_2D, m_tex_depth);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT32F, vars.screen_width, vars.screen_height);
+
+    // FBO
+    glBindFramebuffer(GL_FRAMEBUFFER, m_gbuffer_FBO);
+
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, m_tex_depth, 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_tex_position, 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, m_tex_normal, 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, m_tex_color, 0);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        LOG_ERROR("Empty gbuffer framebuffer is not complete (WTF?!?)");
+    }
+    GLenum DrawBuffers[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+    glDrawBuffers(3, DrawBuffers);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // screen space quad
+    glBindVertexArray(m_vao_ssq);
+    float ssq[] = { -1.f, -1.f, 0.f,
+                    1.f, -1.f, 0.f,
+                    1.f, 1.f, 0.f,
+                    1.f, 1.f, 0.f,
+                    -1.f, 1.f, 0.f,
+                    -1.f, -1.f, 0.f };
+
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_ssq);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(ssq), ssq, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(0);
 }
 
 /****************************************************************************/
@@ -412,6 +464,80 @@ void RendererInterface::renderVoxelColors() const
     glProgramUniform1ui(m_colorboxes_prog, loc, m_voxelColorLevel);
 
     renderGeometry(m_colorboxes_prog);
+}
+
+/****************************************************************************/
+
+void RendererInterface::renderToGBuffer() const
+{
+
+    // bind gbuffer texture
+    glBindTexture(GL_TEXTURE_2D, m_tex_position.get());
+    glBindTexture(GL_TEXTURE_2D, m_tex_normal.get());
+    glBindTexture(GL_TEXTURE_2D, m_tex_color.get());
+    glBindTexture(GL_TEXTURE_2D, m_tex_depth.get());
+
+    // FBO
+    glBindFramebuffer(GL_FRAMEBUFFER, m_gbuffer_FBO);
+    glViewport(0, 0, vars.screen_width, vars.screen_height);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    renderGeometry(m_gbuffer_prog);
+
+    // unbind fbo
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+}
+
+/****************************************************************************/
+
+void RendererInterface::renderIndirectLighting() const
+{
+
+    renderToGBuffer();
+
+    /*
+     *  Render screen space quad
+     */
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(m_indirect_prog);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_tex_position.get());
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, m_tex_normal.get());
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, m_tex_color.get());
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, m_tex_depth.get());
+
+    auto loc = glGetUniformLocation(m_indirect_prog, "u_pos");
+    glUniform1i(loc, 0);
+    loc = glGetUniformLocation(m_indirect_prog, "u_normal");
+    glUniform1i(loc, 1);
+    loc = glGetUniformLocation(m_indirect_prog, "u_color");
+    glUniform1i(loc, 2);
+    loc = glGetUniformLocation(m_indirect_prog, "u_depth");
+    glUniform1i(loc, 3);
+
+    const auto voxelDim = static_cast<unsigned int>(std::pow(2, m_treeLevels - 1));
+    loc = glGetUniformLocation(m_indirect_prog, "u_voxelDim");
+    glUniform1ui(loc, voxelDim);
+    loc = glGetUniformLocation(m_indirect_prog, "u_bboxMin");
+    glUniform3f(loc, m_scene_bbox.pmin.x, m_scene_bbox.pmin.y, m_scene_bbox.pmin.z);
+    loc = glGetUniformLocation(m_indirect_prog, "u_bboxMax");
+    glUniform3f(loc, m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z);
+    loc = glGetUniformLocation(m_indirect_prog, "u_screenwidth");
+    glUniform1ui(loc, vars.screen_width);
+    loc = glGetUniformLocation(m_indirect_prog, "u_screenheight");
+    glUniform1ui(loc, vars.screen_height);
+    loc = glGetUniformLocation(m_indirect_prog, "u_maxlevel");
+    glUniform1ui(loc, m_treeLevels);
+
+    glBindVertexArray(m_vao_ssq);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
 }
 
 /****************************************************************************/
