@@ -65,6 +65,8 @@ RendererImplPK::RendererImplPK(core::TimerArray& timer_array, unsigned int treeL
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
     glBufferStorage(GL_ATOMIC_COUNTER_BUFFER, 2 * sizeof(GLuint), nullptr, GL_MAP_READ_BIT);
     //glClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+
+    gl::printInfo();
 }
 
 /****************************************************************************/

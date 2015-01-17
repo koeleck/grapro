@@ -52,6 +52,8 @@ RendererImplBM::RendererImplBM(core::TimerArray& timer_array, unsigned int treeL
     recreateBuffer(m_octreeNodeBuffer, totalNodes * sizeof(OctreeNodeStruct));
     recreateBuffer(m_octreeNodeColorBuffer, totalNodes * sizeof(OctreeNodeColorStruct));
 
+    gl::printInfo();
+
 }
 
 /****************************************************************************/
