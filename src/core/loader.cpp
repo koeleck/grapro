@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstring>
 #include <boost/tokenizer.hpp>
 
 #include "loader.h"
@@ -71,7 +72,8 @@ bool loadScenefiles(const std::string& scenefiles)
         for (unsigned int i = 0; i < scene->num_lights; ++i) {
             Light* newLight = nullptr;
             const auto* light = scene->lights[i];
-            const bool isShadowcasting = false; // TODO
+            // name starts with "scl_" -> shadowcasting
+            const bool isShadowcasting = (std::strncmp(light->name, "scl_", 4) == 0);
             switch (light->type) {
             case import::LightType::SPOT:
             {
@@ -79,8 +81,6 @@ bool loadScenefiles(const std::string& scenefiles)
                 l->setDirection(light->direction);
                 l->setAngleInnerCone(light->angle_inner_cone);
                 l->setAngleOuterCone(light->angle_outer_cone);
-                LOG_INFO("spot: angle inner: ", l->getAngleInnerCone(),
-                        ", angle outer: ", l->getAngleOuterCone());
                 newLight = l;
                 break;
             }
@@ -95,7 +95,6 @@ bool loadScenefiles(const std::string& scenefiles)
             }
             case import::LightType::POINT:
             {
-                LOG_INFO("Point light");
                 auto* l = core::res::lights->createPointLight(isShadowcasting);
                 newLight = l;
                 break;
@@ -105,16 +104,13 @@ bool loadScenefiles(const std::string& scenefiles)
             }
             if (newLight != nullptr) {
                 newLight->setPosition(light->position);
-                LOG_INFO("POS: (", newLight->getPosition().x, ", ",
-                        newLight->getPosition().y, ", ",
-                        newLight->getPosition().z, ")");
                 newLight->setIntensity(light->color);
                 newLight->setMaxDistance(light->max_distance);
                 newLight->setLinearAttenuation(light->linear_attenuation);
                 newLight->setConstantAttenuation(light->constant_attenuation);
                 newLight->setQuadraticAttenuation(light->quadratic_attenuation);
             } else {
-                LOG_INFO("Unsupported light type for light'",
+                LOG_WARNING("Unsupported light type for light'",
                         light->name, '\'');
             }
         }

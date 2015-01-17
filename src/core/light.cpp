@@ -336,9 +336,12 @@ void DirectionalLight::setSize(const float size)
 void DirectionalLight::updateMatrix()
 {
     if (getMaxDistance() == std::numeric_limits<float>::infinity()) {
-        LOG_ERROR("Directional light can't have max distance = infinity! "
-                "Clamping to 100.0, you idiot!");
-        setMaxDistance(100.f); // this will call updateMatrix() again
+        if (isShadowcasting()) {
+            // insult user:
+            LOG_ERROR("Shadowcasting directional light can't have max "
+                    "distance at infinity! Clamping to 100.0, you idiot!");
+            setMaxDistance(100.f); // this will call updateMatrix() again
+        }
         return;
     }
     const double dist = m_size / 2.f;
