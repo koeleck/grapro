@@ -390,7 +390,7 @@ void RendererImplBM::render(const unsigned int treeLevels, const unsigned int vo
     glEnable(GL_CULL_FACE);
     glDepthFunc(GL_LEQUAL);
 
-    //renderAmbientOcclusion();
+    renderAmbientOcclusion();
     if (renderVoxColors) {
         if (voxelColorLevel != m_voxelColorLevel) {
             m_voxelColorLevel = voxelColorLevel;
