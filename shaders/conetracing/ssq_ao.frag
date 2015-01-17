@@ -20,19 +20,21 @@ uniform sampler2D u_depth;
 
 layout(location = 0) out vec4 out_color;
 
+uniform uint u_num_sqrt_cones;
+uniform uint u_max_samples;
+uniform uint u_sample_interval;
+
 const float M_PI            = 3.14159265359;
-const uint num_sqrt_cones   = 2; // 2x2 grid
-const uint max_samples      = 5; // how many samples to take along each cone?
-const float sample_interval = 8; // how much space is between the samples?
 
 /******************************************************************************/
 
+const uint max_num_sqrt_cones = 4;
 struct Cone
 {
     vec3 pos;
     vec3 dir;
     float angle;
-} cone[num_sqrt_cones * num_sqrt_cones];
+} cone[max_num_sqrt_cones * max_num_sqrt_cones];
 
 float ConeDiameterAtDistance(uint idx, float distance)
 {
@@ -166,30 +168,30 @@ void main()
     uint occluded_cones = 0;
 
     // cone tracing
-    const float step = (1.f / float(num_sqrt_cones));
+    const float step = (1.f / float(u_num_sqrt_cones));
     float ux = 0.f;
     float uy = 0.f;
 
-    for(uint y = 0; y < num_sqrt_cones; ++y)
+    for(uint y = 0; y < u_num_sqrt_cones; ++y)
     {
         uy = (0.5 * step) + y * step;
 
-        for(uint x = 0; x < num_sqrt_cones; ++x)
+        for(uint x = 0; x < u_num_sqrt_cones; ++x)
         {
             ux = (0.5 * step) + x * step;
-            const uint idx = y * num_sqrt_cones + x;
+            const uint idx = y * u_num_sqrt_cones + x;
 
             // create the cone
             ONB onb = toONB(normal);
             vec3 v = UniformHemisphereSampling(ux, uy);
             cone[idx].dir   = normalize(toWorld(onb, v));
             cone[idx].pos   = pos.xyz;
-            cone[idx].angle = 180 / num_sqrt_cones;
+            cone[idx].angle = 180 / u_num_sqrt_cones;
 
             // trace the cone for each sample
-            for(uint s = 0; s < max_samples; ++s)
+            for(uint s = 0; s < u_max_samples; ++s)
             {
-                const float sample_distance = s * sample_interval;
+                const float sample_distance = s * u_sample_interval;
                 const float diameter = ConeDiameterAtDistance(idx, sample_distance);
 
                 // find the corresponding mipmap level.
@@ -222,7 +224,7 @@ void main()
     }
 
     // AO
-    const float ratio = float(occluded_cones) / (float(max_samples) * float(num_sqrt_cones * num_sqrt_cones));
+    const float ratio = float(occluded_cones) / (float(u_max_samples) * float(u_num_sqrt_cones * u_num_sqrt_cones));
 
     out_color = vec4(color, 1);
     out_color *= ratio;

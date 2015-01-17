@@ -473,6 +473,13 @@ void RendererImplBM::renderAmbientOcclusion() const
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_treelevel");
     glProgramUniform1ui(m_ssq_ao_prog, loc, m_treeLevels);
 
+    loc = glGetUniformLocation(m_ssq_ao_prog, "u_num_sqrt_cones");
+    glProgramUniform1ui(m_ssq_ao_prog, loc, m_ao_num_cones);
+    loc = glGetUniformLocation(m_ssq_ao_prog, "u_max_samples");
+    glProgramUniform1ui(m_ssq_ao_prog, loc, m_ao_max_samples);
+    loc = glGetUniformLocation(m_ssq_ao_prog, "u_sample_interval");
+    glProgramUniform1ui(m_ssq_ao_prog, loc, m_ao_sample_interval);
+
     glBindVertexArray(m_vao_ssq.get());
     glDrawArrays(GL_TRIANGLES, 0, 6);
 

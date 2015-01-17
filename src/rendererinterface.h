@@ -33,7 +33,12 @@ public:
     void setGeometry(std::vector<const core::Instance*> geometry);
     void markTreeInvalid() { m_rebuildTree = true; }
 
-    void setAO(bool renderAO) { m_renderAO = renderAO; }
+    void setAO(bool renderAO, unsigned int num_cones, unsigned int max_samples, unsigned int sample_interval) { 
+        m_renderAO = renderAO; 
+        m_ao_num_cones = num_cones;
+        m_ao_max_samples = max_samples;
+        m_ao_sample_interval = sample_interval;
+    }
     void setIndirect(bool renderIndirect) { m_renderIndirect = renderIndirect; }
 
 protected:
@@ -114,7 +119,13 @@ protected:
     unsigned int                        m_voxelColorLevel;
     core::Program                       m_indirect_prog;
 
+    // AO
     bool                                m_renderAO;
+    unsigned int                        m_ao_num_cones;
+    unsigned int                        m_ao_max_samples;
+    unsigned int                        m_ao_sample_interval;
+
+    // indirect light
     bool                                m_renderIndirect;
 
 private:
