@@ -188,7 +188,7 @@ void main()
             // trace the cone for each sample
             for(uint s = 0; s < max_samples; ++s)
             {
-                const float d = 5; // has to be smaller than the current voxel size
+                const float d = 50; // has to be smaller than the current voxel size
                 const float sample_distance = s * d;
                 const float diameter = ConeDiameterAtDistance(idx, sample_distance);
 
@@ -197,7 +197,13 @@ void main()
                 // because we need the first voxel where the diameter fits and not the first
                 // voxel where the diameter does not fit anymore
                 uint level = 0;
-                float voxel_size = u_treelevel;
+                vec3 voxel_size_xyz = (u_bboxMax - u_bboxMin) / float(u_voxelDim);
+                
+                // find maximum of x/y/z dimension
+                float voxel_size = max(voxel_size_xyz.x, voxel_size_xyz.y);
+                voxel_size = max(voxel_size_xyz.y, voxel_size_xyz.z);
+                voxel_size = max(voxel_size_xyz.x, voxel_size_xyz.z);
+
                 while(voxel_size > diameter)
                 {
                     voxel_size /= 2;
@@ -220,10 +226,5 @@ void main()
 
     // debug
     out_color = vec4(color, 1);
-
-    // if(ratio < 0.1f) out_color.r = 1;
-    // if(ratio > 0.1f && ratio < 0.3f) out_color.g = 1;
-    // if(ratio > 0.3f && ratio < 0.7f) out_color.g = 1;
-    // if(ratio > 0.7f) out_color.b = 1;
     out_color *= ratio;
 }
