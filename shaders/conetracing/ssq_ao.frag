@@ -224,7 +224,7 @@ void main()
     }
 
     // AO
-    const float ratio = float(occluded_cones) / (float(u_max_samples) * float(u_num_sqrt_cones * u_num_sqrt_cones));
+    const float ratio = clamp(float(occluded_cones) / (float(u_max_samples) * float(u_num_sqrt_cones * u_num_sqrt_cones)), 0.f, 1.f);
 
     out_color = vec4(color, 1);
     out_color *= ratio;
