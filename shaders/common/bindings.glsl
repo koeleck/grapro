@@ -13,5 +13,6 @@
 #define VOXEL_BINDING		 6
 #define OCTREE_BINDING       7
 #define OCTREE_COLOR_BINDING 8
+#define LIGHT_BINDING        9
 
 #endif // SHADERS_COMMON_BINDINGS_GLSL
