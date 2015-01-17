@@ -9,7 +9,7 @@ uniform vec3 u_bboxMin;
 uniform vec3 u_bboxMax;
 uniform uint u_screenwidth;
 uniform uint u_screenheight;
-uniform uint u_maxlevel;
+uniform uint u_treelevel;
 
 /******************************************************************************/
 
@@ -111,8 +111,8 @@ bool checkOcclusion(uint maxlevel, vec3 wpos)
 
     uvec3 umin = uvec3(0);
 
-    if(maxlevel > u_maxlevel)
-        maxlevel = u_maxlevel;
+    if(maxlevel > u_treelevel)
+        maxlevel = u_treelevel;
 
     // iterate through all tree levels
     for (uint i = 0; i < maxlevel; ++i) {
@@ -162,7 +162,7 @@ void main()
     vec3 color  = texture(u_color, tex_coord).xyz;
 
     // AO: count number of occluded cones
-    uint occluded_cone = 0;
+    uint occluded_cones = 0;
 
     // cone tracing
     const float step = (1.f / float(num_sqrt_cones));
@@ -196,8 +196,8 @@ void main()
                 // start at -1: the final level that is found will be 1 level to much,
                 // because we need the first voxel where the diameter fits and not the first
                 // voxel where the diameter does not fit anymore
-                uint level = -1;
-                float voxel_size = u_voxelDim;
+                uint level = 0;
+                float voxel_size = u_treelevel;
                 while(voxel_size > diameter)
                 {
                     voxel_size /= 2;
@@ -206,23 +206,24 @@ void main()
 
                 // ambient occlusion
                 vec3 wpos = pos.xyz + sample_distance * cone[idx].dir;
-                if(checkOcclusion(level, wpos))
+                if(checkOcclusion(level - 1, wpos))
                 {
                     // we are occluded here
-                    ++occluded_cone;
+                    ++occluded_cones;
                 }
             }
         }
     }
 
     // AO
-    const float ratio = float(occluded_cone) / float(num_sqrt_cones * num_sqrt_cones);
+    const float ratio = float(occluded_cones) / float(num_sqrt_cones * num_sqrt_cones);
 
     // debug
     out_color = vec4(color, 1);
 
-    if(ratio < 0.1f) out_color.r = 1;
-    if(ratio > 0.1f && ratio < 0.3f) out_color.g = 1;
-    if(ratio > 0.3f && ratio < 0.7f) out_color.g = 1;
-    if(ratio > 0.7f) out_color.b = 1;
+    // if(ratio < 0.1f) out_color.r = 1;
+    // if(ratio > 0.1f && ratio < 0.3f) out_color.g = 1;
+    // if(ratio > 0.3f && ratio < 0.7f) out_color.g = 1;
+    // if(ratio > 0.7f) out_color.b = 1;
+    out_color *= ratio;
 }
