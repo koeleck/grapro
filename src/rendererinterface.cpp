@@ -408,8 +408,8 @@ void RendererInterface::renderVoxelColors() const
     glProgramUniform3f(m_colorboxes_prog, loc, m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z);
     loc = glGetUniformLocation(m_colorboxes_prog, "u_voxelDim");
     glProgramUniform1ui(m_colorboxes_prog, loc, dim);
-    loc = glGetUniformLocation(m_colorboxes_prog, "u_treeLevels");
-    glProgramUniform1ui(m_colorboxes_prog, loc, m_treeLevels);
+    loc = glGetUniformLocation(m_colorboxes_prog, "u_maxLevel");
+    glProgramUniform1ui(m_colorboxes_prog, loc, m_voxelColorLevel);
 
     renderGeometry(m_colorboxes_prog);
 }

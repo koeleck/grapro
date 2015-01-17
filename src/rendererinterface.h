@@ -26,9 +26,9 @@ public:
     explicit RendererInterface(core::TimerArray& timer_array, unsigned int treeLevels);
     virtual ~RendererInterface();
 
-    virtual void render(unsigned int treeLevels, bool renderBBoxes = false,
-                        bool renderOctree = false, bool renderVoxColors = false,
-                        bool debug_output = false) = 0;
+    virtual void render(unsigned int treeLevels, unsigned int voxelColorLevel,
+                        bool renderBBoxes = false, bool renderOctree = false,
+                        bool renderVoxColors = false, bool debug_output = false) = 0;
 
     void setGeometry(std::vector<const core::Instance*> geometry);
     void markTreeInvalid() { m_rebuildTree = true; }
@@ -96,6 +96,7 @@ protected:
     // other
     gl::Buffer                          m_atomicCounterBuffer;
     core::Program                       m_colorboxes_prog;
+    unsigned int                        m_voxelColorLevel;
 
 private:
 
