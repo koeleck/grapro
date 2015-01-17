@@ -5,6 +5,7 @@
 #include "material_manager.h"
 #include "mesh_manager.h"
 #include "instance_manager.h"
+#include "light_manager.h"
 
 namespace core
 {
@@ -19,6 +20,7 @@ TextureManager* textures;
 MaterialManager* materials;
 InstanceManager* instances;
 MeshManager* meshes;
+LightManager* lights;
 } // namespace res
 
 /***************************************************************************/
@@ -31,6 +33,7 @@ void initializeManagers()
     res::materials = new MaterialManager();
     res::instances = new InstanceManager();
     res::meshes = new MeshManager();
+    res::lights = new LightManager();
 }
 
 /***************************************************************************/
@@ -43,6 +46,7 @@ void terminateManagers()
     delete res::materials;
     delete res::instances;
     delete res::meshes;
+    delete res::lights;
 }
 
 /***************************************************************************/
