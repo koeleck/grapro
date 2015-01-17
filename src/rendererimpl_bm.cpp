@@ -73,6 +73,10 @@ void RendererImplBM::initShaders()
 
     core::res::shaders->registerShader("octreeMipMapComp", "tree/mipmap.comp", GL_COMPUTE_SHADER);
     m_octreeMipMap_prog = core::res::shaders->registerProgram("octreeMipMap_prog", {"octreeMipMapComp"});
+
+    core::res::shaders->registerShader("ssq_ao_vert", "conetracing/ssq_ao.vert", GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("indirect_frag", "conetracing/indirect.frag", GL_FRAGMENT_SHADER);
+    m_indirect_prog = core::res::shaders->registerProgram("indirect_prog", {"ssq_ao_vert", "indirect_frag"});
 }
 
 /****************************************************************************/
@@ -390,6 +394,7 @@ void RendererImplBM::render(const unsigned int treeLevels, const unsigned int vo
     glDepthFunc(GL_LEQUAL);
 
     renderAmbientOcclusion();
+    //renderIndirectLighting();
     /*if (renderVoxColors) {
         if (voxelColorLevel != m_voxelColorLevel) {
             m_voxelColorLevel = voxelColorLevel;
@@ -410,57 +415,9 @@ void RendererImplBM::render(const unsigned int treeLevels, const unsigned int vo
 
 void RendererImplBM::initAmbientOcclusion()
 {
-    // shader
-    core::res::shaders->registerShader("vertexpulling_vert", "basic/vertexpulling.vert", GL_VERTEX_SHADER);
-    core::res::shaders->registerShader("gbuffer_frag", "conetracing/gbuffer.frag", GL_FRAGMENT_SHADER);
-    m_gbuffer_prog = core::res::shaders->registerProgram("gbuffer_prog", {"vertexpulling_vert", "gbuffer_frag"});
-
     core::res::shaders->registerShader("ssq_ao_vert", "conetracing/ssq_ao.vert", GL_VERTEX_SHADER);
     core::res::shaders->registerShader("ssq_ao_frag", "conetracing/ssq_ao.frag", GL_FRAGMENT_SHADER);
     m_ssq_ao_prog = core::res::shaders->registerProgram("ssq_ao_prog", {"ssq_ao_vert", "ssq_ao_frag"});
-
-    // textures
-    glBindTexture(GL_TEXTURE_2D, m_tex_position.get());
-    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, vars.screen_width, vars.screen_height);
-    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, vars.screen_width, vars.screen_height, 0, GL_RGBA, GL_FLOAT, 0);
-
-    glBindTexture(GL_TEXTURE_2D, m_tex_normal.get());
-    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, vars.screen_width, vars.screen_height);
-    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, vars.screen_width, vars.screen_height, 0, GL_RGBA, GL_FLOAT, 0);
-
-    glBindTexture(GL_TEXTURE_2D, m_tex_color.get());
-    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, vars.screen_width, vars.screen_height);
-    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, vars.screen_width, vars.screen_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-
-    glBindTexture(GL_TEXTURE_2D, m_tex_depth.get());
-    glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT32F, vars.screen_width, vars.screen_height);
-    //glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, vars.screen_width, vars.screen_height, 0, GL_RGBA, GL_FLOAT, 0);
-
-    // FBO
-    glBindFramebuffer(GL_FRAMEBUFFER, m_gbuffer_FBO);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, m_tex_depth, 0);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_tex_position, 0);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, m_tex_normal, 0);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, m_tex_color, 0);
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        LOG_ERROR("Empty framebuffer is not complete (WTF?!?)");
-    }
-    GLenum DrawBuffers[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
-    glDrawBuffers(3, DrawBuffers);
-
-    // screen space quad
-    glBindVertexArray(m_vao_ssq.get());
-    float ssq[] = { -1.f, -1.f, 0.f,
-                    1.f, -1.f, 0.f,
-                    1.f, 1.f, 0.f,
-                    1.f, 1.f, 0.f,
-                    -1.f, 1.f, 0.f,
-                    -1.f, -1.f, 0.f };
-
-    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_ssq.get());
-    glBufferData(GL_ARRAY_BUFFER, sizeof(ssq), ssq, GL_STATIC_DRAW);
-    glVertexAttribPointer(m_v_ssq, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(m_v_ssq);
 }
 
 /****************************************************************************/
@@ -473,22 +430,7 @@ void RendererImplBM::renderAmbientOcclusion() const
      *  positions.
      */
 
-    // bind gbuffer texture
-    glBindTexture(GL_TEXTURE_2D, m_tex_position.get());
-    glBindTexture(GL_TEXTURE_2D, m_tex_normal.get());
-    glBindTexture(GL_TEXTURE_2D, m_tex_color.get());
-    glBindTexture(GL_TEXTURE_2D, m_tex_depth.get());
-
-    // FBO
-    glBindFramebuffer(GL_FRAMEBUFFER, m_gbuffer_FBO);
-    glViewport(0, 0, vars.screen_width, vars.screen_height);
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    renderGeometry(m_gbuffer_prog);
-
-    // unbind fbo
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+    renderToGBuffer();
 
     /*
      *  Render screen space quad
