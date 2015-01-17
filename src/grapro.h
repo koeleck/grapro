@@ -35,6 +35,7 @@ private:
     bool                                m_render_voxelColors;
     bool                                m_debug_output;
     int                                 m_tree_levels;
+    int                                 m_voxelColor_level;
 
     std::unique_ptr<RendererInterface>  m_renderer;
 
