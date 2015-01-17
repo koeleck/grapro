@@ -104,9 +104,12 @@ void GraPro::update_gui(const double delta_t)
         // AO
         if (ImGui::CollapsingHeader("Ambient Occlusion", nullptr, true, true)) {
             ImGui::Checkbox("render AO", &m_render_ao);
-            ImGui::SliderInt("#cones", &m_ao_num_cones, 1, 4);
-            ImGui::SliderInt("max samples", &m_ao_max_samples, 1, 10);
-            ImGui::SliderInt("sample interval", &m_ao_sample_interval, 1, 100);
+            if(m_render_ao)
+            {
+                ImGui::SliderInt("#cones", &m_ao_num_cones, 1, 4);
+                ImGui::SliderInt("max samples", &m_ao_max_samples, 1, 10);
+                ImGui::SliderInt("sample interval", &m_ao_sample_interval, 1, 100);
+            }
             m_renderer->setAO(m_render_ao, m_ao_num_cones, m_ao_max_samples, m_ao_sample_interval);
         }
 
