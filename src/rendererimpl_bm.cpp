@@ -52,8 +52,6 @@ RendererImplBM::RendererImplBM(core::TimerArray& timer_array, unsigned int treeL
     recreateBuffer(m_octreeNodeBuffer, totalNodes * sizeof(OctreeNodeStruct));
     recreateBuffer(m_octreeNodeColorBuffer, totalNodes * sizeof(OctreeNodeColorStruct));
 
-    gl::printInfo();
-
 }
 
 /****************************************************************************/
@@ -384,6 +382,7 @@ void RendererImplBM::render(const unsigned int treeLevels, const unsigned int vo
         createVoxelList(debug_output);
         buildVoxelTree(debug_output);
         m_rebuildTree = false;
+        gl::printInfo();
     }
 
     glEnable(GL_DEPTH_TEST);
