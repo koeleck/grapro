@@ -182,13 +182,13 @@ void main()
                 const float diameter = 2 * ConeRadiusAtDistance(idx, sample_distance);
 
                 // find the corresponding mipmap level.
-                // start at -1: the final level that is found will be 1 level too much,
+                // start at 0: the final level that is found will be 1 level too much,
                 // because we need the first voxel where the diameter fits and not the first
                 // voxel where the diameter does not fit anymore
-                uint level = -1;
-                float voxel_size = u_voxelDim;
-                while(voxel_size > diameter) {
-                    voxel_size /= 2;
+                uint level = 0;
+                vec3 voxel_size = (u_bboxMax - u_bboxMin) / float(u_voxelDim);
+                while(voxel_size.x > diameter) {
+                    voxel_size /= 2.f;
                     ++level;
                 }
 
