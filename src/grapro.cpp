@@ -78,16 +78,12 @@ void GraPro::update_gui(const double delta_t)
 
         // octree
         if (ImGui::CollapsingHeader("Octree", nullptr, true, true)) {
-            if (ImGui::Button("rebuild octree")) {
-                m_renderer->markTreeInvalid();
-            }
             ImGui::Checkbox("show debug output", &m_debug_output);
-            ImGui::SliderInt("tree levels", &m_tree_levels, 1, 8);
+            ImGui::SliderInt("tree levels", &m_tree_levels, 1, 9);
             if (m_tree_levels < m_voxelColor_level) {
                 m_voxelColor_level = m_tree_levels;
             }
             ImGui::Checkbox("show voxel bounding boxes", &m_render_octree);
-
         }
 
         // other

@@ -6,18 +6,18 @@
 
 layout (local_size_variable) in;
 
-uniform uint u_nodeOffset; // 1
-uniform uint u_nodesThisLevel; // 8
+uniform uint u_nodeOffset;
+uniform uint u_nodesThisLevel;
 
 void main()
 {
     // retrieve current thread id and return if out of bounds
-    uint threadId = gl_GlobalInvocationID.x; // [0,64]
+    const uint threadId = gl_GlobalInvocationID.x;
     if (threadId >= u_nodesThisLevel)
-        return; // [0,7]
+        return;
 
-    uint parent = u_nodeOffset + threadId; // [1;8]
-    uint child = octree[parent].id & 0x7FFFFFFF; // [9;17;...;65]
+    uint parent = u_nodeOffset + threadId;
+    uint child = octree[parent].id & 0x7FFFFFFF;
     vec4 colorSum = vec4(0.0);
 
     // check each child

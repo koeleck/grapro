@@ -5,6 +5,16 @@
 
 /******************************************************************************/
 
+struct voxelStruct {
+    uvec4 position;
+    vec4 color;
+    vec4 normal;
+};
+
+layout (std430, binding = VOXEL_BINDING) restrict readonly buffer voxelBlock {
+    voxelStruct voxel[];
+};
+
 struct octreeBuffer
 {
     uint    id;

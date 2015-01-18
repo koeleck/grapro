@@ -99,8 +99,8 @@ void RendererImplBM::resetBuffer(const gl::Buffer & buf, const int binding) cons
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, buf);
 
     // fill with zeroes
-    const auto zero = GLuint{};
-    glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+    //const auto zero = GLuint{};
+    //glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
 
     // bind to binding point
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, buf);
@@ -177,16 +177,13 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
 
     m_tree_timer->start();
 
-    // calculate max threads for flag shader to get all the voxel fragments
-    auto calculateDataHeight = [&](unsigned int num, unsigned width) {
+    // calculate max threads for shaders
+    auto calculateDataWidth = [&](unsigned int num, unsigned width) {
         return (num + width - 1) / width;
     };
-    const auto dataWidth = 1024u;
-    const auto groupWidth = 128u;
-    const auto allocwidth = 64u;
-
-    auto dataHeight = calculateDataHeight(m_numVoxelFrag, dataWidth);
-    auto groupHeight = calculateDataHeight(dataHeight, 8u);
+    const auto localWidth = 64u;
+    const auto fragWidth = calculateDataWidth(m_numVoxelFrag, localWidth);
+    auto groupWidth = 0u;
 
     // octree buffer
     resetBuffer(m_octreeNodeBuffer, core::bindings::OCTREE);
@@ -222,6 +219,7 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
     auto allocOffset = 1u; // offset to first free space for new nodes
     auto maxNodesPerLevel = std::vector<unsigned int>{1}; // number of nodes in each tree level; root level = 1
 
+
     for (auto i = 0u; i < m_treeLevels; ++i) {
 
         if (debug_output) {
@@ -240,10 +238,11 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
 
         // dispatch
         if (debug_output) {
-            LOG_INFO("Dispatching NodeFlag with ", groupWidth, "*", groupHeight, "*1 groups with 8*8*1 threads each");
-            LOG_INFO("--> ", groupWidth * groupHeight * 64, " threads");
+            LOG_INFO("Dispatching NodeFlag with ", fragWidth, "*1*1 groups with 64*1*1 threads each");
+            LOG_INFO("--> ", fragWidth * localWidth, " threads");
         }
-        glDispatchCompute(groupWidth, groupHeight, 1);
+        glDispatchComputeGroupSizeARB(fragWidth, 1, 1,
+                                      localWidth, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         // break to avoid allocating with ptrs to more children
@@ -266,12 +265,13 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
         glProgramUniform1ui(m_octreeNodeAlloc_prog, loc_u_allocOffset, allocOffset);
 
         // dispatch
-        const auto allocGroupDim = (maxNodesPerLevel[i] + allocwidth - 1) / allocwidth;
+        groupWidth = calculateDataWidth(maxNodesPerLevel[i], localWidth);
         if (debug_output) {
-            LOG_INFO("Dispatching NodeAlloc with ", allocGroupDim, "*1*1 groups with 64*1*1 threads each");
-            LOG_INFO("--> ", allocGroupDim * 64, " threads");
+            LOG_INFO("Dispatching NodeAlloc with ", groupWidth, "*1*1 groups with 64*1*1 threads each");
+            LOG_INFO("--> ", groupWidth * localWidth, " threads");
         }
-        glDispatchCompute(allocGroupDim, 1, 1);
+        glDispatchComputeGroupSizeARB(groupWidth, 1, 1,
+                                      localWidth, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_ATOMIC_COUNTER_BARRIER_BIT);
 
         /*
@@ -315,10 +315,11 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
 
     // dispatch
     if (debug_output) {
-        LOG_INFO("Dispatching LeafStore with ", groupWidth, "*", groupHeight, "*1 groups with 8*8*1 threads each");
-        LOG_INFO("--> ", groupWidth * groupHeight * 64, " threads");
+        LOG_INFO("Dispatching LeafStore with ", fragWidth, "*1*1 groups with 64*1*1 threads each");
+        LOG_INFO("--> ", fragWidth * localWidth, " threads");
     }
-    glDispatchCompute(groupWidth, groupHeight, 1);
+    glDispatchComputeGroupSizeARB(fragWidth, 1, 1,
+                                  localWidth, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     /*
@@ -346,13 +347,13 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
         glUniform1ui(loc_nodesThisLevel_MipMap, maxNodesPerLevel[i]);
 
         // dispatch
-        auto groupX = calculateDataHeight(maxNodesPerLevel[i], 64);
+        groupWidth = calculateDataWidth(maxNodesPerLevel[i], localWidth);
         if (debug_output) {
-            LOG_INFO("Dispatching MipMap with ", groupX, "*1*1 groups with 64*1*1 threads each");
-            LOG_INFO("--> ", groupX * 64, " threads");
+            LOG_INFO("Dispatching MipMap with ", groupWidth, "*1*1 groups with 64*1*1 threads each");
+            LOG_INFO("--> ", groupWidth * localWidth, " threads");
         }
-        glDispatchComputeGroupSizeARB(groupX, 1, 1,
-                                      64, 1, 1);
+        glDispatchComputeGroupSizeARB(groupWidth, 1, 1,
+                                      localWidth, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     }
@@ -380,6 +381,16 @@ void RendererImplBM::render(const unsigned int treeLevels, const unsigned int vo
         recreateBuffer(m_octreeNodeBuffer, totalNodes * sizeof(OctreeNodeStruct));
         recreateBuffer(m_octreeNodeColorBuffer, totalNodes * sizeof(OctreeNodeColorStruct));
         resizeFBO();
+    } else if (m_rebuildTree) {
+
+        // zero out buffers!
+        const auto zero = GLuint{};
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
+        glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeColorBuffer);
+        glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
     }
 
     if (m_rebuildTree) {
