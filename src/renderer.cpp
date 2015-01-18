@@ -79,6 +79,13 @@ Renderer::Renderer(core::TimerArray& timer_array)
     m_vertexpulling_prog = core::res::shaders->registerProgram("vertexpulling_prog",
             {"vertexpulling_vert", "vertexpulling_frag"});
 
+    core::res::shaders->registerShader("depth_only_vert", "basic/depth_only.vert",
+            GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("depth_only_frag", "basic/depth_only.frag",
+            GL_FRAGMENT_SHADER);
+    m_depth_only_prog = core::res::shaders->registerProgram("depth_only_prog",
+            {"depth_only_vert", "depth_only_frag"});
+
     // voxel creation
     core::res::shaders->registerShader("voxelGeom", "tree/voxelize.geom", GL_GEOMETRY_SHADER);
     core::res::shaders->registerShader("voxelFrag", "tree/voxelize.frag", GL_FRAGMENT_SHADER);
@@ -353,7 +360,7 @@ void Renderer::createVoxelList()
     glDisable(GL_CULL_FACE);
     glDepthFunc(GL_ALWAYS);
 
-    renderGeometry(voxel_prog);
+    renderGeometry(voxel_prog, false);
 
     // TODO move to shader
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
@@ -584,7 +591,7 @@ void Renderer::render(const bool renderBBoxes, const bool renderOctree)
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glDepthFunc(GL_LEQUAL);
-    renderGeometry(m_vertexpulling_prog);
+    renderGeometry(m_vertexpulling_prog, false);
 
     if (renderBBoxes)
         renderBoundingBoxes();
@@ -594,7 +601,7 @@ void Renderer::render(const bool renderBBoxes, const bool renderOctree)
 
 /****************************************************************************/
 
-void Renderer::renderGeometry(const GLuint prog)
+void Renderer::renderGeometry(const GLuint prog, const bool depthOnly)
 {
     core::res::materials->bind();
     core::res::instances->bind();
@@ -614,46 +621,6 @@ void Renderer::renderGeometry(const GLuint prog)
             continue;
 
         // bind textures
-        if (cmd.textures[core::bindings::DIFFUSE_TEX_UNIT] != 0) {
-            unsigned int unit = core::bindings::DIFFUSE_TEX_UNIT;
-            GLuint tex = cmd.textures[unit];
-            if (textures[unit] != tex) {
-                textures[unit] = tex;
-                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
-            }
-        }
-        if (cmd.textures[core::bindings::SPECULAR_TEX_UNIT] != 0) {
-            unsigned int unit = core::bindings::SPECULAR_TEX_UNIT;
-            GLuint tex = cmd.textures[unit];
-            if (textures[unit] != tex) {
-                textures[unit] = tex;
-                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
-            }
-        }
-        if (cmd.textures[core::bindings::GLOSSY_TEX_UNIT] != 0) {
-            unsigned int unit = core::bindings::GLOSSY_TEX_UNIT;
-            GLuint tex = cmd.textures[unit];
-            if (textures[unit] != tex) {
-                textures[unit] = tex;
-                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
-            }
-        }
-        if (cmd.textures[core::bindings::NORMAL_TEX_UNIT] != 0) {
-            unsigned int unit = core::bindings::NORMAL_TEX_UNIT;
-            GLuint tex = cmd.textures[unit];
-            if (textures[unit] != tex) {
-                textures[unit] = tex;
-                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
-            }
-        }
-        if (cmd.textures[core::bindings::EMISSIVE_TEX_UNIT] != 0) {
-            unsigned int unit = core::bindings::EMISSIVE_TEX_UNIT;
-            GLuint tex = cmd.textures[unit];
-            if (textures[unit] != tex) {
-                textures[unit] = tex;
-                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
-            }
-        }
         if (cmd.textures[core::bindings::ALPHA_TEX_UNIT] != 0) {
             unsigned int unit = core::bindings::ALPHA_TEX_UNIT;
             GLuint tex = cmd.textures[unit];
@@ -662,12 +629,54 @@ void Renderer::renderGeometry(const GLuint prog)
                 glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
-        if (cmd.textures[core::bindings::AMBIENT_TEX_UNIT] != 0) {
-            unsigned int unit = core::bindings::AMBIENT_TEX_UNIT;
-            GLuint tex = cmd.textures[unit];
-            if (textures[unit] != tex) {
-                textures[unit] = tex;
-                glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
+        if (!depthOnly) {
+            if (cmd.textures[core::bindings::DIFFUSE_TEX_UNIT] != 0) {
+                unsigned int unit = core::bindings::DIFFUSE_TEX_UNIT;
+                GLuint tex = cmd.textures[unit];
+                if (textures[unit] != tex) {
+                    textures[unit] = tex;
+                    glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
+                }
+            }
+            if (cmd.textures[core::bindings::SPECULAR_TEX_UNIT] != 0) {
+                unsigned int unit = core::bindings::SPECULAR_TEX_UNIT;
+                GLuint tex = cmd.textures[unit];
+                if (textures[unit] != tex) {
+                    textures[unit] = tex;
+                    glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
+                }
+            }
+            if (cmd.textures[core::bindings::GLOSSY_TEX_UNIT] != 0) {
+                unsigned int unit = core::bindings::GLOSSY_TEX_UNIT;
+                GLuint tex = cmd.textures[unit];
+                if (textures[unit] != tex) {
+                    textures[unit] = tex;
+                    glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
+                }
+            }
+            if (cmd.textures[core::bindings::NORMAL_TEX_UNIT] != 0) {
+                unsigned int unit = core::bindings::NORMAL_TEX_UNIT;
+                GLuint tex = cmd.textures[unit];
+                if (textures[unit] != tex) {
+                    textures[unit] = tex;
+                    glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
+                }
+            }
+            if (cmd.textures[core::bindings::EMISSIVE_TEX_UNIT] != 0) {
+                unsigned int unit = core::bindings::EMISSIVE_TEX_UNIT;
+                GLuint tex = cmd.textures[unit];
+                if (textures[unit] != tex) {
+                    textures[unit] = tex;
+                    glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
+                }
+            }
+            if (cmd.textures[core::bindings::AMBIENT_TEX_UNIT] != 0) {
+                unsigned int unit = core::bindings::AMBIENT_TEX_UNIT;
+                GLuint tex = cmd.textures[unit];
+                if (textures[unit] != tex) {
+                    textures[unit] = tex;
+                    glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
+                }
             }
         }
 

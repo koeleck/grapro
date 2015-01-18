@@ -29,7 +29,7 @@ private:
 
     void initBBoxStuff();
 
-    void renderGeometry(GLuint prog);
+    void renderGeometry(GLuint prog, bool depthOnly);
     void debugRenderTree();
     void renderBoundingBoxes();
 
@@ -42,7 +42,7 @@ private:
     std::vector<DrawCmd>                m_drawlist;
     gl::Buffer                          m_indirect_buffer;
 
-    core::Program                       m_earlyz_prog;
+    core::Program                       m_depth_only_prog;
 
     gl::VertexArray                     m_bbox_vao;
     gl::Buffer                          m_bbox_buffer;
