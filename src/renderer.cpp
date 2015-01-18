@@ -26,34 +26,39 @@ namespace
 constexpr int FLAG_PROG_LOCAL_SIZE = 64;
 constexpr int ALLOC_PROG_LOCAL_SIZE = 256;
 
+typedef struct
+{
+    GLuint  count;
+    GLuint  instanceCount;
+    GLuint  firstIndex;
+    GLuint  baseVertex;
+    GLuint  baseInstance;
+} DrawElementsIndirectCommand;
+
 } // anonymous namespace
 
 /****************************************************************************/
 
 struct Renderer::DrawCmd
 {
-    DrawCmd(const core::Instance* instance_, core::Program prog_,
-            GLuint vao_, GLenum mode_, GLsizei count_, GLenum type_,
-            GLvoid* indices_, GLint basevertex_)
-      : instance{instance_},
-        prog{prog_},
-        vao{vao_},
+    DrawCmd(const GLenum mode_, const GLenum type_, const GLvoid* const indirect_,
+            const GLsizei drawcount_, const GLsizei stride_)
+      : textures{0,},
         mode{mode_},
-        count{count_},
         type{type_},
-        indices{indices_},
-        basevertex{basevertex_}
+        indirect{indirect_},
+        drawcount{drawcount_},
+        stride{stride_}
     {
     }
 
-    const core::Instance*   instance;
-    core::Program           prog;
-    GLuint                  vao;
+    GLuint                  textures[core::bindings::NUM_TEXT_UNITS];
     GLenum                  mode;
-    GLsizei                 count;
     GLenum                  type;
-    GLvoid*                 indices;
-    GLint                   basevertex;
+    const GLvoid*           indirect;
+    GLsizei                 drawcount;
+    GLsizei                 stride;
+    core::AABB              aabb;
 };
 
 /****************************************************************************/
@@ -169,24 +174,115 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
 {
     m_geometry = std::move(geometry);
 
+    // sort geometry by material first and type second
     std::sort(m_geometry.begin(), m_geometry.end(),
             [] (const core::Instance* g0, const core::Instance* g1) -> bool
             {
-                return g0->getMesh()->components() < g1->getMesh()->components();
+                const auto* mat0 = g0->getMaterial();
+                const auto* mat1 = g1->getMaterial();
+                if (mat0->isCompatible(*mat1) == false)
+                    return g0 < g1;
+                const auto* mesh0 = g0->getMesh();
+                const auto* mesh1 = g1->getMesh();
+                return mesh0->type() < mesh1->type();
             });
 
     m_scene_bbox = core::AABB();
     m_drawlist.clear();
     m_drawlist.reserve(m_geometry.size());
+
+    std::vector<DrawElementsIndirectCommand> indirectCmds;
+    indirectCmds.reserve(m_geometry.size());
+    //std::vector<GLuint> instanceIDs;
+    //instanceIDs.reserve(m_geometry.size() + 1);
+    //// first entry in instanceIDs is the number of instances
+    //instanceIDs.push_back(static_cast<GLuint>(m_geometry.size()));
+
+    std::size_t indirect = 0;
+    GLenum current_type = 0;
+    const core::Material* current_mat = nullptr;
     for (const auto* g : m_geometry) {
-        const auto* mesh = g->getMesh();
-        const auto prog = m_programs[mesh->components()()];
-        GLuint vao = core::res::meshes->getVAO(mesh);
-        m_drawlist.emplace_back(g, prog, vao, mesh->mode(),
-                mesh->count(), mesh->type(),
-                mesh->indices(), mesh->basevertex());
         m_scene_bbox.expandBy(g->getBoundingBox());
+
+        const auto* mesh = g->getMesh();
+        const auto* mat = g->getMaterial();
+
+        //instanceIDs.emplace_back(g->getIndex());
+        indirectCmds.emplace_back();
+        auto& indirectCmd = indirectCmds.back();
+        indirectCmd.count = static_cast<GLuint>(mesh->count());
+        indirectCmd.instanceCount = 1;
+        indirectCmd.firstIndex = mesh->firstIndex();
+        indirectCmd.baseVertex = 0;
+        indirectCmd.baseInstance = g->getIndex();
+
+
+        if (mesh->type() != current_type || current_mat == nullptr ||
+                !current_mat->isCompatible(*mat))
+        {
+            current_type = mesh->type();
+            current_mat = mat;
+            m_drawlist.emplace_back(GL_TRIANGLES, mesh->type(),
+                    reinterpret_cast<const GLvoid*>(indirect), 0, 0);
+        }
+        {
+            // update current drawcall (textures & bounding box)
+            auto& cmd = m_drawlist.back();
+            cmd.drawcount++;
+            cmd.aabb.expandBy(g->getBoundingBox());
+            if (mat->hasDiffuseTexture()) {
+                const auto unit = core::bindings::DIFFUSE_TEX_UNIT;
+                const GLuint tex = *mat->getDiffuseTexture();
+                assert(cmd.textures[unit] == 0 || cmd.textures[unit] == tex);
+                cmd.textures[unit] = tex;
+            }
+            if (mat->hasSpecularTexture()) {
+                const auto unit = core::bindings::SPECULAR_TEX_UNIT;
+                const GLuint tex = *mat->getSpecularTexture();
+                assert(cmd.textures[unit] == 0 || cmd.textures[unit] == tex);
+                cmd.textures[unit] = tex;
+            }
+            if (mat->hasEmissiveTexture()) {
+                const auto unit = core::bindings::EMISSIVE_TEX_UNIT;
+                const GLuint tex = *mat->getEmissiveTexture();
+                assert(cmd.textures[unit] == 0 || cmd.textures[unit] == tex);
+                cmd.textures[unit] = tex;
+            }
+            if (mat->hasGlossyTexture()) {
+                const auto unit = core::bindings::GLOSSY_TEX_UNIT;
+                const GLuint tex = *mat->getGlossyTexture();
+                assert(cmd.textures[unit] == 0 || cmd.textures[unit] == tex);
+                cmd.textures[unit] = tex;
+            }
+            if (mat->hasAlphaTexture()) {
+                const auto unit = core::bindings::ALPHA_TEX_UNIT;
+                const GLuint tex = *mat->getAlphaTexture();
+                assert(cmd.textures[unit] == 0 || cmd.textures[unit] == tex);
+                cmd.textures[unit] = tex;
+            }
+            if (mat->hasNormalTexture()) {
+                const auto unit = core::bindings::NORMAL_TEX_UNIT;
+                const GLuint tex = *mat->getNormalTexture();
+                assert(cmd.textures[unit] == 0 || cmd.textures[unit] == tex);
+                cmd.textures[unit] = tex;
+            }
+            if (mat->hasAmbientTexture()) {
+                const auto unit = core::bindings::AMBIENT_TEX_UNIT;
+                const GLuint tex = *mat->getAmbientTexture();
+                assert(cmd.textures[unit] == 0 || cmd.textures[unit] == tex);
+                cmd.textures[unit] = tex;
+            }
+        }
+        indirect += sizeof(DrawElementsIndirectCommand);
     }
+
+    // upload draw calls
+    m_indirect_buffer = gl::Buffer();
+    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_indirect_buffer);
+    glBufferStorage(GL_DRAW_INDIRECT_BUFFER,
+            static_cast<GLsizeiptr>(m_geometry.size() * sizeof(DrawElementsIndirectCommand)),
+            indirectCmds.data(), 0);
+    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 
     // make every side of the bounding box equally long
     const auto maxExtend = m_scene_bbox.maxExtend();
@@ -511,72 +607,72 @@ void Renderer::renderGeometry(const GLuint prog)
 
     glUseProgram(prog);
     glBindVertexArray(m_vertexpulling_vao);
+    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_indirect_buffer);
     for (const auto& cmd : m_drawlist) {
         // Frustum Culling
-        if (!cam->inFrustum(cmd.instance->getBoundingBox()))
+        if (!cam->inFrustum(cmd.aabb))
             continue;
 
         // bind textures
-        const auto* mat = cmd.instance->getMaterial();
-        if (mat->hasDiffuseTexture()) {
+        if (cmd.textures[core::bindings::DIFFUSE_TEX_UNIT] != 0) {
             unsigned int unit = core::bindings::DIFFUSE_TEX_UNIT;
-            GLuint tex = *mat->getDiffuseTexture();
+            GLuint tex = cmd.textures[unit];
             if (textures[unit] != tex) {
                 textures[unit] = tex;
                 glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
-        if (mat->hasSpecularTexture()) {
+        if (cmd.textures[core::bindings::SPECULAR_TEX_UNIT] != 0) {
             unsigned int unit = core::bindings::SPECULAR_TEX_UNIT;
-            GLuint tex = *mat->getSpecularTexture();
+            GLuint tex = cmd.textures[unit];
             if (textures[unit] != tex) {
                 textures[unit] = tex;
                 glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
-        if (mat->hasGlossyTexture()) {
+        if (cmd.textures[core::bindings::GLOSSY_TEX_UNIT] != 0) {
             unsigned int unit = core::bindings::GLOSSY_TEX_UNIT;
-            GLuint tex = *mat->getGlossyTexture();
+            GLuint tex = cmd.textures[unit];
             if (textures[unit] != tex) {
                 textures[unit] = tex;
                 glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
-        if (mat->hasNormalTexture()) {
+        if (cmd.textures[core::bindings::NORMAL_TEX_UNIT] != 0) {
             unsigned int unit = core::bindings::NORMAL_TEX_UNIT;
-            GLuint tex = *mat->getNormalTexture();
+            GLuint tex = cmd.textures[unit];
             if (textures[unit] != tex) {
                 textures[unit] = tex;
                 glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
-        if (mat->hasEmissiveTexture()) {
+        if (cmd.textures[core::bindings::EMISSIVE_TEX_UNIT] != 0) {
             unsigned int unit = core::bindings::EMISSIVE_TEX_UNIT;
-            GLuint tex = *mat->getEmissiveTexture();
+            GLuint tex = cmd.textures[unit];
             if (textures[unit] != tex) {
                 textures[unit] = tex;
                 glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
-        if (mat->hasAlphaTexture()) {
+        if (cmd.textures[core::bindings::ALPHA_TEX_UNIT] != 0) {
             unsigned int unit = core::bindings::ALPHA_TEX_UNIT;
-            GLuint tex = *mat->getAlphaTexture();
+            GLuint tex = cmd.textures[unit];
             if (textures[unit] != tex) {
                 textures[unit] = tex;
                 glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
-        if (mat->hasAmbientTexture()) {
+        if (cmd.textures[core::bindings::AMBIENT_TEX_UNIT] != 0) {
             unsigned int unit = core::bindings::AMBIENT_TEX_UNIT;
-            GLuint tex = *mat->getAmbientTexture();
+            GLuint tex = cmd.textures[unit];
             if (textures[unit] != tex) {
                 textures[unit] = tex;
                 glBindMultiTextureEXT(GL_TEXTURE0 + unit, GL_TEXTURE_2D, tex);
             }
         }
 
-        glDrawElementsInstancedBaseVertexBaseInstance(cmd.mode, cmd.count, cmd.type,
-                cmd.indices, 1, 0, cmd.instance->getIndex());
+        glMultiDrawElementsIndirect(cmd.mode, cmd.type,
+                cmd.indirect, cmd.drawcount, cmd.stride);
     }
 }
 

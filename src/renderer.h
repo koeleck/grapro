@@ -40,6 +40,7 @@ private:
     std::vector<const core::Instance*>  m_geometry;
     ProgramMap                          m_programs;
     std::vector<DrawCmd>                m_drawlist;
+    gl::Buffer                          m_indirect_buffer;
 
     core::Program                       m_earlyz_prog;
 
