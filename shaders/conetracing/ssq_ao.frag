@@ -15,6 +15,7 @@ uniform uint u_screenheight;
 uniform uint u_treeLevels;
 uniform uint u_coneGridSize;
 uniform uint u_numSteps;
+uniform uint u_weight;
 
 uniform sampler2D u_pos;
 uniform sampler2D u_normal;
@@ -90,7 +91,7 @@ void main()
     const vec3 color  = texture(u_color, uv).xyz;
 
     const float step = (1.f / float(u_coneGridSize));
-    uint occluded_cones = 0;
+    float occ = 0.f;
 
     for (uint y = 0; y < u_coneGridSize; ++y) {
 
@@ -107,6 +108,9 @@ void main()
             cone.dir   = normalize(toWorld(onb, v));
             cone.angle = 180 / float(u_coneGridSize);
 
+            // weight 
+            float d = abs(dot(normalize(normal), cone.dir));
+
             // trace the cone for each sample
             for (uint step = 1; step <= u_numSteps; ++step) {
 
@@ -117,7 +121,6 @@ void main()
                 // calculate mipmap level
                 int level = int(u_treeLevels);
                 float voxel_size = voxelSize;
-                vec3 voxel_size_xyz = (u_bboxMax - u_bboxMin) / float(u_voxelDim);
                 while (voxel_size < diameter && level > 0) {
                     voxel_size *= 2;
                     --level;
@@ -127,7 +130,7 @@ void main()
                 const vec3 wpos = pos + totalDist * cone.dir;
                 if (isOccluded(level, wpos)) {
                     // we are occluded here
-                    ++occluded_cones;
+                    occ += 1.f * pow(d, float(u_weight));
                     break;
                 }
             }
@@ -135,8 +138,7 @@ void main()
     }
 
     // AO
-    const float occlusion = float(occluded_cones) / float(u_coneGridSize * u_coneGridSize);
-    //out_color = vec4(color * (1.f - occlusion), 1);
+    const float occlusion = clamp(occ / float(u_coneGridSize * u_coneGridSize), 0.f, 1.f);
     out_color = vec4(1.f - occlusion);
 
 }

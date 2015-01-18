@@ -36,7 +36,7 @@ private:
     bool                                m_render_ao;
     int                                 m_ao_num_cones = 10;
     int                                 m_ao_max_samples = 1;
-    int                                 m_ao_sample_interval = 8;
+    int                                 m_ao_weight = 1;
     bool                                m_render_indirect;
     bool                                m_debug_output;
     int                                 m_tree_levels;

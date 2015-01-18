@@ -485,6 +485,9 @@ void RendererImplBM::renderAmbientOcclusion() const
     glUniform1ui(loc, m_ao_num_cones);
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_numSteps");
     glUniform1ui(loc, m_ao_max_samples);
+    loc = glGetUniformLocation(m_ssq_ao_prog, "u_weight");
+    glUniform1ui(loc, m_ao_weight);
+
 
     glBindVertexArray(m_vao_ssq.get());
     glDrawArrays(GL_TRIANGLES, 0, 6);
