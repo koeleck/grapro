@@ -61,9 +61,17 @@ LightManager::LightManager()
     glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, 0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 
+
+    // glBindBufferRange requires offset to be aligned, so compute this offset here:
+    GLint alignment;
+    glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &alignment);
+    // round up
+    const auto size_2d = vars.max_num_2d_shadowmaps * static_cast<int>(sizeof(GLint));
+    m_buffer_offset = alignment * ((size_2d + alignment - 1) / alignment);
+
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_light_id_buffer);
     glBufferStorage(GL_SHADER_STORAGE_BUFFER,
-            (vars.max_num_2d_shadowmaps + vars.max_num_cube_shadowmaps) * static_cast<int>(sizeof(GLint)),
+            m_buffer_offset + (vars.max_num_cube_shadowmaps * static_cast<int>(sizeof(GLint))),
             nullptr, GL_DYNAMIC_STORAGE_BIT);
     const GLint negone = -1;
     glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32I, GL_RED_INTEGER, GL_INT, &negone);
@@ -93,9 +101,6 @@ SpotLight* LightManager::createSpotlight(const bool isShadowcasting)
             glNamedBufferSubDataEXT(m_light_id_buffer,
                     m_num_shadowmaps * static_cast<int>(sizeof(GLint)), sizeof(GLint),
                     &index);
-            LOG_INFO("glNamedBufferSubDataEXT(m_light_id_buffer, ",
-                    m_num_shadowmaps * static_cast<int>(sizeof(GLint)), ", ", sizeof(GLint),
-                    ", ", index, ")");
             m_num_shadowmaps++;
         }
     }
@@ -124,9 +129,6 @@ DirectionalLight* LightManager::createDirectionalLight(const bool isShadowcastin
             glNamedBufferSubDataEXT(m_light_id_buffer,
                     m_num_shadowmaps * static_cast<int>(sizeof(GLint)), sizeof(GLint),
                     &index);
-            LOG_INFO("glNamedBufferSubDataEXT(m_light_id_buffer, ",
-                    m_num_shadowmaps * static_cast<int>(sizeof(GLint)), ", ", sizeof(GLint),
-                    ", ", index, ")");
             m_num_shadowmaps++;
         }
     }
@@ -151,14 +153,11 @@ PointLight* LightManager::createPointLight(const bool isShadowcasting)
             LOG_ERROR("Maximum number of cube shadowmaps reached! "
                     "Created light will not cast shadows.");
         } else {
-            depthTex = 6 * m_num_shadowcubemaps;
+            depthTex = m_num_shadowcubemaps;
             glNamedBufferSubDataEXT(m_light_id_buffer,
-                    (vars.max_num_2d_shadowmaps + m_num_shadowcubemaps) * static_cast<int>(sizeof(GLint)),
+                    m_buffer_offset + (m_num_shadowcubemaps * static_cast<int>(sizeof(GLint))),
                     sizeof(GLint),
                     &index);
-            LOG_INFO("glNamedBufferSubDataEXT(m_light_id_buffer, ",
-                    (vars.max_num_2d_shadowmaps + m_num_shadowcubemaps)* static_cast<int>(sizeof(GLint)), ", ", sizeof(GLint),
-                    ", ", index, ")");
             m_num_shadowcubemaps++;
         }
     }
@@ -201,8 +200,7 @@ void LightManager::setupForShadowCubeMapRendering()
     glBindFramebuffer(GL_FRAMEBUFFER, m_cube_fbo);
     glViewport(0, 0, vars.shadowcubemap_res, vars.shadowcubemap_res);
     glBindBufferRange(GL_SHADER_STORAGE_BUFFER, bindings::LIGHT_IDS,
-            m_light_id_buffer,
-            vars.max_num_2d_shadowmaps * static_cast<int>(sizeof(GLint)),
+            m_light_id_buffer, m_buffer_offset,
             vars.max_num_cube_shadowmaps * static_cast<int>(sizeof(GLint)));
 }
 

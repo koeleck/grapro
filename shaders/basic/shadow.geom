@@ -27,11 +27,6 @@ layout(std430, binding = LIGHT_ID_BINDING) restrict readonly buffer LightIDBlock
 void main()
 {
     const int ID = lightID[gl_InvocationID];
-    //int ID = -1;
-    //if (gl_InvocationID == 0)
-    //    ID = 0;
-    //else if (gl_InvocationID == 1)
-    //    ID = 9;
     if (ID == -1)
         return;
 

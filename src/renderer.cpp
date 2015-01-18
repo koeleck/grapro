@@ -85,10 +85,14 @@ Renderer::Renderer(core::TimerArray& timer_array)
             GL_VERTEX_SHADER);
     core::res::shaders->registerShader("shadow_geom", "basic/shadow.geom",
             GL_GEOMETRY_SHADER);
+    core::res::shaders->registerShader("shadow_cube_geom", "basic/shadow_cube.geom",
+            GL_GEOMETRY_SHADER);
     core::res::shaders->registerShader("depth_only_frag", "basic/depth_only.frag",
             GL_FRAGMENT_SHADER);
     m_2d_shadow_prog = core::res::shaders->registerProgram("shadow2d_prog",
             {"shadow_vert", "shadow_geom", "depth_only_frag"});
+    m_cube_shadow_prog = core::res::shaders->registerProgram("shadow_cube_prog",
+            {"shadow_vert", "shadow_cube_geom", "depth_only_frag"});
 
     // voxel creation
     core::res::shaders->registerShader("voxelGeom", "tree/voxelize.geom", GL_GEOMETRY_SHADER);
@@ -590,13 +594,18 @@ void Renderer::render(const bool renderBBoxes, const bool renderOctree)
     if (m_geometry.empty())
         return;
 
+    core::res::materials->bind();
+    core::res::instances->bind();
+    core::res::meshes->bind();
+    core::res::lights->bind();
+
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     renderShadowmaps();
 
     glUseProgram(m_debug_tex_prog);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, core::res::lights->getShadowMapTexture());
+    glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, core::res::lights->getShadowCubeMapTexture());
     glDrawArrays(GL_TRIANGLES, 0, 3);
     return;
 
@@ -623,10 +632,6 @@ void Renderer::render(const bool renderBBoxes, const bool renderOctree)
 void Renderer::renderGeometry(const GLuint prog, const bool depthOnly,
         const core::Camera* cam)
 {
-    core::res::materials->bind();
-    core::res::instances->bind();
-    core::res::meshes->bind();
-    core::res::lights->bind();
 
     GLuint textures[core::bindings::NUM_TEXT_UNITS] = {0,};
 
@@ -710,8 +715,6 @@ void Renderer::renderBoundingBoxes()
     if (m_geometry.empty())
         return;
 
-    core::res::instances->bind();
-
     GLuint prog = m_bbox_prog;
     glUseProgram(prog);
     glBindVertexArray(m_bbox_vao);
@@ -789,14 +792,17 @@ void Renderer::markTreeInvalid()
 
 void Renderer::renderShadowmaps()
 {
-    core::res::instances->bind();
-    core::res::meshes->bind();
-    core::res::lights->bind();
+    glEnable(GL_DEPTH_TEST);
 
     GLuint prog = m_2d_shadow_prog;
     core::res::lights->setupForShadowMapRendering();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    renderGeometry(prog, false, nullptr);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    renderGeometry(prog, true, nullptr);
+
+    prog = m_cube_shadow_prog;
+    core::res::lights->setupForShadowCubeMapRendering();
+    glClear(GL_DEPTH_BUFFER_BIT);
+    renderGeometry(prog, true, nullptr);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, vars.screen_width, vars.screen_height);

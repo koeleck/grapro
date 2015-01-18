@@ -45,7 +45,7 @@ private:
     LightPool       m_light_buffer;
     int             m_num_shadowmaps;
     int             m_num_shadowcubemaps;
-
+    GLintptr        m_buffer_offset;
 };
 
 } // namespace core
