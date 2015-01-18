@@ -59,6 +59,8 @@ public:
 
     GLuint getIndex() const;
 
+    bool isCompatible(const Material& other) const;
+
 private:
     friend class MaterialManager;
     Material(GLuint index, shader::MaterialStruct* ptr);
@@ -81,6 +83,7 @@ private:
     GLuint          m_index;
     shader::MaterialStruct* m_data;
 };
+
 
 } // namespace core
 
