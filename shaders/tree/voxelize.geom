@@ -5,6 +5,7 @@ layout(triangle_strip, max_vertices = 3) out;
 
 in VertexData
 {
+    vec3 wpos;
     vec3 viewdir;
     vec3 normal;
     vec2 uv;
