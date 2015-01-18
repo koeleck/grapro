@@ -29,8 +29,7 @@ void emitTriangle(in int ID, in vec4 vertex[3], in int layer)
     // cull front faces
     vec3 normal = cross(vertex[1].xyz - vertex[0].xyz,
                         vertex[2].xyz - vertex[0].xyz);
-    vec3 view = lights[ID].position - vertex[0].xyz;
-    if (dot(normal, view) > 0.0)
+    if (normal.z > 0.0)
         return;
 
     // frustum culling
