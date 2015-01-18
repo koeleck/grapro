@@ -104,9 +104,9 @@ void GraPro::update_gui(const double delta_t)
             {
                 ImGui::SliderInt("#cones", &m_ao_num_cones, 2, 32);
                 ImGui::SliderInt("max samples", &m_ao_max_samples, 1, 5);
-                ImGui::SliderInt("sample interval", &m_ao_sample_interval, 1, 100);
+                ImGui::SliderInt("weight by angle", &m_ao_weight, 0, 3);
             }
-            m_renderer->setAO(m_render_ao, m_ao_num_cones, m_ao_max_samples, m_ao_sample_interval);
+            m_renderer->setAO(m_render_ao, m_ao_num_cones, m_ao_max_samples, m_ao_weight);
             ImGui::Checkbox("render Indirect", &m_render_indirect);
             m_renderer->setIndirect(m_render_indirect);
             if (m_render_indirect) {

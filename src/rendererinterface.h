@@ -33,11 +33,11 @@ public:
     void setGeometry(std::vector<const core::Instance*> geometry);
     void markTreeInvalid() { m_rebuildTree = true; }
 
-    void setAO(bool renderAO, unsigned int num_cones, unsigned int max_samples, unsigned int sample_interval) {
+    void setAO(bool renderAO, unsigned int num_cones, unsigned int max_samples, unsigned int weight) {
         m_renderAO = renderAO;
         m_ao_num_cones = num_cones;
         m_ao_max_samples = max_samples;
-        m_ao_sample_interval = sample_interval;
+        m_ao_weight = weight;
     }
     void setIndirect(bool renderIndirect) { m_renderIndirect = renderIndirect; }
     void setConeGridSize(unsigned int size) { m_coneGridSize = size; }
@@ -129,7 +129,7 @@ protected:
     bool                                m_renderAO;
     unsigned int                        m_ao_num_cones;
     unsigned int                        m_ao_max_samples;
-    unsigned int                        m_ao_sample_interval;
+    unsigned int                        m_ao_weight;
 
 private:
 
