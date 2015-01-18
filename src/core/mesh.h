@@ -25,6 +25,7 @@ public:
     GLsizei count() const;
     GLint   basevertex() const;
     const AABB& bbox() const;
+    GLuint firstIndex() const;
     GLuint index() const;
 
 private:
