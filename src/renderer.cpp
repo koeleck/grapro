@@ -12,6 +12,7 @@
 #include "core/camera_manager.h"
 #include "core/material_manager.h"
 #include "core/shader_interface.h"
+#include "core/texture_manager.h"
 #include "core/light_manager.h"
 #include "core/texture.h"
 #include "log/log.h"
@@ -79,12 +80,15 @@ Renderer::Renderer(core::TimerArray& timer_array)
     m_vertexpulling_prog = core::res::shaders->registerProgram("vertexpulling_prog",
             {"vertexpulling_vert", "vertexpulling_frag"});
 
-    core::res::shaders->registerShader("depth_only_vert", "basic/depth_only.vert",
+    // shadows
+    core::res::shaders->registerShader("shadow_vert", "basic/shadow.vert",
             GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("shadow_geom", "basic/shadow.geom",
+            GL_GEOMETRY_SHADER);
     core::res::shaders->registerShader("depth_only_frag", "basic/depth_only.frag",
             GL_FRAGMENT_SHADER);
-    m_depth_only_prog = core::res::shaders->registerProgram("depth_only_prog",
-            {"depth_only_vert", "depth_only_frag"});
+    m_2d_shadow_prog = core::res::shaders->registerProgram("shadow2d_prog",
+            {"shadow_vert", "shadow_geom", "depth_only_frag"});
 
     // voxel creation
     core::res::shaders->registerShader("voxelGeom", "tree/voxelize.geom", GL_GEOMETRY_SHADER);
@@ -105,6 +109,10 @@ Renderer::Renderer(core::TimerArray& timer_array)
     m_octreeLeafStore_prog = core::res::shaders->registerProgram("octreeLeafStore_prog", {"octreeLeafStoreComp"});
 
     // debug render
+    core::res::shaders->registerShader("ssq_vert", "basic/ssq.vert", GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("ssq_frag", "basic/ssq.frag", GL_FRAGMENT_SHADER);
+    m_debug_tex_prog = core::res::shaders->registerProgram("ssq_prog", {"ssq_vert", "ssq_frag"});
+
     core::res::shaders->registerShader("octreeDebugBBox_vert", "tree/bbox.vert", GL_VERTEX_SHADER);
     core::res::shaders->registerShader("octreeDebugBBox_frag", "tree/bbox.frag", GL_FRAGMENT_SHADER);
     m_voxel_bbox_prog = core::res::shaders->registerProgram("octreeDebugBBox_prog",
@@ -360,7 +368,7 @@ void Renderer::createVoxelList()
     glDisable(GL_CULL_FACE);
     glDepthFunc(GL_ALWAYS);
 
-    renderGeometry(voxel_prog, false);
+    renderGeometry(voxel_prog, false, core::res::cameras->getDefaultCam());
 
     // TODO move to shader
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
@@ -582,6 +590,16 @@ void Renderer::render(const bool renderBBoxes, const bool renderOctree)
     if (m_geometry.empty())
         return;
 
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
+    renderShadowmaps();
+
+    glUseProgram(m_debug_tex_prog);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, core::res::lights->getShadowMapTexture());
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+    return;
+
     if (m_rebuildTree) {
         createVoxelList();
         buildVoxelTree();
@@ -591,7 +609,8 @@ void Renderer::render(const bool renderBBoxes, const bool renderOctree)
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glDepthFunc(GL_LEQUAL);
-    renderGeometry(m_vertexpulling_prog, false);
+
+    renderGeometry(m_vertexpulling_prog, false, core::res::cameras->getDefaultCam());
 
     if (renderBBoxes)
         renderBoundingBoxes();
@@ -601,14 +620,13 @@ void Renderer::render(const bool renderBBoxes, const bool renderOctree)
 
 /****************************************************************************/
 
-void Renderer::renderGeometry(const GLuint prog, const bool depthOnly)
+void Renderer::renderGeometry(const GLuint prog, const bool depthOnly,
+        const core::Camera* cam)
 {
     core::res::materials->bind();
     core::res::instances->bind();
     core::res::meshes->bind();
     core::res::lights->bind();
-
-    const auto* cam = core::res::cameras->getDefaultCam();
 
     GLuint textures[core::bindings::NUM_TEXT_UNITS] = {0,};
 
@@ -617,7 +635,7 @@ void Renderer::renderGeometry(const GLuint prog, const bool depthOnly)
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_indirect_buffer);
     for (const auto& cmd : m_drawlist) {
         // Frustum Culling
-        if (!cam->inFrustum(cmd.aabb))
+        if (cam != nullptr && !cam->inFrustum(cmd.aabb))
             continue;
 
         // bind textures
@@ -765,6 +783,23 @@ void Renderer::debugRenderTree()
 void Renderer::markTreeInvalid()
 {
     m_rebuildTree = true;
+}
+
+/****************************************************************************/
+
+void Renderer::renderShadowmaps()
+{
+    core::res::instances->bind();
+    core::res::meshes->bind();
+    core::res::lights->bind();
+
+    GLuint prog = m_2d_shadow_prog;
+    core::res::lights->setupForShadowMapRendering();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    renderGeometry(prog, false, nullptr);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, vars.screen_width, vars.screen_height);
 }
 
 /****************************************************************************/

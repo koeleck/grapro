@@ -29,6 +29,7 @@ constexpr int VERTEX    = 5;
 constexpr int VOXEL     = 6;
 constexpr int OCTREE    = 7;
 constexpr int LIGHT     = 8;
+constexpr int LIGHT_IDS = 9;
 
 // Vertex Attrib Arrays
 constexpr int POSITIONS = 0;

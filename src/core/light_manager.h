@@ -27,6 +27,12 @@ public:
     const LightList& getLights() const;
     void bind() const;
 
+    void setupForShadowMapRendering();
+    void setupForShadowCubeMapRendering();
+
+    GLuint getShadowMapTexture() const;
+    GLuint getShadowCubeMapTexture() const;
+
 private:
     using LightPool = BufferStoragePool<shader::LightStruct>;
 
@@ -35,6 +41,7 @@ private:
     gl::Texture     m_shadowcubemaps;
     gl::Framebuffer m_2d_fbo;
     gl::Framebuffer m_cube_fbo;
+    gl::Buffer      m_light_id_buffer;
     LightPool       m_light_buffer;
     int             m_num_shadowmaps;
     int             m_num_shadowcubemaps;

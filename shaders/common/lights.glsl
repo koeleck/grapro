@@ -11,7 +11,7 @@
 
 struct Light
 {
-    mat4    projViewMatrix;
+    mat4    ProjViewMatrix;
 
     vec3    position;
     float   angleInnerCone;
@@ -33,6 +33,7 @@ struct Light
 #define LIGHT_TYPE_SPOT         0x10000000
 #define LIGHT_TYPE_DIRECTIONAL  0x20000000
 #define LIGHT_TYPE_POINT        0x40000000
+#define LIGHT_TEXID_BITS        0x0fffffff
 
 layout(std430, binding = LIGHT_BINDING) restrict readonly buffer LightBlock
 {

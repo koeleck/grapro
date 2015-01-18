@@ -88,7 +88,7 @@ bool loadScenefiles(const std::string& scenefiles)
             {
                 auto* l = core::res::lights->createDirectionalLight(isShadowcasting);
                 l->setDirection(light->direction);
-                l->setSize(100.f); // TODO
+                l->setSize(1000.f); // TODO
                 l->setRotation(.0f); // TODO
                 newLight = l;
                 break;
@@ -105,7 +105,8 @@ bool loadScenefiles(const std::string& scenefiles)
             if (newLight != nullptr) {
                 newLight->setPosition(light->position);
                 newLight->setIntensity(light->color);
-                newLight->setMaxDistance(light->max_distance);
+                //newLight->setMaxDistance(light->max_distance);
+                newLight->setMaxDistance(1000.f); // TODO
                 newLight->setLinearAttenuation(light->linear_attenuation);
                 newLight->setConstantAttenuation(light->constant_attenuation);
                 newLight->setQuadraticAttenuation(light->quadratic_attenuation);

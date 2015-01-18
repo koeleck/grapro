@@ -29,9 +29,11 @@ private:
 
     void initBBoxStuff();
 
-    void renderGeometry(GLuint prog, bool depthOnly);
+    void renderGeometry(GLuint prog, bool depthOnly,
+            const core::Camera* cam);
     void debugRenderTree();
     void renderBoundingBoxes();
+    void renderShadowmaps();
 
     void createVoxelList();
     void buildVoxelTree();
@@ -42,7 +44,10 @@ private:
     std::vector<DrawCmd>                m_drawlist;
     gl::Buffer                          m_indirect_buffer;
 
-    core::Program                       m_depth_only_prog;
+    // lights
+    core::Program                       m_2d_shadow_prog;
+    core::Program                       m_cube_shadow_prog;
+
 
     gl::VertexArray                     m_bbox_vao;
     gl::Buffer                          m_bbox_buffer;
@@ -69,6 +74,9 @@ private:
     // debug voxeltree
     std::vector<core::AABB>             m_voxel_bboxes;
     core::Program                       m_voxel_bbox_prog;
+
+    // debug
+    core::Program                       m_debug_tex_prog;
 };
 
 #endif // RENDERER_H

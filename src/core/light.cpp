@@ -1,4 +1,5 @@
 #include <limits>
+#include <glm/mat4x4.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -254,12 +255,14 @@ void SpotLight::updateMatrix()
     glm::dmat4 projmat;
     if (getMaxDistance() == std::numeric_limits<float>::infinity()) {
         projmat = glm::infinitePerspective<double>(getAngleOuterCone(), 1.f, NEAR_PLANE);
+        LOG_INFO("near: ", NEAR_PLANE, ", far: infty");
     } else {
         projmat = glm::perspective<double>(getAngleOuterCone(), 1.f, NEAR_PLANE,
                 getMaxDistance());
+        LOG_INFO("near: ", NEAR_PLANE, ", far: ", getMaxDistance());
     }
     glm::dmat4 viewmat = glm::lookAt<double, glm::defaultp>(getPosition(),
-            getPosition() + getDirection(), glm::vec3(.0f, .0f, 1.f));
+            getPosition() + getDirection(), glm::vec3(.0f, 1.f, .0f));
 
     m_data->projViewMatrix = glm::mat4(projmat * viewmat);
 }
@@ -339,22 +342,23 @@ void DirectionalLight::updateMatrix()
         if (isShadowcasting()) {
             // insult user:
             LOG_ERROR("Shadowcasting directional light can't have max "
-                    "distance at infinity! Clamping to 100.0, you idiot!");
-            setMaxDistance(100.f); // this will call updateMatrix() again
+                    "distance at infinity! Clamping to 5000.0, you idiot!");
+            setMaxDistance(5000.f); // this will call updateMatrix() again
         }
         return;
     }
+
     const double dist = m_size / 2.f;
     glm::dmat4 projmat = glm::ortho<double>(-dist, dist, -dist, dist,
-            -NEAR_PLANE, -getMaxDistance());
+            NEAR_PLANE, getMaxDistance());
 
-    glm::dmat4 translation(1.0);
-    translation[3] = glm::dvec4(-getPosition(), 1.0);
-    glm::dquat orientation = glm::angleAxis<double, glm::defaultp>(m_rotation,
-            getDirection());
-    glm::dmat4 viewmat = glm::mat4_cast(glm::conjugate(orientation)) * translation;
+    // TODO Rotation
+    glm::dmat4 viewmat = glm::lookAt<double, glm::defaultp>(getPosition(),
+            getPosition() + getDirection(), glm::vec3(1.0f, .0f, 0.f));
+
 
     m_data->projViewMatrix = glm::mat4(projmat * viewmat);
+
 }
 
 /*****************************************************************************
