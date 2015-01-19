@@ -33,7 +33,7 @@ GraPro::GraPro(GLFWwindow* window)
     m_coneGridSize{10},
     m_coneSteps{1},
     m_renderer{new RendererImplBM(m_timers, m_tree_levels)}
-    //m_renderer{new RendererImplPK(m_timers, m_tree_levels)}
+    //m_renderer{new RendererImplPK(m_timers, m_tree_levels)} // does not work anymore!
 {
     const auto* instances = core::res::instances;
     m_renderer->setGeometry(instances->getInstances());

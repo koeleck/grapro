@@ -6,12 +6,12 @@
 /******************************************************************************/
 
 struct voxelStruct {
-    uvec4 position;
-    vec4 color;
-    vec4 normal;
+    uint position; // 2 bits unused, 10/10/10 bits pos.x/y/z
+    uint color; // 11/11/10 RGB
+    uint padding, padding2;
 };
 
-layout (std430, binding = VOXEL_BINDING) restrict readonly buffer voxelBlock {
+layout (std430, binding = VOXEL_BINDING) restrict buffer voxelBlock {
     voxelStruct voxel[];
 };
 
@@ -27,7 +27,7 @@ layout(std430, binding = OCTREE_BINDING) restrict buffer octreeBlock
 
 struct octreeColorBuffer
 {
-    vec4    color;
+    vec4 color;
 };
 
 layout(std430, binding = OCTREE_COLOR_BINDING) restrict buffer octreeColorBlock
@@ -109,6 +109,40 @@ ONB toONB(vec3 normal)
 vec3 toWorld(ONB onb, vec3 v)
 {
     return onb.S * v.x + onb.T * v.y + onb.N * v.z;
+}
+
+/******************************************************************************/
+
+uvec3 convertPosition(in uint pos)
+{
+    return uvec3((pos >> 20u) & 0x000003FF, (pos >> 10u) & 0x000003FF, pos & 0x000003FF);
+}
+
+/******************************************************************************/
+
+uint convertPosition(in uvec3 pos)
+{
+    return ((pos.x & 0x000003FF) << 20u) | ((pos.y & 0x000003FF) << 10u) | (pos.z & 0x000003FF);
+}
+
+/******************************************************************************/
+
+vec3 convertColor(in uint col)
+{
+    float r = float((col >> 21u) & 0x000007FF) / 2047.f;
+    float g = float((col >> 10u) & 0x000007FF) / 2047.f;
+    float b = float(col & 0x000003FF) / 1023.f;
+    return vec3(r,g,b);
+}
+
+/******************************************************************************/
+
+uint convertColor(in vec3 col)
+{
+    uint r = uint(col.r * 2047.f);
+    uint g = uint(col.g * 2047.f);
+    uint b = uint(col.b * 1023.f);
+    return ((r & 0x000007FF) << 21u) | ((g & 0x000007FF) << 10u) | (b & 0x000003FF);
 }
 
 /******************************************************************************/

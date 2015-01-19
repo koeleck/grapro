@@ -33,6 +33,7 @@ void main()
 		// init
         for (uint i = 0; i < 8; ++i) {
             octree[off + i].id = 0u;
+            octreeColor[off + i].color = vec4(0);
         }
 	}
 }

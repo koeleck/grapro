@@ -5,9 +5,9 @@
 
 struct VoxelStruct
 {
-    glm::uvec4 position;
-    glm::vec4 color;
-    glm::vec4 normal;
+    unsigned int position; // 2 bits unused, 10/10/10 bits pos.x/y/z
+    unsigned int color; // 11/11/10
+    unsigned int padding, padding2;
 };
 
 struct OctreeNodeStruct

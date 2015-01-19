@@ -162,8 +162,11 @@ void RendererImplPK::buildVoxelTree(const bool debug_output)
     m_tree_timer->start();
 
     // calculate max invocations for compute shader to get all the voxel fragments
-    const auto flag_num_workgroups = static_cast<unsigned int>((m_numVoxelFrag + FLAG_PROG_LOCAL_SIZE - 1)
-                                                                / FLAG_PROG_LOCAL_SIZE);
+    auto calculateDataWidth = [&](unsigned int num, unsigned width) {
+        return (num + width - 1) / width;
+    };
+    const auto localWidth = 64u;
+    const auto fragWidth = calculateDataWidth(m_numVoxelFrag, localWidth);
 
     auto loc = GLint{};
     const auto flag_prog = m_octreeNodeFlag_prog;
@@ -236,7 +239,8 @@ void RendererImplPK::buildVoxelTree(const bool debug_output)
 
             glProgramUniform1ui(flag_prog, uMaxLevel, i);
 
-            glDispatchCompute(flag_num_workgroups, 1, 1);
+            glDispatchComputeGroupSizeARB(fragWidth, 1, 1,
+                                          FLAG_PROG_LOCAL_SIZE, 1, 1);
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
         }
 
@@ -255,7 +259,8 @@ void RendererImplPK::buildVoxelTree(const bool debug_output)
 
         const auto alloc_workgroups = static_cast<GLuint>((previously_allocated + ALLOC_PROG_LOCAL_SIZE - 1)
                                                           / ALLOC_PROG_LOCAL_SIZE);
-        glDispatchCompute(alloc_workgroups, 1, 1);
+        glDispatchComputeGroupSizeARB(alloc_workgroups, 1, 1,
+                                      ALLOC_PROG_LOCAL_SIZE, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_ATOMIC_COUNTER_BARRIER_BIT);
 
         // start_node points to the first node that was allocated in this iteration
@@ -287,11 +292,8 @@ void RendererImplPK::buildVoxelTree(const bool debug_output)
     glUseProgram(m_octreeLeafStore_prog);
 
     // dispatch
-    const auto dataWidth = 1024u;
-    const auto dataHeight = static_cast<unsigned int>((m_numVoxelFrag + dataWidth - 1) / dataWidth);
-    const auto groupDimX = static_cast<unsigned int>(dataWidth / 8);
-    const auto groupDimY = static_cast<unsigned int>((dataHeight + 7) / 8);
-    glDispatchCompute(groupDimX, groupDimY, 1);
+    glDispatchComputeGroupSizeARB(fragWidth, 1, 1,
+                                  localWidth, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     /*
@@ -308,7 +310,9 @@ void RendererImplPK::buildVoxelTree(const bool debug_output)
         glProgramUniform1ui(m_octreeMipMap_prog, loc_u_level, i);
 
         // dispatch
-        glDispatchCompute(groupDimX, groupDimY, 1);
+        const auto groupWidth = calculateDataWidth(/*maxNodesPerLevel[i]*/m_numVoxelFrag, FLAG_PROG_LOCAL_SIZE);
+        glDispatchComputeGroupSizeARB(groupWidth, 1, 1,
+                                      FLAG_PROG_LOCAL_SIZE, 1, 1);
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         --i;

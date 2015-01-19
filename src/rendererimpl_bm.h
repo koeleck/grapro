@@ -23,7 +23,6 @@ private:
     void initAmbientOcclusion();
     void renderAmbientOcclusion() const;
 
-    void resetBuffer(const gl::Buffer &, int) const;
     void resetAtomicBuffer() const;
 
 	// ambient occlusion

@@ -9,6 +9,7 @@ layout (local_size_variable) in;
 uniform uint u_numVoxelFrag;
 uniform uint u_voxelDim;
 uniform uint u_maxLevel;
+uniform uint u_isLeaf;
 
 void main()
 {
@@ -21,7 +22,7 @@ void main()
     uint nodeptr = octree[0].id; // ptr to first child
     int voxel_dim = int(u_voxelDim);
     ivec3 umin = ivec3(0);
-    const ivec3 pos = ivec3(voxel[threadID].position.xyz);
+    const ivec3 pos = ivec3(convertPosition(voxel[threadID].position));
 
     // iterate through all tree levels
     for (uint i = 0; i < u_maxLevel; ++i) {
@@ -44,5 +45,14 @@ void main()
 
     // flag node
     octree[childIdx].id = 0x80000000u;
+
+    // store color if it's a leaf
+    if (u_isLeaf == 1) {
+        const vec3 col = convertColor(voxel[threadID].color);
+        atomicAdd(octreeColor[childIdx].color.r, col.r);
+        atomicAdd(octreeColor[childIdx].color.g, col.g);
+        atomicAdd(octreeColor[childIdx].color.b, col.b);
+        atomicAdd(octreeColor[childIdx].color.w, 1.f);
+    }
 
 }

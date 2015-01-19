@@ -3,6 +3,7 @@
 #include "common/materials.glsl"
 #include "common/bindings.glsl"
 #include "common/textures.glsl"
+#include "common/voxel.glsl"
 
 in VertexFragmentData
 {
@@ -18,17 +19,6 @@ in VertexFragmentData
 
 // atomic counter
 layout(binding = 0) uniform atomic_uint uVoxelFragCount;
-
-// voxel buffer
-struct voxelStruct {
-    uvec4 position;
-    vec4 color;
-    vec4 normal;
-};
-
-layout (std430, binding = VOXEL_BINDING) buffer voxelBlock {
-    voxelStruct voxel[];
-};
 
 uniform int uNumVoxels;
 
@@ -53,6 +43,8 @@ void setNormal() {
     } else {
         m_normal = inData.normal;
     }
+
+    normalize(m_normal);
 
 }
 
@@ -94,8 +86,10 @@ void main()
 
     const uint idx = atomicCounterIncrement(uVoxelFragCount);
 
-    voxel[idx].position = uvec4(texcoord.xyz, 0);
-    voxel[idx].color = vec4(m_diffuse_color, 0.f);
-    voxel[idx].normal = vec4(m_normal, 0.f);
+    voxel[idx].position = convertPosition(texcoord.xyz);
+    voxel[idx].color = convertColor(m_diffuse_color);
+
+    /*voxel[idx].position = uvec4(texcoord.xyz, 0);
+    voxel[idx].color = vec4(m_diffuse_color, 0.f);*/
 
 }
