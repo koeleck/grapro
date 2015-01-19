@@ -83,9 +83,6 @@ void RendererImplPK::initShaders()
     core::res::shaders->registerShader("octreeNodeAllocComp", "tree/nodealloc_pk.comp", GL_COMPUTE_SHADER,
             "LOCAL_SIZE " + std::to_string(ALLOC_PROG_LOCAL_SIZE));
     m_octreeNodeAlloc_prog = core::res::shaders->registerProgram("octreeNodeAlloc_prog", {"octreeNodeAllocComp"});
-
-    core::res::shaders->registerShader("octreeLeafStoreComp", "tree/leafstore.comp", GL_COMPUTE_SHADER);
-    m_octreeLeafStore_prog = core::res::shaders->registerProgram("octreeLeafStore_prog", {"octreeLeafStoreComp"});
 }
 
 /****************************************************************************/
@@ -182,19 +179,11 @@ void RendererImplPK::buildVoxelTree(const bool debug_output)
     const auto uStartNode = glGetUniformLocation(alloc_prog, "uStartNode");
     const auto uCount = glGetUniformLocation(alloc_prog, "uCount");
 
-    const auto loc_u_numVoxelFrag_Store = glGetUniformLocation(m_octreeLeafStore_prog, "u_numVoxelFrag");
-    const auto loc_u_voxelDim_Store = glGetUniformLocation(m_octreeLeafStore_prog, "u_voxelDim");
-    const auto loc_u_treeLevels = glGetUniformLocation(m_octreeLeafStore_prog, "u_treeLevels");
-
     const auto loc_u_numVoxelFrag_MipMap = glGetUniformLocation(m_octreeMipMap_prog, "u_numVoxelFrag");
     const auto loc_u_level = glGetUniformLocation(m_octreeMipMap_prog, "u_level");
     const auto loc_u_voxelDim_MipMap = glGetUniformLocation(m_octreeMipMap_prog, "u_voxelDim");
 
     const auto voxelDim = static_cast<unsigned int>(std::pow(2, m_treeLevels - 1));
-
-    glProgramUniform1ui(m_octreeLeafStore_prog, loc_u_numVoxelFrag_Store, m_numVoxelFrag);
-    glProgramUniform1ui(m_octreeLeafStore_prog, loc_u_voxelDim_Store, voxelDim);
-    glProgramUniform1ui(m_octreeLeafStore_prog, loc_u_treeLevels, m_treeLevels);
 
     glProgramUniform1ui(m_octreeMipMap_prog, loc_u_numVoxelFrag_MipMap, m_numVoxelFrag);
     glProgramUniform1ui(m_octreeMipMap_prog, loc_u_voxelDim_MipMap, voxelDim);
@@ -284,17 +273,6 @@ void RendererImplPK::buildVoxelTree(const bool debug_output)
     m_tree_timer->stop();
 
     m_mipmap_timer->start();
-
-    /*
-     *  write information to leafs
-     */
-
-    glUseProgram(m_octreeLeafStore_prog);
-
-    // dispatch
-    glDispatchComputeGroupSizeARB(fragWidth, 1, 1,
-                                  localWidth, 1, 1);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     /*
      *  mip map higher levels

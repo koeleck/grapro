@@ -91,7 +91,6 @@ protected:
     // octree
     core::Program                       m_octreeNodeFlag_prog;
     core::Program                       m_octreeNodeAlloc_prog;
-    core::Program                       m_octreeLeafStore_prog;
     core::Program                       m_octreeMipMap_prog;
     gl::Buffer                          m_octreeNodeBuffer;
     gl::Buffer                          m_octreeNodeColorBuffer;
