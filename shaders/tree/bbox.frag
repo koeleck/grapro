@@ -6,6 +6,5 @@ uniform vec4 u_color;
 
 void main()
 {
-    //out_FragColor = u_color;
     out_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
 }

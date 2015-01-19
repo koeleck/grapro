@@ -6,16 +6,6 @@
 
 layout(location = 0) out vec4 out_Color;
 
-in VertexData
-{
-    vec3 viewdir;
-    vec3 normal;
-    vec2 uv;
-    vec3 tangent;
-    vec3 bitangent;
-    flat uint materialID;
-} inData;
-
 in vec4 worldPosition;
 
 uniform vec3 u_bboxMin;
@@ -26,18 +16,18 @@ uniform uint u_maxLevel;
 void main()
 {
 
-	vec3 voxelSize = (u_bboxMax - u_bboxMin) / float(u_voxelDim);
-	ivec3 pos = ivec3(vec3(worldPosition.xyz - u_bboxMin) / voxelSize);
+    vec3 voxelSize = (u_bboxMax - u_bboxMin) / float(u_voxelDim);
+    ivec3 pos = ivec3(vec3(worldPosition.xyz - u_bboxMin) / voxelSize);
 
-	// local vars
+    // local vars
     uint childIdx = 0;
     uint nodePtr = octree[childIdx].id;
 
-	uint voxelDim = u_voxelDim;
+    uint voxelDim = u_voxelDim;
 
     uvec3 umin = uvec3(0);
 
-	// iterate through all tree levels
+    // iterate through all tree levels
     for (uint i = 0; i < u_maxLevel - 1; ++i) {
 
         // go to next dimension
@@ -65,6 +55,6 @@ void main()
 
     vec4 col = octreeColor[childIdx].color;
 
-	out_Color = vec4(col.xyz / col.w, 1.0);
+    out_Color = vec4(col.xyz / col.w, 1.0);
 
 }

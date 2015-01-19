@@ -40,7 +40,6 @@ private:
     bool                                m_render_indirect;
     bool                                m_debug_output;
     int                                 m_tree_levels;
-    int                                 m_voxelColor_level;
     int                                 m_coneGridSize;
     int                                 m_coneSteps;
 

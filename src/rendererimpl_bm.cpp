@@ -279,7 +279,7 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
 
         // uniforms
         isLeaf = (i == m_treeLevels - 1);
-        glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_maxLevel, i - 1 + 1);
+        glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_maxLevel, i);
         glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_isLeaf, isLeaf ? 1 : 0);
         if (isLeaf) {
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::OCTREE_COLOR, m_octreeNodeColorBuffer);
@@ -350,8 +350,8 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
 
 /****************************************************************************/
 
-void RendererImplBM::render(const unsigned int treeLevels, const unsigned int voxelColorLevel,
-                            const bool renderBBoxes, const bool renderOctree, const bool renderVoxColors,
+void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBoxes,
+                            const bool renderOctree, const bool renderVoxColors,
                             const bool debug_output)
 {
     if (m_geometry.empty())
@@ -401,9 +401,6 @@ void RendererImplBM::render(const unsigned int treeLevels, const unsigned int vo
     } else if (m_renderIndirect) {
         renderIndirectLighting();
     } else if (renderVoxColors) {
-        if (voxelColorLevel != m_voxelColorLevel) {
-            m_voxelColorLevel = voxelColorLevel;
-        }
         renderVoxelColors();
     } else {
         renderGeometry(m_vertexpulling_prog);
@@ -414,6 +411,8 @@ void RendererImplBM::render(const unsigned int treeLevels, const unsigned int vo
 
     if (renderOctree)
         renderVoxelBoundingBoxes();
+
+
 }
 
 /****************************************************************************/
@@ -481,7 +480,7 @@ void RendererImplBM::renderAmbientOcclusion() const
     glUniform1ui(loc, m_ao_weight);
 
 
-    glBindVertexArray(m_vao_ssq.get());
+    glBindVertexArray(m_vao_ssq);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
 

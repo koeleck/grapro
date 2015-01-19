@@ -29,7 +29,6 @@ GraPro::GraPro(GLFWwindow* window)
     m_render_indirect{false},
     m_debug_output{false},
     m_tree_levels{static_cast<int>(vars.voxel_octree_levels)},
-    m_voxelColor_level{m_tree_levels},
     m_coneGridSize{10},
     m_coneSteps{1},
     m_renderer{new RendererImplBM(m_timers, m_tree_levels)}
@@ -52,7 +51,6 @@ void GraPro::render_scene()
 
     m_render_timer->start();
     m_renderer->render(std::make_unsigned<int>::type(m_tree_levels),
-                       std::make_unsigned<int>::type(m_voxelColor_level),
                        m_render_bboxes, m_render_octree, m_render_voxelColors,
                        m_debug_output);
     m_render_timer->stop();
@@ -79,22 +77,13 @@ void GraPro::update_gui(const double delta_t)
         // octree
         if (ImGui::CollapsingHeader("Octree", nullptr, true, true)) {
             ImGui::Checkbox("show debug output", &m_debug_output);
-            ImGui::SliderInt("tree levels", &m_tree_levels, 1, 9);
-            if (m_tree_levels < m_voxelColor_level) {
-                m_voxelColor_level = m_tree_levels;
-            }
+            ImGui::SliderInt("tree levels", &m_tree_levels, 1, 10);
             ImGui::Checkbox("show voxel bounding boxes", &m_render_octree);
         }
 
         // other
         if (ImGui::CollapsingHeader("Other", nullptr, true, true)) {
             ImGui::Checkbox("render voxel colors", &m_render_voxelColors);
-            if (m_render_voxelColors) {
-                ImGui::SliderInt("voxel color level", &m_voxelColor_level, 1, m_tree_levels);
-                if (m_tree_levels == 1) {
-                    m_voxelColor_level = 1;
-                }
-            }
             ImGui::Checkbox("render AO", &m_render_ao);
             if(m_render_ao)
             {

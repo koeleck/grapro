@@ -11,8 +11,8 @@ public:
     explicit RendererImplPK(core::TimerArray&, unsigned int);
     ~RendererImplPK();
 
-    virtual void render(unsigned int, unsigned int, bool = false,
-    					bool = false, bool = false, bool = false);
+    virtual void render(unsigned int, bool = false, bool = false,
+                        bool = false, bool = false);
 
 private:
 

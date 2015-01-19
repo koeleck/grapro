@@ -26,9 +26,9 @@ public:
     explicit RendererInterface(core::TimerArray& timer_array, unsigned int treeLevels);
     virtual ~RendererInterface();
 
-    virtual void render(unsigned int treeLevels, unsigned int voxelColorLevel,
-                        bool renderBBoxes = false, bool renderOctree = false,
-                        bool renderVoxColors = false, bool debug_output = false) = 0;
+    virtual void render(unsigned int treeLevels, bool renderBBoxes = false,
+                        bool renderOctree = false, bool renderVoxColors = false,
+                        bool debug_output = false) = 0;
 
     void setGeometry(std::vector<const core::Instance*> geometry);
     void markTreeInvalid() { m_rebuildTree = true; }
@@ -114,15 +114,18 @@ protected:
     gl::Buffer                          m_vbo_ssq;
 
     // indirect
+    core::Program                       m_indirect_prog;
     bool                                m_renderIndirect;
-    unsigned int                        m_coneGridSize = 2;
-    unsigned int                        m_coneSteps = 3;
+    unsigned int                        m_coneGridSize = 10;
+    unsigned int                        m_coneSteps = 1;
+
+    // color boxes
+    core::Program                       m_colorboxes_prog;
+    gl::VertexArray                     m_colorboxes_vao;
+    gl::Buffer                          m_colorboxes_vbo;
 
     // other
     gl::Buffer                          m_atomicCounterBuffer;
-    core::Program                       m_colorboxes_prog;
-    unsigned int                        m_voxelColorLevel;
-    core::Program                       m_indirect_prog;
 
     // AO
     bool                                m_renderAO;

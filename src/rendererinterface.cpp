@@ -113,7 +113,6 @@ void RendererInterface::initBBoxes()
     glBindVertexArray(m_bbox_vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_bbox_buffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
     glBindVertexArray(0);
 
     core::res::shaders->registerShader("bbox_vert", "basic/bbox.vert", GL_VERTEX_SHADER);
@@ -167,10 +166,11 @@ void RendererInterface::initVoxelBBoxes()
 
 void RendererInterface::initVoxelColors()
 {
-    core::res::shaders->registerShader("colorboxes_frag", "tree/colorboxes.frag",
-            GL_FRAGMENT_SHADER);
+    core::res::shaders->registerShader("colorboxes_vert", "tree/colorboxes.vert", GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("colorboxes_geom", "tree/colorboxes.geom", GL_GEOMETRY_SHADER);
+    core::res::shaders->registerShader("colorboxes_frag", "tree/colorboxes.frag", GL_FRAGMENT_SHADER);
     m_colorboxes_prog = core::res::shaders->registerProgram("colorboxes_prog",
-            {"vertexpulling_vert", "colorboxes_frag"});
+            {"colorboxes_vert", "colorboxes_geom", "colorboxes_frag"});
 }
 
 /****************************************************************************/
@@ -434,18 +434,31 @@ unsigned int RendererInterface::calculateMaxNodes() const
 
 void RendererInterface::renderVoxelColors() const
 {
+
+    if (m_voxel_bboxes.empty())
+        return;
+
+    glUseProgram(m_colorboxes_prog);
+    glBindVertexArray(m_colorboxes_vao);
+
     // uniforms
     const auto dim = static_cast<int>(std::pow(2.0, m_treeLevels - 1));
     auto loc = glGetUniformLocation(m_colorboxes_prog, "u_bboxMin");
-    glProgramUniform3f(m_colorboxes_prog, loc, m_scene_bbox.pmin.x, m_scene_bbox.pmin.y, m_scene_bbox.pmin.z);
+    glUniform3f(loc, m_scene_bbox.pmin.x, m_scene_bbox.pmin.y, m_scene_bbox.pmin.z);
     loc = glGetUniformLocation(m_colorboxes_prog, "u_bboxMax");
-    glProgramUniform3f(m_colorboxes_prog, loc, m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z);
+    glUniform3f(loc, m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z);
     loc = glGetUniformLocation(m_colorboxes_prog, "u_voxelDim");
-    glProgramUniform1ui(m_colorboxes_prog, loc, dim);
+    glUniform1ui(loc, dim);
     loc = glGetUniformLocation(m_colorboxes_prog, "u_maxLevel");
-    glProgramUniform1ui(m_colorboxes_prog, loc, m_voxelColorLevel);
+    glUniform1ui(loc, m_treeLevels);
 
-    renderGeometry(m_colorboxes_prog);
+    for (auto i = 0u; i < m_voxel_bboxes.size(); ++i) {
+        const auto & bbox = m_voxel_bboxes[i];
+        float data[3] = {bbox.center().x, bbox.center().y, bbox.center().z};
+        glUniform3fv(0, 1, data);
+        glDrawArrays(GL_POINTS, 0, 1);
+    }
+
 }
 
 /****************************************************************************/

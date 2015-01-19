@@ -305,9 +305,9 @@ void RendererImplPK::buildVoxelTree(const bool debug_output)
 
 /****************************************************************************/
 
-void RendererImplPK::render(const unsigned int treeLevels, const unsigned int voxelColorLevel,
-                            const bool renderBBoxes, const bool renderOctree,
-                            const bool renderVoxColors, const bool debug_output)
+void RendererImplPK::render(const unsigned int treeLevels, const bool renderBBoxes,
+                            const bool renderOctree, const bool renderVoxColors,
+                            const bool debug_output)
 {
     if (m_geometry.empty())
         return;
@@ -335,9 +335,6 @@ void RendererImplPK::render(const unsigned int treeLevels, const unsigned int vo
     glDepthFunc(GL_LEQUAL);
 
     if (renderVoxColors) {
-        if (voxelColorLevel != m_voxelColorLevel) {
-            m_voxelColorLevel = voxelColorLevel;
-        }
         renderVoxelColors();
     } else {
         renderGeometry(m_vertexpulling_prog);
