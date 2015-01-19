@@ -181,6 +181,12 @@ void LightManager::bind() const
 {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindings::LIGHT,
             m_light_buffer.buffer());
+
+    glActiveTexture(GL_TEXTURE0 + bindings::DIR_LIGHT_TEX_UNIT);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, m_shadowmaps);
+
+    glActiveTexture(GL_TEXTURE0 + bindings::OMNI_LIGHT_TEX_UNIT);
+    glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, m_shadowcubemaps);
 }
 
 /****************************************************************************/
@@ -240,6 +246,7 @@ int LightManager::getNumShadowCubeMapsUsed() const
 }
 
 /****************************************************************************/
+
 
 } // namespace core
 
