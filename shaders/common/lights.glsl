@@ -30,6 +30,7 @@ struct Light
                         // [28:0]:  depth texture index
 };
 
+#define LIGHT_IS_SHADOWCASTING  0x80000000
 #define LIGHT_TYPE_SPOT         0x10000000
 #define LIGHT_TYPE_DIRECTIONAL  0x20000000
 #define LIGHT_TYPE_POINT        0x40000000

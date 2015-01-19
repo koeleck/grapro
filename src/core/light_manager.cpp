@@ -40,6 +40,11 @@ LightManager::LightManager()
     glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
             m_shadowmaps, 0);
 
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        LOG_ERROR("Framebuffer not complete");
+    }
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+
     // cube shadowmaps
     glBindFramebuffer(GL_FRAMEBUFFER, m_cube_fbo);
 
@@ -56,10 +61,13 @@ LightManager::LightManager()
     glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
             m_shadowcubemaps, 0);
 
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        LOG_ERROR("Framebuffer not complete");
+    }
+    glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, 0);
+
     // done with framebuffers
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, 0);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 
 
     // glBindBufferRange requires offset to be aligned, so compute this offset here:
@@ -72,7 +80,7 @@ LightManager::LightManager()
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_light_id_buffer);
     glBufferStorage(GL_SHADER_STORAGE_BUFFER,
             m_buffer_offset + (vars.max_num_cube_shadowmaps * static_cast<int>(sizeof(GLint))),
-            nullptr, GL_DYNAMIC_STORAGE_BIT);
+            nullptr, 0);
     const GLint negone = -1;
     glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32I, GL_RED_INTEGER, GL_INT, &negone);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
@@ -98,9 +106,14 @@ SpotLight* LightManager::createSpotlight(const bool isShadowcasting)
                     "Created light will not cast shadows.");
         } else {
             depthTex = m_num_shadowmaps;
-            glNamedBufferSubDataEXT(m_light_id_buffer,
-                    m_num_shadowmaps * static_cast<int>(sizeof(GLint)), sizeof(GLint),
-                    &index);
+            //glNamedBufferSubDataEXT(m_light_id_buffer,
+            //        m_num_shadowmaps * static_cast<int>(sizeof(GLint)),
+            //        sizeof(GLint),
+            //        &index);
+            glClearNamedBufferSubDataEXT(m_light_id_buffer, GL_R32I,
+                    m_num_shadowmaps * static_cast<int>(sizeof(GLint)),
+                    sizeof(GLint),
+                    GL_RED_INTEGER, GL_INT, &index);
             m_num_shadowmaps++;
         }
     }
@@ -126,9 +139,15 @@ DirectionalLight* LightManager::createDirectionalLight(const bool isShadowcastin
                     "Created light will not cast shadows.");
         } else {
             depthTex = m_num_shadowmaps;
-            glNamedBufferSubDataEXT(m_light_id_buffer,
-                    m_num_shadowmaps * static_cast<int>(sizeof(GLint)), sizeof(GLint),
-                    &index);
+            //glNamedBufferSubDataEXT(m_light_id_buffer,
+            //        m_num_shadowmaps * static_cast<int>(sizeof(GLint)),
+            //        sizeof(GLint),
+            //        &index);
+            glClearNamedBufferSubDataEXT(m_light_id_buffer, GL_R32I,
+                    m_num_shadowmaps * static_cast<int>(sizeof(GLint)),
+                    sizeof(GLint),
+                    GL_RED_INTEGER, GL_INT, &index);
+
             m_num_shadowmaps++;
         }
     }
@@ -154,10 +173,14 @@ PointLight* LightManager::createPointLight(const bool isShadowcasting)
                     "Created light will not cast shadows.");
         } else {
             depthTex = m_num_shadowcubemaps;
-            glNamedBufferSubDataEXT(m_light_id_buffer,
-                    m_buffer_offset + (m_num_shadowcubemaps * static_cast<int>(sizeof(GLint))),
+            //glNamedBufferSubDataEXT(m_light_id_buffer,
+            //        m_buffer_offset + (m_num_shadowcubemaps * static_cast<int>(sizeof(GLint))),
+            //        sizeof(GLint),
+            //        &index);
+            glClearNamedBufferSubDataEXT(m_light_id_buffer, GL_R32I,
+                    m_buffer_offset + m_num_shadowcubemaps * static_cast<int>(sizeof(GLint)),
                     sizeof(GLint),
-                    &index);
+                    GL_RED_INTEGER, GL_INT, &index);
             m_num_shadowcubemaps++;
         }
     }
@@ -195,8 +218,10 @@ void LightManager::setupForShadowMapRendering()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, m_2d_fbo);
     glViewport(0, 0, vars.shadowmap_res, vars.shadowmap_res);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindings::LIGHT_IDS,
-            m_light_id_buffer);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, bindings::LIGHT_IDS,
+            m_light_id_buffer,
+            0,
+            vars.max_num_2d_shadowmaps * static_cast<int>(sizeof(GLint)));
 }
 
 /****************************************************************************/
@@ -206,7 +231,8 @@ void LightManager::setupForShadowCubeMapRendering()
     glBindFramebuffer(GL_FRAMEBUFFER, m_cube_fbo);
     glViewport(0, 0, vars.shadowcubemap_res, vars.shadowcubemap_res);
     glBindBufferRange(GL_SHADER_STORAGE_BUFFER, bindings::LIGHT_IDS,
-            m_light_id_buffer, m_buffer_offset,
+            m_light_id_buffer,
+            m_buffer_offset,
             vars.max_num_cube_shadowmaps * static_cast<int>(sizeof(GLint)));
 }
 

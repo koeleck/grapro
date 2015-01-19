@@ -23,6 +23,8 @@ public:
 
     void markTreeInvalid();
 
+    const core::AABB& getSceneBBox() const;
+
 private:
     struct DrawCmd;
     using ProgramMap = std::unordered_map<unsigned char, core::Program>;

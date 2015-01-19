@@ -86,11 +86,21 @@ void main()
     for (int i = 0; i < numLights; ++i) {
         float attenuation;
         vec3 light_dir;
+        const int type_texid = lights[i].type_texid;
+        const bool isShadowcasting = (type_texid & LIGHT_IS_SHADOWCASTING) != 0;
+
         // TODO max dist
-        if ((lights[i].type_texid & LIGHT_TYPE_DIRECTIONAL) != 0) {
+        if ((type_texid & LIGHT_TYPE_DIRECTIONAL) != 0) {
             light_dir = -lights[i].direction;
             attenuation = 1.0;
-        } else if ((lights[i].type_texid & LIGHT_TYPE_SPOT) != 0) {
+            if (isShadowcasting) {
+                int layer = (type_texid & LIGHT_TEXID_BITS);
+                vec4 tmp = lights[i].ProjViewMatrix * vec4(inData.wpos, 1.0);
+                tmp.xyz = (tmp.xyz / tmp.w) * 0.5 + 0.5;
+                vec4 texcoord = vec4(tmp.xy, float(layer), tmp.z);
+                attenuation *= texture(uShadowMapTex, texcoord);
+            }
+        } else if ((type_texid & LIGHT_TYPE_SPOT) != 0) {
             const vec3 diff = inData.wpos - lights[i].position;
             const float dist = length(diff);
             const vec3 dir = diff / dist;
@@ -99,13 +109,32 @@ void main()
                     dot(dir, lights[i].direction)) /
                     (lights[i].constantAttenuation + lights[i].linearAttenuation * dist +
                      lights[i].quadraticAttenuation * dist * dist);
+            if (isShadowcasting) {
+                int layer = (type_texid & LIGHT_TEXID_BITS);
+                vec4 tmp = lights[i].ProjViewMatrix * vec4(inData.wpos, 1.0);
+                tmp.xyz = (tmp.xyz / tmp.w) * 0.5 + 0.5;
+                vec4 texcoord = vec4(tmp.xy, float(layer), tmp.z);
+                attenuation *= texture(uShadowMapTex, texcoord);
+            }
         } else { // POINT
-            const vec3 diff = lights[i].position - inData.wpos;
+            const vec3 diff = inData.wpos - lights[i].position;
             const float dist = length(diff);
-            light_dir = diff / dist;
+            const vec3 dir = diff / dist;
+            light_dir = -dir;
             attenuation = 1.0 /
                     (lights[i].constantAttenuation + lights[i].linearAttenuation * dist +
                      lights[i].quadraticAttenuation * dist * dist);
+            if (isShadowcasting) {
+                int layer = (type_texid & LIGHT_TEXID_BITS);
+                vec3 absDiff = abs(diff);
+                const float abs_z = max(absDiff.x, max(absDiff.y, absDiff.z));
+                const float f = 2000.0; const float n = 1.0;
+                // see src/core/light.cpp:
+                const float depth = lights[i].direction.x + lights[i].direction.y / abs_z;
+
+                vec4 texcoord = vec4(dir, layer);
+                attenuation *= texture(uShadowCubeMapTex, texcoord, depth);
+            }
         }
 
         const float n_dot_l = max(dot(light_dir, normal), 0.0);

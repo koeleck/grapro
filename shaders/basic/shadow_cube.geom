@@ -3,7 +3,7 @@
 #include "common/lights.glsl"
 #include "common/bindings.glsl"
 
-layout(triangles, invocations = 1) in;
+layout(triangles, invocations = NUM_SHADOWCUBEMAPS) in;
 layout(triangle_strip, max_vertices = 18) out; // 6 sides x 3 vertices
 
 in VertexData
@@ -24,25 +24,27 @@ layout(std430, binding = LIGHT_ID_BINDING) restrict readonly buffer LightIDBlock
     int     lightID[];
 };
 
+// TODO
+const float BIAS = 0.1;
+
 void emitTriangle(in int ID, in vec4 vertex[3], in int layer)
 {
     // cull front faces
-    vec3 normal = cross(vertex[1].xyz - vertex[0].xyz,
-                        vertex[2].xyz - vertex[0].xyz);
-    vec3 view = lights[ID].position - vertex[0].xyz;
-    if (dot(normal, view) > 0.0)
-        return;
+    //vec3 normal = cross(vertex[1].xyz - vertex[0].xyz,
+    //                    vertex[2].xyz - vertex[0].xyz);
+    //if (normal.z > 0.0)
+    //    return;
 
     // frustum culling
     const mat4 ProjMat = lights[ID].ProjViewMatrix; // this is actually just a projection matrix
     int outOfBound[6] = int[6](0, 0, 0, 0, 0, 0);
     for (int i = 0; i < 3; ++i) {
         vertex[i] = ProjMat * vertex[i];
-        if (vertex[i].x > +vertex[i].w) ++outOfBound[0];
+        if (vertex[i].x >  vertex[i].w) ++outOfBound[0];
         if (vertex[i].x < -vertex[i].w) ++outOfBound[1];
-        if (vertex[i].y > +vertex[i].w) ++outOfBound[2];
+        if (vertex[i].y >  vertex[i].w) ++outOfBound[2];
         if (vertex[i].y < -vertex[i].w) ++outOfBound[3];
-        if (vertex[i].z > +vertex[i].w) ++outOfBound[4];
+        if (vertex[i].z >  vertex[i].w) ++outOfBound[4];
         if (vertex[i].z < -vertex[i].w) ++outOfBound[5];
     }
     for (int i = 0; i < 6; ++i) {
@@ -53,6 +55,7 @@ void emitTriangle(in int ID, in vec4 vertex[3], in int layer)
     for (int i = 0; i < 3; ++i) {
         gl_Layer = layer;
         gl_Position = vertex[i];
+        gl_Position.z += BIAS;
         outData.uv = inData[i].uv;
         outData.materialID = inData[i].materialID;
         EmitVertex();
@@ -79,30 +82,63 @@ void emitTriangle(in int ID, in vec4 vertex[3], in int layer)
 #define NEG_Z(v) vec4(v.xyz, 1.0)
 
 // transposed rotation matrices
+/*
 const mat3 RotationMatrix[6] = mat3[6](
     mat3(vec3( 0.0,  0.0,  1.0),
-         vec3( 0.0,  1.0,  0.0),
-         vec3(-1.0,  0.0,  0.0)), // xpos
+         vec3( 0.0, -1.0,  0.0),
+         vec3( 1.0,  0.0,  0.0)), // xpos
 
-    mat3(vec3( 0.0,  0.0, -1.0),
-         vec3( 0.0,  1.0,  0.0),
+    mat3(vec3( 0.0,  0.0,  1.0),
+         vec3( 0.0, -1.0,  0.0),
          vec3( 1.0,  0.0,  0.0)), // x neg
 
     mat3(vec3( 1.0,  0.0,  0.0),
-         vec3( 0.0,  0.0,  1.0),
+         vec3( 0.0,  0.0, -1.0),
          vec3( 0.0, -1.0,  0.0)), // y pos
 
-    mat3(vec3( 1.0,  0.0,  0.0),
+    mat3(vec3(-1.0,  0.0,  0.0),
          vec3( 0.0,  0.0, -1.0),
          vec3( 0.0,  1.0,  0.0)), // y neg
 
-    mat3(vec3(-1.0,  0.0,  0.0),
-         vec3( 0.0,  1.0,  0.0),
-         vec3( 0.0,  0.0, -1.0)), // z pos
+    mat3(vec3( 1.0,  0.0,  0.0),
+         vec3( 0.0, -1.0,  0.0),
+         vec3( 0.0,  0.0,  1.0)), // z pos
 
     mat3(vec3( 1.0,  0.0,  0.0),
-         vec3( 0.0,  1.0,  0.0),
-         vec3( 0.0,  0.0,  1.0))); // z pos
+         vec3( 0.0, -1.0,  0.0),
+         vec3( 0.0,  0.0,  1.0))); // z neg
+*/
+const mat3 RotationMatrix[7] = mat3[7](
+
+    //  passt
+    mat3(vec3( 0.0,  0.0, -1.0),
+         vec3( 0.0, -1.0,  0.0),
+         vec3(-1.0,  0.0,  0.0)), // xpos
+    mat3(vec3( 0.0,  0.0,  1.0),
+         vec3( 0.0, -1.0,  0.0),
+         vec3( 1.0,  0.0,  0.0)), // x neg
+    // /passt
+
+    mat3(vec3( 1.0,  0.0,  0.0),
+         vec3( 0.0,  0.0,  1.0),
+         vec3( 0.0, -1.0,  0.0)), // y neg
+    mat3(vec3( 1.0,  0.0,  0.0),
+         vec3( 0.0,  0.0, -1.0),
+         vec3( 0.0,  1.0,  0.0)), // y pos
+
+    // passt
+    mat3(vec3( 1.0,  0.0,  0.0),
+         vec3( 0.0, -1.0,  0.0),
+         vec3( 0.0,  0.0, -1.0)), // z neg
+
+    mat3(vec3(-1.0,  0.0,  0.0),
+         vec3( 0.0, -1.0,  0.0),
+         vec3( 0.0,  0.0,  1.0)), // z pos
+    // /passt
+
+
+    mat3(1.0)
+);
 
 
 void main()

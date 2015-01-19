@@ -106,7 +106,7 @@ bool loadScenefiles(const std::string& scenefiles)
                 newLight->setPosition(light->position);
                 newLight->setIntensity(light->color);
                 //newLight->setMaxDistance(light->max_distance);
-                newLight->setMaxDistance(1000.f); // TODO
+                newLight->setMaxDistance(2000.f); // TODO
                 newLight->setLinearAttenuation(light->linear_attenuation);
                 newLight->setConstantAttenuation(light->constant_attenuation);
                 newLight->setQuadraticAttenuation(light->quadratic_attenuation);

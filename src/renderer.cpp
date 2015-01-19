@@ -84,9 +84,9 @@ Renderer::Renderer(core::TimerArray& timer_array)
     core::res::shaders->registerShader("shadow_vert", "basic/shadow.vert",
             GL_VERTEX_SHADER);
     core::res::shaders->registerShader("shadow_geom", "basic/shadow.geom",
-            GL_GEOMETRY_SHADER);
+            GL_GEOMETRY_SHADER, "NUM_SHADOWMAPS " + std::to_string(core::res::lights->getNumShadowMapsUsed()));
     core::res::shaders->registerShader("shadow_cube_geom", "basic/shadow_cube.geom",
-            GL_GEOMETRY_SHADER);
+            GL_GEOMETRY_SHADER, "NUM_SHADOWCUBEMAPS " + std::to_string(core::res::lights->getNumShadowCubeMapsUsed()));
     core::res::shaders->registerShader("depth_only_frag", "basic/depth_only.frag",
             GL_FRAGMENT_SHADER);
     m_2d_shadow_prog = core::res::shaders->registerProgram("shadow2d_prog",
@@ -236,9 +236,7 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
         indirectCmd.baseInstance = g->getIndex();
 
 
-        if (mesh->type() != current_type || current_mat == nullptr ||
-                !current_mat->isCompatible(*mat))
-        {
+        if (mesh->type() != current_type || current_mat != mat) {
             current_type = mesh->type();
             current_mat = mat;
             m_drawlist.emplace_back(GL_TRIANGLES, mesh->type(),
@@ -599,19 +597,12 @@ void Renderer::render(const bool renderBBoxes, const bool renderOctree)
     core::res::meshes->bind();
     core::res::lights->bind();
 
-    glEnable(GL_DEPTH_TEST);
-    glDisable(GL_CULL_FACE);
-    renderShadowmaps();
-
-    /*
-    glUseProgram(m_debug_tex_prog);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, core::res::lights->getShadowCubeMapTexture());
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-    return;
-    */
-
     if (m_rebuildTree) {
+        // only render shadowmaps once
+        glEnable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+        renderShadowmaps();
+
         createVoxelList();
         buildVoxelTree();
         m_rebuildTree = false;
@@ -794,6 +785,7 @@ void Renderer::markTreeInvalid()
 
 void Renderer::renderShadowmaps()
 {
+    glDisable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
 
     GLuint prog;
@@ -813,6 +805,13 @@ void Renderer::renderShadowmaps()
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, vars.screen_width, vars.screen_height);
+}
+
+/****************************************************************************/
+
+const core::AABB& Renderer::getSceneBBox() const
+{
+    return m_scene_bbox;
 }
 
 /****************************************************************************/

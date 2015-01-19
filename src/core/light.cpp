@@ -12,7 +12,7 @@ namespace core
 
 namespace
 {
-constexpr auto NEAR_PLANE = .1f;
+constexpr auto NEAR_PLANE = 5.f; // optimized for sponza
 } // anonymous namespace
 
 /*****************************************************************************
@@ -29,7 +29,7 @@ Light::Light(shader::LightStruct* const data, const LightType type,
     m_constant_attenuation{.0f},
     m_linear_attenuation{.0f},
     m_quadratic_attenuation{.0f},
-    m_max_distance{1.f},
+    m_max_distance{10.f},
     m_type{type},
     m_depth_tex{depthTex}
 {
@@ -255,11 +255,9 @@ void SpotLight::updateMatrix()
     glm::dmat4 projmat;
     if (getMaxDistance() == std::numeric_limits<float>::infinity()) {
         projmat = glm::infinitePerspective<double>(getAngleOuterCone(), 1.f, NEAR_PLANE);
-        LOG_INFO("near: ", NEAR_PLANE, ", far: infty");
     } else {
         projmat = glm::perspective<double>(getAngleOuterCone(), 1.f, NEAR_PLANE,
                 getMaxDistance());
-        LOG_INFO("near: ", NEAR_PLANE, ", far: ", getMaxDistance());
     }
     glm::dmat4 viewmat = glm::lookAt<double, glm::defaultp>(getPosition(),
             getPosition() + getDirection(), glm::vec3(.0f, 1.f, .0f));
@@ -377,7 +375,7 @@ PointLight::PointLight(shader::LightStruct* const data, const int depthTex)
 
 void PointLight::updateMatrix()
 {
-    double angle = glm::pi<double>() / 2.0; // 90 degrees
+    double angle = glm::radians(90.0);
     glm::dmat4 projmat;
     if (getMaxDistance() == std::numeric_limits<float>::infinity()) {
         projmat = glm::infinitePerspective<double>(angle, 1.f, NEAR_PLANE);
@@ -387,6 +385,14 @@ void PointLight::updateMatrix()
     }
     // view transformation will be done in the shaders
     m_data->projViewMatrix = glm::mat4(projmat);
+
+    // we have to compute the fragments depth in the shader, so
+    // store the necessary values in 'direction'
+    //  to compute depth : [0, 1] from abs(z):
+    // --> depth = direction.x + direction.y / abs(z);
+    const double a = 0.5 - projmat[2][2] / 2.0;
+    const double b = projmat[3][2] / 2.0;
+    m_data->direction = glm::vec3(a, b, .0f);
 }
 
 /****************************************************************************/
