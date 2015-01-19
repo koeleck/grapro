@@ -82,62 +82,30 @@ void emitTriangle(in int ID, in vec4 vertex[3], in int layer)
 #define NEG_Z(v) vec4(v.xyz, 1.0)
 
 // transposed rotation matrices
-/*
 const mat3 RotationMatrix[6] = mat3[6](
-    mat3(vec3( 0.0,  0.0,  1.0),
-         vec3( 0.0, -1.0,  0.0),
-         vec3( 1.0,  0.0,  0.0)), // xpos
 
-    mat3(vec3( 0.0,  0.0,  1.0),
-         vec3( 0.0, -1.0,  0.0),
-         vec3( 1.0,  0.0,  0.0)), // x neg
-
-    mat3(vec3( 1.0,  0.0,  0.0),
-         vec3( 0.0,  0.0, -1.0),
-         vec3( 0.0, -1.0,  0.0)), // y pos
-
-    mat3(vec3(-1.0,  0.0,  0.0),
-         vec3( 0.0,  0.0, -1.0),
-         vec3( 0.0,  1.0,  0.0)), // y neg
-
-    mat3(vec3( 1.0,  0.0,  0.0),
-         vec3( 0.0, -1.0,  0.0),
-         vec3( 0.0,  0.0,  1.0)), // z pos
-
-    mat3(vec3( 1.0,  0.0,  0.0),
-         vec3( 0.0, -1.0,  0.0),
-         vec3( 0.0,  0.0,  1.0))); // z neg
-*/
-const mat3 RotationMatrix[7] = mat3[7](
-
-    //  passt
     mat3(vec3( 0.0,  0.0, -1.0),
          vec3( 0.0, -1.0,  0.0),
-         vec3(-1.0,  0.0,  0.0)), // xpos
+         vec3(-1.0,  0.0,  0.0)),
+
     mat3(vec3( 0.0,  0.0,  1.0),
          vec3( 0.0, -1.0,  0.0),
-         vec3( 1.0,  0.0,  0.0)), // x neg
-    // /passt
+         vec3( 1.0,  0.0,  0.0)),
 
     mat3(vec3( 1.0,  0.0,  0.0),
          vec3( 0.0,  0.0,  1.0),
-         vec3( 0.0, -1.0,  0.0)), // y neg
+         vec3( 0.0, -1.0,  0.0)),
     mat3(vec3( 1.0,  0.0,  0.0),
          vec3( 0.0,  0.0, -1.0),
-         vec3( 0.0,  1.0,  0.0)), // y pos
+         vec3( 0.0,  1.0,  0.0)),
 
-    // passt
     mat3(vec3( 1.0,  0.0,  0.0),
          vec3( 0.0, -1.0,  0.0),
-         vec3( 0.0,  0.0, -1.0)), // z neg
+         vec3( 0.0,  0.0, -1.0)),
 
     mat3(vec3(-1.0,  0.0,  0.0),
          vec3( 0.0, -1.0,  0.0),
-         vec3( 0.0,  0.0,  1.0)), // z pos
-    // /passt
-
-
-    mat3(1.0)
+         vec3( 0.0,  0.0,  1.0)),
 );
 
 
