@@ -603,11 +603,13 @@ void Renderer::render(const bool renderBBoxes, const bool renderOctree)
     glDisable(GL_CULL_FACE);
     renderShadowmaps();
 
+    /*
     glUseProgram(m_debug_tex_prog);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, core::res::lights->getShadowCubeMapTexture());
     glDrawArrays(GL_TRIANGLES, 0, 3);
     return;
+    */
 
     if (m_rebuildTree) {
         createVoxelList();
@@ -794,15 +796,20 @@ void Renderer::renderShadowmaps()
 {
     glEnable(GL_DEPTH_TEST);
 
-    GLuint prog = m_2d_shadow_prog;
-    core::res::lights->setupForShadowMapRendering();
-    glClear(GL_DEPTH_BUFFER_BIT);
-    renderGeometry(prog, true, nullptr);
+    GLuint prog;
+    if (core::res::lights->getNumShadowMapsUsed() > 0) {
+        prog = m_2d_shadow_prog;
+        core::res::lights->setupForShadowMapRendering();
+        glClear(GL_DEPTH_BUFFER_BIT);
+        renderGeometry(prog, true, nullptr);
+    }
 
-    prog = m_cube_shadow_prog;
-    core::res::lights->setupForShadowCubeMapRendering();
-    glClear(GL_DEPTH_BUFFER_BIT);
-    renderGeometry(prog, true, nullptr);
+    if (core::res::lights->getNumShadowCubeMapsUsed() > 0) {
+        prog = m_cube_shadow_prog;
+        core::res::lights->setupForShadowCubeMapRendering();
+        glClear(GL_DEPTH_BUFFER_BIT);
+        renderGeometry(prog, true, nullptr);
+    }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, vars.screen_width, vars.screen_height);

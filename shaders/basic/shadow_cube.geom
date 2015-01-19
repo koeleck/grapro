@@ -3,7 +3,7 @@
 #include "common/lights.glsl"
 #include "common/bindings.glsl"
 
-layout(triangles, invocations = 32) in;
+layout(triangles, invocations = 1) in;
 layout(triangle_strip, max_vertices = 18) out; // 6 sides x 3 vertices
 
 in VertexData
@@ -75,8 +75,34 @@ void emitTriangle(in int ID, in vec4 vertex[3], in int layer)
 #define NEG_X(v) vec4(-v.z,  v.y,  v.x, 1.0)
 #define POS_Y(v) vec4( v.x,  v.z, -v.y, 1.0)
 #define NEG_Y(v) vec4( v.x, -v.z,  v.y, 1.0)
-#define POS_Z(v) vec4(-v.z,  v.y, -v.x, 1.0)
+#define POS_Z(v) vec4(-v.x,  v.y, -v.z, 1.0)
 #define NEG_Z(v) vec4(v.xyz, 1.0)
+
+// transposed rotation matrices
+const mat3 RotationMatrix[6] = mat3[6](
+    mat3(vec3( 0.0,  0.0,  1.0),
+         vec3( 0.0,  1.0,  0.0),
+         vec3(-1.0,  0.0,  0.0)), // xpos
+
+    mat3(vec3( 0.0,  0.0, -1.0),
+         vec3( 0.0,  1.0,  0.0),
+         vec3( 1.0,  0.0,  0.0)), // x neg
+
+    mat3(vec3( 1.0,  0.0,  0.0),
+         vec3( 0.0,  0.0,  1.0),
+         vec3( 0.0, -1.0,  0.0)), // y pos
+
+    mat3(vec3( 1.0,  0.0,  0.0),
+         vec3( 0.0,  0.0, -1.0),
+         vec3( 0.0,  1.0,  0.0)), // y neg
+
+    mat3(vec3(-1.0,  0.0,  0.0),
+         vec3( 0.0,  1.0,  0.0),
+         vec3( 0.0,  0.0, -1.0)), // z pos
+
+    mat3(vec3( 1.0,  0.0,  0.0),
+         vec3( 0.0,  1.0,  0.0),
+         vec3( 0.0,  0.0,  1.0))); // z pos
 
 
 void main()
@@ -92,6 +118,14 @@ void main()
                                  gl_in[1].gl_Position.xyz - pos,
                                  gl_in[2].gl_Position.xyz - pos);
 
+    for (int i = 0; i < 6; ++i) {
+        vec4 vertex[3] = vec4[3](
+                vec4(baseVertex[0] * RotationMatrix[i], 1.0),
+                vec4(baseVertex[1] * RotationMatrix[i], 1.0),
+                vec4(baseVertex[2] * RotationMatrix[i], 1.0));
+        emitTriangle(ID, vertex, baseLayer + i);
+    }
+    /*
     vec4 vertex[3] = vec4[3](POS_X(baseVertex[0]),
                              POS_X(baseVertex[1]),
                              POS_X(baseVertex[2]));
@@ -121,4 +155,5 @@ void main()
                              NEG_Z(baseVertex[1]),
                              NEG_Z(baseVertex[2]));
     emitTriangle(ID, vertex, baseLayer + 5);
+    */
 }

@@ -33,6 +33,10 @@ public:
     GLuint getShadowMapTexture() const;
     GLuint getShadowCubeMapTexture() const;
 
+    int getNumLights() const;
+    int getNumShadowMapsUsed() const;
+    int getNumShadowCubeMapsUsed() const;
+
 private:
     using LightPool = BufferStoragePool<shader::LightStruct>;
 
