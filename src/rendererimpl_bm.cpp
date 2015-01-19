@@ -222,7 +222,7 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
                                   FLAG_PROG_LOCAL_SIZE, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-    for (auto i = 0u; i < m_treeLevels - 1; ++i) {
+    for (auto i = 1u; i < m_treeLevels; ++i) {
 
         if (debug_output) {
             LOG_INFO("");
@@ -236,12 +236,12 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
         glUseProgram(m_octreeNodeAlloc_prog);
 
         // uniforms
-        glProgramUniform1ui(m_octreeNodeAlloc_prog, loc_u_numNodesThisLevel, maxNodesPerLevel[i]);
+        glProgramUniform1ui(m_octreeNodeAlloc_prog, loc_u_numNodesThisLevel, maxNodesPerLevel[i - 1]);
         glProgramUniform1ui(m_octreeNodeAlloc_prog, loc_u_nodeOffset, nodeOffset);
         glProgramUniform1ui(m_octreeNodeAlloc_prog, loc_u_allocOffset, allocOffset);
 
         // dispatch
-        groupWidth = calculateDataWidth(maxNodesPerLevel[i], FLAG_PROG_LOCAL_SIZE);
+        groupWidth = calculateDataWidth(maxNodesPerLevel[i - 1], FLAG_PROG_LOCAL_SIZE);
         if (debug_output) {
             LOG_INFO("Dispatching NodeAlloc with ", groupWidth, "*1*1 groups with 64*1*1 threads each");
             LOG_INFO("--> ", groupWidth * FLAG_PROG_LOCAL_SIZE, " threads");
@@ -268,7 +268,7 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
 
         maxNodesPerLevel.emplace_back(maxNodesToBeAllocated);   // maxNodesToBeAllocated is the number of threads
                                                                 // we want to launch in the next level
-        nodeOffset += maxNodesPerLevel[i];                      // add number of newly allocated child nodes to offset
+        nodeOffset += maxNodesPerLevel[i - 1];                      // add number of newly allocated child nodes to offset
         allocOffset += maxNodesToBeAllocated;
 
         /*
@@ -278,8 +278,8 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
         glUseProgram(m_octreeNodeFlag_prog);
 
         // uniforms
-        isLeaf = (i == m_treeLevels - 2);
-        glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_maxLevel, i + 1);
+        isLeaf = (i == m_treeLevels - 1);
+        glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_maxLevel, i - 1 + 1);
         glProgramUniform1ui(m_octreeNodeFlag_prog, loc_u_isLeaf, isLeaf ? 1 : 0);
         if (isLeaf) {
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::OCTREE_COLOR, m_octreeNodeColorBuffer);
