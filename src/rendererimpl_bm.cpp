@@ -8,7 +8,13 @@
 #include "core/timer_array.h"
 #include "core/instance_manager.h"
 #include "core/mesh_manager.h"
-
+#include "core/mesh.h"
+#include "core/camera_manager.h"
+#include "core/material_manager.h"
+#include "core/shader_interface.h"
+#include "core/texture_manager.h"
+#include "core/light_manager.h"
+#include "core/texture.h"
 #include "log/log.h"
 
 #include "framework/vars.h"
@@ -20,6 +26,15 @@
 namespace
 {
 constexpr unsigned int FLAG_PROG_LOCAL_SIZE {64u};
+constexpr int ALLOC_PROG_LOCAL_SIZE = 256;
+typedef struct
+{
+    GLuint count;
+    GLuint instanceCount;
+    GLuint firstIndex;
+    GLuint baseVertex;
+    GLuint baseInstance;
+} DrawElementsIndirectCommand;
 } // anonymous namespace
 
 /****************************************************************************/
@@ -81,6 +96,20 @@ void RendererImplBM::initShaders()
     core::res::shaders->registerShader("ssq_ao_vert", "conetracing/ssq_ao.vert", GL_VERTEX_SHADER);
     core::res::shaders->registerShader("indirect_frag", "conetracing/indirect.frag", GL_FRAGMENT_SHADER);
     m_indirect_prog = core::res::shaders->registerProgram("indirect_prog", {"ssq_ao_vert", "indirect_frag"});
+
+    // shadows
+    core::res::shaders->registerShader("shadow_vert", "basic/shadow.vert",
+    GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("shadow_geom", "basic/shadow.geom",
+    GL_GEOMETRY_SHADER, "NUM_SHADOWMAPS " + std::to_string(core::res::lights->getNumShadowMapsUsed()));
+    core::res::shaders->registerShader("shadow_cube_geom", "basic/shadow_cube.geom",
+    GL_GEOMETRY_SHADER, "NUM_SHADOWCUBEMAPS " + std::to_string(core::res::lights->getNumShadowCubeMapsUsed()));
+    core::res::shaders->registerShader("depth_only_frag", "basic/depth_only.frag",
+    GL_FRAGMENT_SHADER);
+    m_2d_shadow_prog = core::res::shaders->registerProgram("shadow2d_prog",
+    {"shadow_vert", "shadow_geom", "depth_only_frag"});
+    m_cube_shadow_prog = core::res::shaders->registerProgram("shadow_cube_prog",
+    {"shadow_vert", "shadow_cube_geom", "depth_only_frag"});
 }
 
 /****************************************************************************/
@@ -357,6 +386,11 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
     if (m_geometry.empty())
         return;
 
+    core::res::materials->bind();
+    core::res::instances->bind();
+    core::res::meshes->bind();
+    core::res::lights->bind();
+
     if (treeLevels != m_treeLevels) {
 
         m_treeLevels = treeLevels;
@@ -386,6 +420,11 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
     }
 
     if (m_rebuildTree) {
+        // only render shadowmaps once
+        glEnable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+        renderShadowmaps();
+
         createVoxelList(debug_output);
         buildVoxelTree(debug_output);
         m_rebuildTree = false;
@@ -501,6 +540,29 @@ void RendererImplBM::renderAmbientOcclusion() const
                       vars.screen_width/2, 0, vars.screen_width, vars.screen_height/2,
                       GL_COLOR_BUFFER_BIT, GL_LINEAR);
     */
+}
+
+/****************************************************************************/
+
+void RendererImplBM::renderShadowmaps()
+{
+    glDisable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
+    GLuint prog;
+    if (core::res::lights->getNumShadowMapsUsed() > 0) {
+        prog = m_2d_shadow_prog;
+        core::res::lights->setupForShadowMapRendering();
+        glClear(GL_DEPTH_BUFFER_BIT);
+        renderGeometry(prog);
+    }
+    if (core::res::lights->getNumShadowCubeMapsUsed() > 0) {
+        prog = m_cube_shadow_prog;
+        core::res::lights->setupForShadowCubeMapRendering();
+        glClear(GL_DEPTH_BUFFER_BIT);
+        renderGeometry(prog);
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, vars.screen_width, vars.screen_height);
 }
 
 /****************************************************************************/

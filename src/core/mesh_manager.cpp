@@ -110,6 +110,9 @@ Mesh* MeshManager::addMesh(const import::Mesh* mesh)
             *data++ = mesh->vertex_colors[i][2];
         }
     }
+    // since we're only pushing floats into the buffer,
+    // // the start of out index array is always aligned to
+    // // 4 bytes... good
     GLubyte* indices = reinterpret_cast<GLubyte*>(data);
     for (unsigned int i = 0; i < mesh->num_indices; ++i) {
         if (per_index_size == sizeof(GLubyte)) {
@@ -134,6 +137,8 @@ Mesh* MeshManager::addMesh(const import::Mesh* mesh)
     mesh_data->stride = static_cast<GLuint>(per_vertex_size / static_cast<GLsizei>(sizeof(float)));
     mesh_data->components = static_cast<GLuint>(components());
     mesh_data->first = static_cast<GLuint>(offset / static_cast<GLintptr>(sizeof(float)));
+    mesh_data->firstIndex = static_cast<GLuint>((offset + vertices_size) / per_index_size);
+    mesh_data->count = static_cast<GLuint>(mesh->num_indices);
 
     auto res = m_meshes.emplace(std::move(name),
             std::unique_ptr<Mesh>(

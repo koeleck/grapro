@@ -35,8 +35,6 @@ void initializeManagers()
     res::instances = new InstanceManager();
     res::meshes = new MeshManager();
     res::lights = new LightManager();
-
-    gl::printInfo();
 }
 
 /***************************************************************************/

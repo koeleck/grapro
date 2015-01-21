@@ -43,6 +43,7 @@ public:
     void setConeGridSize(unsigned int size) { m_coneGridSize = size; }
     void setConeSteps(unsigned int steps) { m_coneSteps = steps; }
 
+    const core::AABB& getSceneBBox() const { return this->m_scene_bbox; } 
 protected:
     struct DrawCmd;
 
