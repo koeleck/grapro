@@ -23,12 +23,16 @@ private:
     void initAmbientOcclusion();
     void renderAmbientOcclusion() const;
     void renderVoxels() const;
+    void renderShadowmaps();
 
     void resetAtomicBuffer() const;
 
 	// ambient occlusion
     core::Program                       m_ssq_ao_prog;
 
+    // lights
+    core::Program m_2d_shadow_prog;
+    core::Program m_cube_shadow_prog;
 };
 
 #endif // RENDERER_H

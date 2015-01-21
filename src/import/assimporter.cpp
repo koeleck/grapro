@@ -95,12 +95,12 @@ struct AssimpMesh
     const aiMesh* ptr;
 };
 
+// local function declarations:
 glm::vec3 to_glm(const aiVector3D& vec3);
 glm::vec3 to_glm(const aiColor3D& col);
 glm::vec3 to_glm(const aiColor4D& col);
 glm::mat4 to_glm(const aiMatrix4x4& mat);
 
-// local function declarations:
 std::size_t getSceneInfo(const std::string& filename, const aiScene* scene,
         std::vector<std::pair<std::string, const aiCamera*>>& cameras,
         std::vector<std::pair<std::string, const aiLight*>>& lights,
@@ -114,12 +114,13 @@ std::string getName(const aiLight* light);
 std::string getName(const aiMaterial* mat);
 std::string getName(const aiMesh* mesh);
 std::string getName(const aiNode* node);
+const aiNode* findNode(const aiNode* root, const aiString& name);
 
 char* dumpCamera(char* ptr, const std::pair<std::string, const aiCamera*>& cam);
 char* dumpMaterial(char* ptr, const std::pair<std::string, AssimpMaterial>& mat);
 char* dumpTexture(char* ptr, const std::string& tex);
 char* dumpMesh(char* ptr, const std::pair<std::string, AssimpMesh>& mesh);
-char* dumpLight(char* ptr, const std::pair<std::string, const aiLight*>& light);
+char* dumpLight(const aiNode* root, char* ptr, const std::pair<std::string, const aiLight*>& light);
 char* dumpNode(char* ptr, const std::pair<std::string, AssimpNode>& node);
 
 } // anonymous namespace
@@ -242,7 +243,7 @@ std::unique_ptr<Scene> assimport(const std::string& filename)
 
     for (std::size_t i = 0; i < lights.size(); ++i) {
         my_scene->lights[i] = reinterpret_cast<Light*>(data);
-        data = dumpLight(data, lights[i]);
+        data = dumpLight(scene->mRootNode, data, lights[i]);
     }
 
     for (std::size_t i = 0; i < textures.size(); ++i) {
@@ -668,14 +669,25 @@ char* dumpMesh(char* ptr, const std::pair<std::string, AssimpMesh>& mesh)
 
 /***************************************************************************/
 
-char* dumpLight(char* ptr, const std::pair<std::string, const aiLight*>& light)
+char* dumpLight(const aiNode* const root, char* ptr,
+        const std::pair<std::string, const aiLight*>& light)
 {
     Light* my_light = reinterpret_cast<Light*>(ptr);
     ptr += sizeof(Light);
 
+    const auto* node = findNode(root, light.second->mName);
+    glm::mat4 trans{glm::ctor::uninitialize};
+    if (node == nullptr) {
+        LOG_WARNING("Import: No node to light '",
+                light.second->mName.C_Str(), '\'');
+        trans = glm::mat4(1.f);
+    } else {
+        trans = to_glm(node->mTransformation);
+    }
+
     my_light->name = ptr;
-    my_light->position = to_glm(light.second->mPosition);
-    my_light->direction = to_glm(light.second->mDirection);
+    my_light->position = glm::vec3(trans * glm::vec4(to_glm(light.second->mPosition), 1.f));
+    my_light->direction = glm::vec3(trans * glm::vec4(to_glm(light.second->mDirection), .0f));
     my_light->color = to_glm(light.second->mColorDiffuse);
     my_light->angle_inner_cone = light.second->mAngleInnerCone;
     my_light->angle_outer_cone = light.second->mAngleOuterCone;
@@ -823,6 +835,21 @@ glm::mat4 to_glm(const aiMatrix4x4& mat)
     const glm::mat4* tmp = reinterpret_cast<const glm::mat4*>(&mat);
     return glm::transpose(*tmp);
 
+}
+
+/***************************************************************************/
+
+const aiNode* findNode(const aiNode* node, const aiString& name)
+{
+    if (node->mName == name)
+        return node;
+    const auto numChildren = node->mNumChildren;
+    for (unsigned int i = 0; i < numChildren; ++i) {
+        auto res = findNode(node->mChildren[i], name);
+        if (res != nullptr)
+            return res;
+    }
+    return nullptr;
 }
 
 /***************************************************************************/

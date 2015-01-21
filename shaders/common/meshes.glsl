@@ -14,6 +14,8 @@ struct Mesh
     uint    stride;
     uint    components;
     uint    first;
+    uint    firstIndex;
+    uint    count;
 };
 
 // keep in sync with core/mesh.h: MeshComponents

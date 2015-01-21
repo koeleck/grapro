@@ -20,16 +20,17 @@ namespace bindings
 {
 
 // Shader storage buffers:
-constexpr int CAMERA        = 0;
-constexpr int TEXTURE       = 1;
-constexpr int MESH          = 2;
-constexpr int MATERIAL      = 3;
-constexpr int INSTANCE      = 4;
-constexpr int VERTEX        = 5;
-constexpr int VOXEL         = 6;
-constexpr int OCTREE        = 7;
-constexpr int OCTREE_COLOR  = 8;
-constexpr int LIGHT         = 9;
+constexpr int CAMERA    = 0;
+constexpr int TEXTURE   = 1;
+constexpr int MESH      = 2;
+constexpr int MATERIAL  = 3;
+constexpr int INSTANCE  = 4;
+constexpr int VERTEX    = 5;
+constexpr int VOXEL     = 6;
+constexpr int OCTREE    = 7;
+constexpr int OCTREE_COLOR = 8;
+constexpr int LIGHT     = 9;
+constexpr int LIGHT_IDS = 10;
 
 // Vertex Attrib Arrays
 constexpr int POSITIONS = 0;
@@ -38,16 +39,17 @@ constexpr int NORMALS   = 2;
 constexpr int TANGENTS  = 3;
 
 // Texture Units
-constexpr int DIFFUSE_TEX_UNIT      = 0;
-constexpr int SPECULAR_TEX_UNIT     = 1;
-constexpr int GLOSSY_TEX_UNIT       = 2;
-constexpr int NORMAL_TEX_UNIT       = 3;
-constexpr int EMISSIVE_TEX_UNIT     = 4;
-constexpr int ALPHA_TEX_UNIT        = 5;
-constexpr int AMBIENT_TEX_UNIT      = 6;
-constexpr int DIR_LIGHT_TEX_UNIT    = 7;
-constexpr int OMNI_LIGHT_TEX_UNIT   = 8;
-constexpr int NUM_TEXT_UNITS        = 9; // <- keep up to date
+constexpr int DIFFUSE_TEX_UNIT    = 0;
+constexpr int SPECULAR_TEX_UNIT   = 1;
+constexpr int GLOSSY_TEX_UNIT     = 2;
+constexpr int NORMAL_TEX_UNIT     = 3;
+constexpr int EMISSIVE_TEX_UNIT   = 4;
+constexpr int ALPHA_TEX_UNIT      = 5;
+constexpr int AMBIENT_TEX_UNIT    = 6;
+constexpr int NUM_TEXT_UNITS      = 7; // <- keep up to date
+
+constexpr int DIR_LIGHT_TEX_UNIT  = 7;
+constexpr int OMNI_LIGHT_TEX_UNIT = 8;
 
 } // namespace bindings
 
@@ -65,7 +67,7 @@ struct CameraStruct
     glm::vec4                       padding[3];
 };
 static_assert(sizeof(CameraStruct) == 256 &&
-              sizeof(CameraStruct) % CameraStruct::alignment() == 0, "");
+        sizeof(CameraStruct) % CameraStruct::alignment() == 0, "");
 
 
 struct MaterialStruct
@@ -93,7 +95,7 @@ struct MaterialStruct
     GLfloat                         opacity;
 };
 static_assert(sizeof(MaterialStruct) == 96 &&
-              sizeof(MaterialStruct) % MaterialStruct::alignment() == 0, "");
+        sizeof(MaterialStruct) % MaterialStruct::alignment() == 0, "");
 
 struct InstanceStruct
 {
@@ -105,7 +107,7 @@ struct InstanceStruct
     GLuint                          MaterialID;
 };
 static_assert(sizeof(InstanceStruct) == 96 &&
-              sizeof(InstanceStruct) % InstanceStruct::alignment() == 0, "");
+        sizeof(InstanceStruct) % InstanceStruct::alignment() == 0, "");
 
 struct MeshStruct
 {
@@ -113,14 +115,19 @@ struct MeshStruct
     GLuint                          stride;
     GLuint                          components; // see mesh.h
     GLuint                          first;
+    GLuint                          firstIndex;
+    GLuint                          count;
 };
-static_assert(sizeof(MeshStruct) == 12 &&
-              sizeof(MeshStruct) % MeshStruct::alignment() == 0, "");
+static_assert(sizeof(MeshStruct) == 20 &&
+        sizeof(MeshStruct) % MeshStruct::alignment() == 0, "");
 
 struct LightStruct
 {
     static constexpr int alignment() {return 16;} // vec4
-    glm::mat4                       lightMatrix;
+    enum Type : GLint {SPOT        = 0x10000000,
+                       DIRECTIONAL = 0x20000000,
+                       POINT       = 0x40000000};
+
     glm::mat4                       projViewMatrix;
 
     glm::vec3                       position;
@@ -136,12 +143,11 @@ struct LightStruct
     GLfloat                         linearAttenuation;
     GLfloat                         quadraticAttenuation;
     GLint                           type_texid; // 31:      is shadowcasting
-                                                // [30:29]: type
-                                                // [28:0]:  depth texture index
+                                                // [30:28]: type
+                                                // [27:0]:  depth texture index
 };
-static_assert(sizeof(LightStruct) == 192 &&
-              sizeof(LightStruct) % LightStruct::alignment() == 0, "");
-
+static_assert(sizeof(LightStruct) == 128 &&
+        sizeof(LightStruct) % LightStruct::alignment() == 0, "");
 
 } // namespace shader
 

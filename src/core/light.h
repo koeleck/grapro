@@ -57,6 +57,8 @@ protected:
     Light(shader::LightStruct* data, LightType type, int depthTex);
     shader::LightStruct*    m_data;
 
+    virtual void updateMatrix() = 0;
+
 private:
     glm::vec3               m_position;
     glm::vec3               m_intensity;
@@ -85,6 +87,8 @@ protected:
     friend class LightManager;
     SpotLight(shader::LightStruct* data, int depthTex);
 
+    virtual void updateMatrix() override;
+
 private:
     glm::vec3               m_direction;
     float                   m_angle_inner_cone;
@@ -110,6 +114,8 @@ protected:
     friend class LightManager;
     DirectionalLight(shader::LightStruct* data, int depthTex);
 
+    virtual void updateMatrix() override;
+
 private:
     glm::vec3               m_direction;
     float                   m_rotation;
@@ -127,6 +133,8 @@ protected:
     friend class LightManager;
     PointLight(shader::LightStruct* data, int depthTex);
 
+    virtual void updateMatrix() override;
+
 private:
 };
 
@@ -135,3 +143,4 @@ private:
 } // namespace core
 
 #endif // CORE_LIGHT_H
+

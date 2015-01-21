@@ -335,5 +335,47 @@ GLuint Material::getIndex() const
 
 /****************************************************************************/
 
+bool Material::isCompatible(const Material& other) const
+{
+    if (this == &other)
+        return true;
+
+    // compatible, if using the same textures, or one uses textures and the
+    // other doesn't, or both don't use any textures at all
+    if (hasDiffuseTexture() && other.hasDiffuseTexture()) {
+        if (getDiffuseTexture() != other.getDiffuseTexture())
+            return false;
+    }
+    if (hasSpecularTexture() && other.hasSpecularTexture()) {
+        if (getSpecularTexture() != other.getSpecularTexture())
+            return false;
+    }
+    if (hasEmissiveTexture() && other.hasEmissiveTexture()) {
+        if (getEmissiveTexture() != other.getEmissiveTexture())
+            return false;
+
+    }
+    if (hasGlossyTexture() && other.hasGlossyTexture()) {
+        if (getGlossyTexture() != other.getGlossyTexture())
+            return false;
+    }
+    if (hasAlphaTexture() && other.hasAlphaTexture()) {
+        if (getAlphaTexture() != other.getAlphaTexture())
+            return false;
+    }
+    if (hasNormalTexture() && other.hasNormalTexture()) {
+        if (getNormalTexture() != other.getNormalTexture())
+            return false;
+    }
+    if (hasAmbientTexture() && other.hasAmbientTexture()) {
+        if (getAmbientTexture() != other.getAmbientTexture())
+            return false;
+    }
+
+    return true;
+}
+
+/****************************************************************************/
+
 } // namespace core
 

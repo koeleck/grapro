@@ -77,4 +77,18 @@ GLuint Mesh::index() const
 
 /****************************************************************************/
 
+GLuint Mesh::firstIndex() const
+{
+    unsigned int size;
+    if (m_type == GL_UNSIGNED_BYTE)
+        size = 1;
+    else if (m_type == GL_UNSIGNED_SHORT)
+        size = 2;
+    else
+        size = 4;
+    return static_cast<GLuint>(reinterpret_cast<std::size_t>(m_indices) / size);
+}
+
+/****************************************************************************/
+
 } // namespace core

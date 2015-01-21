@@ -12,6 +12,7 @@ layout(location = 3) out float out_depth;
 
 in VertexData
 {
+    vec3 wpos;
     vec3 viewdir;
     vec3 normal;
     vec2 uv;
@@ -19,8 +20,6 @@ in VertexData
     vec3 bitangent;
     flat uint materialID;
 } inData;
-
-in vec4 worldPosition;
 
 void main()
 {
@@ -94,7 +93,7 @@ void main()
     }
 
 
-    out_pos    = worldPosition;
+    out_pos    = vec4(inData.wpos, 1);
     out_normal = normal;
     out_color  = vec3(diffuse_color * n_dot_l + specular_color * spec + 0.15 * ambient_color);
     out_depth  = gl_FragCoord.z;

@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstring>
 #include <boost/tokenizer.hpp>
 
 #include "loader.h"
@@ -8,6 +9,7 @@
 #include "material_manager.h"
 #include "mesh_manager.h"
 #include "instance_manager.h"
+#include "light_manager.h"
 #include "aabb.h"
 
 #include "log/log.h"
@@ -53,7 +55,6 @@ bool loadScenefiles(const std::string& scenefiles)
             auto* inst = res::instances->addInstance(node->name,
                     res::meshes->getMesh(mesh->name),
                     res::materials->getMaterial(mat->name));
-
             inst->move(node->position);
             inst->setScale(node->scale);
             inst->setOrientation(node->rotation);
@@ -69,7 +70,50 @@ bool loadScenefiles(const std::string& scenefiles)
         }
 
         for (unsigned int i = 0; i < scene->num_lights; ++i) {
-            // TODO
+            Light* newLight = nullptr;
+            const auto* light = scene->lights[i];
+            // name starts with "scl_" -> shadowcasting
+            const bool isShadowcasting = (std::strncmp(light->name, "scl_", 4) == 0);
+            switch (light->type) {
+            case import::LightType::SPOT:
+            {
+                auto* l = core::res::lights->createSpotlight(isShadowcasting);
+                l->setDirection(light->direction);
+                l->setAngleInnerCone(light->angle_inner_cone);
+                l->setAngleOuterCone(light->angle_outer_cone);
+                newLight = l;
+                break;
+            }
+            case import::LightType::DIRECTIONAL:
+            {
+                auto* l = core::res::lights->createDirectionalLight(isShadowcasting);
+                l->setDirection(light->direction);
+                l->setSize(1000.f); // TODO
+                l->setRotation(.0f); // TODO
+                newLight = l;
+                break;
+            }
+            case import::LightType::POINT:
+            {
+                auto* l = core::res::lights->createPointLight(isShadowcasting);
+                newLight = l;
+                break;
+            }
+            default:
+                break;
+            }
+            if (newLight != nullptr) {
+                newLight->setPosition(light->position);
+                newLight->setIntensity(light->color);
+                //newLight->setMaxDistance(light->max_distance);
+                newLight->setMaxDistance(2000.f); // TODO
+                newLight->setLinearAttenuation(light->linear_attenuation);
+                newLight->setConstantAttenuation(light->constant_attenuation);
+                newLight->setQuadraticAttenuation(light->quadratic_attenuation);
+            } else {
+                LOG_WARNING("Unsupported light type for light'",
+                        light->name, '\'');
+            }
         }
     }
 

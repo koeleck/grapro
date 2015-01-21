@@ -10,6 +10,7 @@
 #include "core/instance_manager.h"
 #include "core/camera_manager.h"
 #include "core/shader_manager.h"
+#include "core/light_manager.h"
 
 #include "log/log.h"
 
@@ -41,6 +42,27 @@ GraPro::GraPro(GLFWwindow* window)
     m_cam->setFixedYawAxis(true, up);
 
     m_render_timer = m_timers.addGPUTimer("Render");
+
+    // fix lights
+//    const auto& bbox = m_renderer.getSceneBBox();
+    const auto& bbox = m_renderer.get()->getSceneBBox();
+    const auto maxExtend = bbox.maxExtend();
+    const auto maxDist = bbox.pmax[maxExtend] - bbox.pmin[maxExtend];
+    for (auto& light : core::res::lights->getLights()) {
+    light->setMaxDistance(2500.f);
+    if (light->getType() != core::LightType::DIRECTIONAL ||
+    light->isShadowcasting() == false)
+    {
+    continue;
+    }
+    auto pos = light->getPosition();
+    pos.y = bbox.pmax.y;
+    light->setPosition(pos);
+    auto* dlight = static_cast<core::DirectionalLight*>(light.get());
+    dlight->setSize(maxDist);
+    }
+    // done. print gpu mem usage
+    gl::printInfo();
 }
 
 /****************************************************************************/
