@@ -2,7 +2,6 @@
 #define RENDERER_H
 
 #include <vector>
-#include <unordered_map>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/glm.hpp>
 #include "core/instance.h"
@@ -11,15 +10,18 @@
 #include "core/aabb.h"
 #include "core/camera.h"
 #include "core/timer_array.h"
+#include "gbuffer.h"
 
 class Renderer
 {
 public:
-    Renderer(core::TimerArray& timer_array);
+    Renderer(int width, int height, core::TimerArray& timer_array);
     ~Renderer();
 
     void setGeometry(std::vector<const core::Instance*> geometry);
     void render(bool renderBBoxes = false, bool render_octree = false);
+
+    void resize(int width, int height);
 
     void markTreeInvalid();
 
@@ -27,7 +29,6 @@ public:
 
 private:
     struct DrawCmd;
-    using ProgramMap = std::unordered_map<unsigned char, core::Program>;
 
     void initBBoxStuff();
 
@@ -40,9 +41,9 @@ private:
     void createVoxelList();
     void buildVoxelTree();
 
+    GBuffer                             m_gbuffer;
     core::AABB                          m_scene_bbox;
     std::vector<const core::Instance*>  m_geometry;
-    ProgramMap                          m_programs;
     std::vector<DrawCmd>                m_drawlist;
     gl::Buffer                          m_indirect_buffer;
 

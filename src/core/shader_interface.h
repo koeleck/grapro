@@ -50,6 +50,10 @@ constexpr int NUM_TEXT_UNITS      = 7; // <- keep up to date
 constexpr int DIR_LIGHT_TEX_UNIT  = 7;
 constexpr int OMNI_LIGHT_TEX_UNIT = 8;
 
+constexpr int GBUFFER_DEPTH_TEX                     = 0;
+constexpr int GBUFFER_DIFFUSE_NORMAL_TEX            = 1;
+constexpr int GBUFFER_SPECULAR_GLOSSY_EMISSIVE_TEX  = 2;
+
 } // namespace bindings
 
 namespace shader

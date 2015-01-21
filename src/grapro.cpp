@@ -19,7 +19,7 @@ GraPro::GraPro(GLFWwindow* window)
     m_showgui{true},
     m_render_bboxes{false},
     m_render_octree{false},
-    m_renderer{m_timers}
+    m_renderer{getWidth(), getHeight(), m_timers}
 {
     const auto* instances = core::res::instances;
     m_renderer.setGeometry(instances->getInstances());
@@ -159,6 +159,7 @@ void GraPro::resize(const int width, const int height)
     double ratio = static_cast<double>(width) / height;
     // TODO check
     static_cast<core::PerspectiveCamera*>(m_cam)->setAspectRatio(ratio);
+    m_renderer.resize(width, height);
 }
 
 /****************************************************************************/

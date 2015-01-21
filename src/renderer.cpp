@@ -64,8 +64,9 @@ struct Renderer::DrawCmd
 
 /****************************************************************************/
 
-Renderer::Renderer(core::TimerArray& timer_array)
-  : m_numVoxelFrag{0u},
+Renderer::Renderer(const int width, const int height, core::TimerArray& timer_array)
+  : m_gbuffer{width, height},
+    m_numVoxelFrag{0u},
     m_rebuildTree{true},
     m_timers(timer_array)
 {
@@ -186,6 +187,13 @@ Renderer::Renderer(core::TimerArray& timer_array)
 /****************************************************************************/
 
 Renderer::~Renderer() = default;
+
+/****************************************************************************/
+
+void Renderer::resize(const int width, const int height)
+{
+    m_gbuffer = GBuffer(width, height);
+}
 
 /****************************************************************************/
 
