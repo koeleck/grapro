@@ -31,11 +31,11 @@ int light_counter = 0;
 int material_counter = 0;
 int mesh_counter = 0;
 int node_counter = 0;
-const char* DEFAULT_CAM_NAME = "unkown_camera";
-const char* DEFAULT_LIGHT_NAME = "unkown_light";
-const char* DEFAULT_MATERIAL_NAME = "unknown_material";
-const char* DEFAULT_MESH_NAME = "unkown_mesh";
-const char* DEFAULT_NODE_NAME = "unkown_node";
+std::string DEFAULT_CAM_NAME = "unkown_camera";
+std::string DEFAULT_LIGHT_NAME = "unkown_light";
+std::string DEFAULT_MATERIAL_NAME = "unknown_material";
+std::string DEFAULT_MESH_NAME = "unkown_mesh";
+std::string DEFAULT_NODE_NAME = "unkown_node";
 
 struct AssimpMaterial
 {
@@ -108,7 +108,7 @@ std::size_t getSceneInfo(const std::string& filename, const aiScene* scene,
         std::vector<std::string>& textures,
         std::vector<std::pair<std::string, AssimpMesh>>& meshes,
         std::vector<std::pair<std::string, AssimpNode>>& nodes);
-std::string getName(const aiString& name, const char* default_name, int& counter);
+std::string getName(const aiString& name, const std::string& default_name, int& counter);
 std::string getName(const aiCamera* cam);
 std::string getName(const aiLight* light);
 std::string getName(const aiMaterial* mat);
@@ -148,6 +148,12 @@ std::unique_ptr<Scene> assimport(const std::string& filename)
         LOG_ERROR(importer.GetErrorString());
         return nullptr;
     }
+    // adjust default names
+    DEFAULT_CAM_NAME = filename + "_unkown_camera";
+    DEFAULT_LIGHT_NAME = filename + "_unkown_light";
+    DEFAULT_MATERIAL_NAME = filename + "_unknown_material";
+    DEFAULT_MESH_NAME = filename + "_unkown_mesh";
+    DEFAULT_NODE_NAME = filename + "_unkown_node";
 
     std::vector<std::pair<std::string, const aiCamera*>> cameras;
     std::vector<std::pair<std::string, const aiLight*>> lights;
@@ -742,7 +748,7 @@ char* dumpNode(char* ptr, const std::pair<std::string, AssimpNode>& node)
 
 /***************************************************************************/
 
-std::string getName(const aiString& name, const char* default_name, int& counter)
+std::string getName(const aiString& name, const std::string& default_name, int& counter)
 {
     if (name.length == 0) {
         return default_name + std::to_string(counter++);
