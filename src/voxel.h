@@ -20,4 +20,9 @@ struct OctreeNodeColorStruct
     glm::vec4 color;
 };
 
+struct BrickStruct
+{
+	unsigned int radiance;
+};
+
 #endif // VOXEL_H

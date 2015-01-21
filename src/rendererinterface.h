@@ -43,7 +43,7 @@ public:
     void setConeGridSize(unsigned int size) { m_coneGridSize = size; }
     void setConeSteps(unsigned int steps) { m_coneSteps = steps; }
 
-    const core::AABB& getSceneBBox() const { return this->m_scene_bbox; } 
+    const core::AABB& getSceneBBox() const { return this->m_scene_bbox; }
 protected:
     struct DrawCmd;
 
@@ -95,6 +95,7 @@ protected:
     core::Program                       m_octreeMipMap_prog;
     gl::Buffer                          m_octreeNodeBuffer;
     gl::Buffer                          m_octreeNodeColorBuffer;
+    gl::Buffer                          m_brickBuffer;
     bool                                m_rebuildTree;
     unsigned int                        m_treeLevels;
 
