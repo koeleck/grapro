@@ -25,7 +25,7 @@ layout(std430, binding = LIGHT_ID_BINDING) restrict readonly buffer LightIDBlock
 };
 
 // TODO
-const float BIAS = 0.1;
+const float BIAS = 0.2;
 
 void emitTriangle(in int ID, in vec4 vertex[3], in int layer)
 {
@@ -74,12 +74,6 @@ void emitTriangle(in int ID, in vec4 vertex[3], in int layer)
  ProjMatrix looks along the negativ z-axis, so
  rotate vertices accordingly:
 */
-#define POS_X(v) vec4( v.z,  v.y, -v.x, 1.0)
-#define NEG_X(v) vec4(-v.z,  v.y,  v.x, 1.0)
-#define POS_Y(v) vec4( v.x,  v.z, -v.y, 1.0)
-#define NEG_Y(v) vec4( v.x, -v.z,  v.y, 1.0)
-#define POS_Z(v) vec4(-v.x,  v.y, -v.z, 1.0)
-#define NEG_Z(v) vec4(v.xyz, 1.0)
 
 // transposed rotation matrices
 const mat3 RotationMatrix[6] = mat3[6](
@@ -105,7 +99,7 @@ const mat3 RotationMatrix[6] = mat3[6](
 
     mat3(vec3(-1.0,  0.0,  0.0),
          vec3( 0.0, -1.0,  0.0),
-         vec3( 0.0,  0.0,  1.0)),
+         vec3( 0.0,  0.0,  1.0))
 );
 
 
@@ -129,35 +123,4 @@ void main()
                 vec4(baseVertex[2] * RotationMatrix[i], 1.0));
         emitTriangle(ID, vertex, baseLayer + i);
     }
-    /*
-    vec4 vertex[3] = vec4[3](POS_X(baseVertex[0]),
-                             POS_X(baseVertex[1]),
-                             POS_X(baseVertex[2]));
-    emitTriangle(ID, vertex, baseLayer);
-
-    vertex         = vec4[3](NEG_X(baseVertex[0]),
-                             NEG_X(baseVertex[1]),
-                             NEG_X(baseVertex[2]));
-    emitTriangle(ID, vertex, baseLayer + 1);
-
-    vertex         = vec4[3](POS_Y(baseVertex[0]),
-                             POS_Y(baseVertex[1]),
-                             POS_Y(baseVertex[2]));
-    emitTriangle(ID, vertex, baseLayer + 2);
-
-    vertex         = vec4[3](NEG_Y(baseVertex[0]),
-                             NEG_Y(baseVertex[1]),
-                             NEG_Y(baseVertex[2]));
-    emitTriangle(ID, vertex, baseLayer + 3);
-
-    vertex         = vec4[3](POS_Z(baseVertex[0]),
-                             POS_Z(baseVertex[1]),
-                             POS_Z(baseVertex[2]));
-    emitTriangle(ID, vertex, baseLayer + 4);
-
-    vertex         = vec4[3](NEG_Z(baseVertex[0]),
-                             NEG_Z(baseVertex[1]),
-                             NEG_Z(baseVertex[2]));
-    emitTriangle(ID, vertex, baseLayer + 5);
-    */
 }
