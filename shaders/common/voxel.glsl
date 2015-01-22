@@ -149,4 +149,24 @@ uint convertColor(in vec3 col)
 
 /******************************************************************************/
 
+void iterateTreeLevel(const ivec3 pos, inout uint nodePtr, inout int voxelDim,
+                      inout uint childIdx, inout ivec3 umin)
+{
+    // go to next dimension
+    voxelDim /= 2;
+
+    // mask out flag bit to get child idx
+    childIdx = int(nodePtr & 0x7FFFFFFF);
+
+    // create subnodes
+    const ivec3 subnode = clamp(1 + pos - umin - voxelDim, 0, 1);
+    umin += voxelDim * subnode;
+
+    // calculate new child node
+    childIdx += subnode.x + 2 * subnode.y + 4 * subnode.z;
+    nodePtr = octree[childIdx].id;
+}
+
+/******************************************************************************/
+
 #endif // SHADER_COMMON_VOXEL_GLSL

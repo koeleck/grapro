@@ -27,18 +27,12 @@ const float voxelSize = (u_bboxMax.x - u_bboxMin.x) / float(u_voxelDim);
 
 vec4 getColor(uint maxlevel, vec3 wpos)
 {
-
     const ivec3 pos = ivec3((wpos - u_bboxMin) / voxelSize);
-
-    // local vars
     uint childIdx = 0;
     uint nodePtr = octree[childIdx].id;
+    int voxelDim = int(u_voxelDim);
+    ivec3 umin = ivec3(0);
 
-    uint voxelDim = u_voxelDim;
-
-    uvec3 umin = uvec3(0);
-
-    // iterate through all tree levels
     for (uint i = 0; i < maxlevel - 1; ++i) {
 
         if ((nodePtr & 0x80000000) == 0) {
@@ -46,27 +40,7 @@ vec4 getColor(uint maxlevel, vec3 wpos)
             return vec4(0);
         }
 
-        // go to next dimension
-        voxelDim /= 2;
-
-        // mask out flag bit to get child idx
-        childIdx = int(nodePtr & 0x7FFFFFFF);
-
-        // create subnodes
-        ivec3 subnodeptrXYZ = clamp(ivec3(1 + pos - umin - voxelDim), 0, 1);
-
-        int subnodeptr = subnodeptrXYZ.x;
-        subnodeptr += 2 * subnodeptrXYZ.y;
-        subnodeptr += 4 * subnodeptrXYZ.z;
-
-        childIdx += subnodeptr;
-
-        umin.x += voxelDim * subnodeptrXYZ.x;
-        umin.y += voxelDim * subnodeptrXYZ.y;
-        umin.z += voxelDim * subnodeptrXYZ.z;
-
-        // update node
-        nodePtr = octree[childIdx].id;
+        iterateTreeLevel(pos, nodePtr, voxelDim, childIdx, umin);
 
     }
 
@@ -74,25 +48,18 @@ vec4 getColor(uint maxlevel, vec3 wpos)
     if (col.w == 0.f) return vec4(0);
     col /= col.w;
     return col;
-
 }
 
 /******************************************************************************/
 
 vec4 getNormal(uint maxlevel, vec3 wpos)
 {
-
     const ivec3 pos = ivec3((wpos - u_bboxMin) / voxelSize);
-
-    // local vars
     uint childIdx = 0;
     uint nodePtr = octree[childIdx].id;
+    int voxelDim = int(u_voxelDim);
+    ivec3 umin = ivec3(0);
 
-    uint voxelDim = u_voxelDim;
-
-    uvec3 umin = uvec3(0);
-
-    // iterate through all tree levels
     for (uint i = 0; i < maxlevel - 1; ++i) {
 
         if ((nodePtr & 0x80000000) == 0) {
@@ -100,27 +67,7 @@ vec4 getNormal(uint maxlevel, vec3 wpos)
             return vec4(0);
         }
 
-        // go to next dimension
-        voxelDim /= 2;
-
-        // mask out flag bit to get child idx
-        childIdx = int(nodePtr & 0x7FFFFFFF);
-
-        // create subnodes
-        ivec3 subnodeptrXYZ = clamp(ivec3(1 + pos - umin - voxelDim), 0, 1);
-
-        int subnodeptr = subnodeptrXYZ.x;
-        subnodeptr += 2 * subnodeptrXYZ.y;
-        subnodeptr += 4 * subnodeptrXYZ.z;
-
-        childIdx += subnodeptr;
-
-        umin.x += voxelDim * subnodeptrXYZ.x;
-        umin.y += voxelDim * subnodeptrXYZ.y;
-        umin.z += voxelDim * subnodeptrXYZ.z;
-
-        // update node
-        nodePtr = octree[childIdx].id;
+        iterateTreeLevel(pos, nodePtr, voxelDim, childIdx, umin);
 
     }
 
@@ -128,14 +75,12 @@ vec4 getNormal(uint maxlevel, vec3 wpos)
     if (normal.w == 0.f) return vec4(0);
     normal /= normal.w;
     return normal;
-
 }
 
 /******************************************************************************/
 
 void main()
 {
-
     const vec2 uv = gl_FragCoord.xy / vec2(u_screenwidth, u_screenheight);
     const vec3 normal = texture(u_normal, uv).xyz;
     if (normal == 0) return;
@@ -188,7 +133,7 @@ void main()
     //out_color = vec4(dot(voxelNormal, cone.dir));
 
     //out_color = getNormal(int(u_treeLevels), pos);
-
+    //out_color = vec4(normal, 0);
 }
 
 /******************************************************************************/
