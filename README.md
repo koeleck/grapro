@@ -21,6 +21,6 @@ octree node buffer:
 &nbsp;&nbsp;&nbsp;&nbsp;a) node alloc  
 &nbsp;&nbsp;&nbsp;&nbsp;b) node flag  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if leaf:  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;atomicAdd color, emissive, normal, counter  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;atomicAdd color, emissive, normal, counter  
 &nbsp;&nbsp;&nbsp;&nbsp;c) injectLightingInformation:  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;walk over all leafs and compute radiance (walk over all lights) ("shadowmapping to octree")  
