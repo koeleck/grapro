@@ -166,6 +166,7 @@ void main()
 
         result += attenuation * lights[i].intensity * (diffuse_color * n_dot_l + specular_color * spec);
     }
+    result += emissive_color;
 
     out_Color = vec4(result , 1.0);
 }
