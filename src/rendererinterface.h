@@ -59,6 +59,7 @@ protected:
     void renderToGBuffer() const;
     void renderIndirectDiffuseLighting() const;
     void renderIndirectSpecularLighting() const;
+    void coneTracing() const;
 
     void createVoxelBBoxes(unsigned int num);
     void resizeFBO() const;
@@ -132,6 +133,7 @@ protected:
 
     // other
     gl::Buffer                          m_atomicCounterBuffer;
+    core::Program                       m_coneTracing_prog;
 
     // AO
     bool                                m_renderAO;
@@ -147,6 +149,7 @@ private:
     void initVoxelBBoxes();
     void initVoxelColors();
     void initGBuffer();
+    void initConeTracingPass();
 
 };
 

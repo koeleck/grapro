@@ -30,6 +30,7 @@ RendererInterface::RendererInterface(core::TimerArray& timer_array, unsigned int
 	initVoxelBBoxes();
     initVoxelColors();
     initGBuffer();
+    initConeTracingPass();
 
 }
 
@@ -171,6 +172,15 @@ void RendererInterface::initVoxelColors()
     core::res::shaders->registerShader("colorboxes_frag", "tree/colorboxes.frag", GL_FRAGMENT_SHADER);
     m_colorboxes_prog = core::res::shaders->registerProgram("colorboxes_prog",
             {"colorboxes_vert", "colorboxes_geom", "colorboxes_frag"});
+}
+
+
+
+void RendererInterface::initConeTracingPass()
+{
+    core::res::shaders->registerShader("ssq_ao_vert", "conetracing/ssq_ao.vert", GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("conetracing_frag", "conetracing/conetracing.frag", GL_FRAGMENT_SHADER);
+    m_coneTracing_prog = core::res::shaders->registerProgram("coneTracing_prog", {"ssq_ao_vert", "conetracing_frag"});
 }
 
 /****************************************************************************/
@@ -576,6 +586,56 @@ void RendererInterface::renderIndirectSpecularLighting() const
     glBindVertexArray(m_vao_ssq);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
+}
+
+/****************************************************************************/
+
+void RendererInterface::coneTracing() const
+{
+    renderToGBuffer();
+
+    /*
+     *  Render screen space quad
+     */
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(m_coneTracing_prog);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_tex_position);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, m_tex_normal);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, m_tex_color);
+
+    auto loc = glGetUniformLocation(m_coneTracing_prog, "u_pos");
+    glUniform1i(loc, 0);
+    loc = glGetUniformLocation(m_coneTracing_prog, "u_normal");
+    glUniform1i(loc, 1);
+    loc = glGetUniformLocation(m_coneTracing_prog, "u_color");
+    glUniform1i(loc, 2);
+
+    const auto voxelDim = static_cast<unsigned int>(std::pow(2, m_treeLevels - 1));
+    loc = glGetUniformLocation(m_coneTracing_prog, "u_voxelDim");
+    glUniform1ui(loc, voxelDim);
+    loc = glGetUniformLocation(m_coneTracing_prog, "u_bboxMin");
+    glUniform3f(loc, m_scene_bbox.pmin.x, m_scene_bbox.pmin.y, m_scene_bbox.pmin.z);
+    loc = glGetUniformLocation(m_coneTracing_prog, "u_bboxMax");
+    glUniform3f(loc, m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z);
+    loc = glGetUniformLocation(m_coneTracing_prog, "u_screenwidth");
+    glUniform1ui(loc, vars.screen_width);
+    loc = glGetUniformLocation(m_coneTracing_prog, "u_screenheight");
+    glUniform1ui(loc, vars.screen_height);
+    loc = glGetUniformLocation(m_coneTracing_prog, "u_treeLevels");
+    glUniform1ui(loc, m_treeLevels);
+    loc = glGetUniformLocation(m_coneTracing_prog, "u_coneGridSize");
+    glUniform1ui(loc, m_coneGridSize);
+    loc = glGetUniformLocation(m_coneTracing_prog, "u_numSteps");
+    glUniform1ui(loc, m_coneSteps);
+
+    glBindVertexArray(m_vao_ssq);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
 /****************************************************************************/

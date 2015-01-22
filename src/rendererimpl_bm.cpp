@@ -448,7 +448,8 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
     } else if (renderVoxColors) {
         renderVoxelColors();
     } else {
-        renderGeometry(m_vertexpulling_prog);
+        //renderGeometry(m_vertexpulling_prog);
+        coneTracing();
     }
 
     if (renderBBoxes)
@@ -464,7 +465,6 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
 
 void RendererImplBM::initAmbientOcclusion()
 {
-    core::res::shaders->registerShader("ssq_ao_vert", "conetracing/ssq_ao.vert", GL_VERTEX_SHADER);
     core::res::shaders->registerShader("ssq_ao_frag", "conetracing/ssq_ao.frag", GL_FRAGMENT_SHADER);
     m_ssq_ao_prog = core::res::shaders->registerProgram("ssq_ao_prog", {"ssq_ao_vert", "ssq_ao_frag"});
 }
