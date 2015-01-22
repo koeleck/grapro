@@ -623,6 +623,10 @@ void Renderer::render(const bool renderBBoxes, const bool renderOctree)
         m_rebuildTree = false;
     }
 
+    if (renderOctree) {
+        debugRenderTree(true);
+    }
+
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glDepthFunc(GL_LEQUAL);
@@ -631,8 +635,6 @@ void Renderer::render(const bool renderBBoxes, const bool renderOctree)
 
     if (renderBBoxes)
         renderBoundingBoxes();
-    if (renderOctree)
-        debugRenderTree();
 }
 
 /****************************************************************************/
@@ -740,7 +742,9 @@ void Renderer::renderBoundingBoxes()
 void Renderer::initBBoxStuff()
 {
     // indices
-    GLubyte indices[] = {0, 1,
+    GLubyte indices[] = {
+                        // wireframe bounding box
+                         0, 1,
                          0, 2,
                          0, 4,
                          1, 3,
@@ -751,7 +755,22 @@ void Renderer::initBBoxStuff()
                          4, 5,
                          4, 6,
                          5, 7,
-                         6, 7};
+                         6, 7, // 24 indices
+
+                        // solid bounding box
+                         0, 1, 3,
+                         0, 3, 2,
+                         5, 4, 6,
+                         5, 6, 7,
+                         4, 0, 2,
+                         4, 2, 6,
+                         1, 5, 7,
+                         1, 7, 3,
+                         6, 2, 3,
+                         6, 3, 7,
+                         0, 4, 5,
+                         0, 5, 1 // 36 indices
+    };
 
     glBindVertexArray(m_bbox_vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_bbox_buffer);
@@ -766,7 +785,7 @@ void Renderer::initBBoxStuff()
 
 /****************************************************************************/
 
-void Renderer::debugRenderTree()
+void Renderer::debugRenderTree(const bool solid)
 {
     if (m_voxel_bboxes.empty())
         return;
@@ -782,7 +801,12 @@ void Renderer::debugRenderTree()
         float data[6] = {bbox.pmin.x, bbox.pmin.y, bbox.pmin.z,
                          bbox.pmax.x, bbox.pmax.y, bbox.pmax.z};
         glUniform3fv(0, 2, data);
-        glDrawElements(GL_LINES, 24, GL_UNSIGNED_BYTE, nullptr);
+        if (!solid) {
+            glDrawElements(GL_LINES, 24, GL_UNSIGNED_BYTE, nullptr);
+        } else {
+            // TODO different program
+            glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, reinterpret_cast<void*>(24));
+        }
 
         //glDrawElementsInstancedBaseVertexBaseInstance(GL_LINES, 24, GL_UNSIGNED_BYTE,
         //        nullptr, 1, g->getMesh()->basevertex(), g->getIndex());

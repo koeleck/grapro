@@ -34,7 +34,7 @@ private:
 
     void renderGeometry(GLuint prog, bool depthOnly,
             const core::Camera* cam);
-    void debugRenderTree();
+    void debugRenderTree(bool solid);
     void renderBoundingBoxes();
     void renderShadowmaps();
 
