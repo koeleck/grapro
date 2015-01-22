@@ -67,7 +67,7 @@ void main()
         return;
     }
 
-    //setNormal();
+    setNormal();
     setColor();
 
     vec3 pos = inData.position.xyz;
@@ -88,6 +88,7 @@ void main()
 
     voxel[idx].position = convertPosition(texcoord.xyz);
     voxel[idx].color = convertColor(m_diffuse_color);
+    voxel[idx].normal = packUnorm4x8(vec4(m_normal, 0));
 
     /*voxel[idx].position = uvec4(texcoord.xyz, 0);
     voxel[idx].color = vec4(m_diffuse_color, 0.f);*/

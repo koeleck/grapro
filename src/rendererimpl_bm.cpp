@@ -95,8 +95,11 @@ void RendererImplBM::initShaders()
     m_octreeMipMap_prog = core::res::shaders->registerProgram("octreeMipMap_prog", {"octreeMipMapComp"});
 
     core::res::shaders->registerShader("ssq_ao_vert", "conetracing/ssq_ao.vert", GL_VERTEX_SHADER);
-    core::res::shaders->registerShader("indirect_frag", "conetracing/indirect.frag", GL_FRAGMENT_SHADER);
-    m_indirect_prog = core::res::shaders->registerProgram("indirect_prog", {"ssq_ao_vert", "indirect_frag"});
+    core::res::shaders->registerShader("indirectDiffuse_frag", "conetracing/indirect_diffuse.frag", GL_FRAGMENT_SHADER);
+    m_indirectDiffuse_prog = core::res::shaders->registerProgram("indirectDiffuse_prog", {"ssq_ao_vert", "indirectDiffuse_frag"});
+
+    core::res::shaders->registerShader("indirectSpecular_frag", "conetracing/indirect_specular.frag", GL_FRAGMENT_SHADER);
+    m_indirectSpecular_prog = core::res::shaders->registerProgram("indirectSpecular_prog", {"ssq_ao_vert", "indirectSpecular_frag"});
 
     // shadows
     core::res::shaders->registerShader("shadow_vert", "basic/shadow.vert",
@@ -438,8 +441,10 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
 
     if (m_renderAO) {
         renderAmbientOcclusion();
-    } else if (m_renderIndirect) {
-        renderIndirectLighting();
+    } else if (m_renderIndirectDiffuse) {
+        renderIndirectDiffuseLighting();
+    } else if (m_renderIndirectSpecular) {
+        renderIndirectSpecularLighting();
     } else if (renderVoxColors) {
         renderVoxelColors();
     } else {

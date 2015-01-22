@@ -486,7 +486,7 @@ void RendererInterface::renderToGBuffer() const
 
 /****************************************************************************/
 
-void RendererInterface::renderIndirectLighting() const
+void RendererInterface::renderIndirectDiffuseLighting() const
 {
 
     renderToGBuffer();
@@ -497,34 +497,80 @@ void RendererInterface::renderIndirectLighting() const
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUseProgram(m_indirect_prog);
+    glUseProgram(m_indirectDiffuse_prog);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, m_tex_position);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, m_tex_normal);
 
-    auto loc = glGetUniformLocation(m_indirect_prog, "u_pos");
+    auto loc = glGetUniformLocation(m_indirectDiffuse_prog, "u_pos");
     glUniform1i(loc, 0);
-    loc = glGetUniformLocation(m_indirect_prog, "u_normal");
+    loc = glGetUniformLocation(m_indirectDiffuse_prog, "u_normal");
     glUniform1i(loc, 1);
 
     const auto voxelDim = static_cast<unsigned int>(std::pow(2, m_treeLevels - 1));
-    loc = glGetUniformLocation(m_indirect_prog, "u_voxelDim");
+    loc = glGetUniformLocation(m_indirectDiffuse_prog, "u_voxelDim");
     glUniform1ui(loc, voxelDim);
-    loc = glGetUniformLocation(m_indirect_prog, "u_bboxMin");
+    loc = glGetUniformLocation(m_indirectDiffuse_prog, "u_bboxMin");
     glUniform3f(loc, m_scene_bbox.pmin.x, m_scene_bbox.pmin.y, m_scene_bbox.pmin.z);
-    loc = glGetUniformLocation(m_indirect_prog, "u_bboxMax");
+    loc = glGetUniformLocation(m_indirectDiffuse_prog, "u_bboxMax");
     glUniform3f(loc, m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z);
-    loc = glGetUniformLocation(m_indirect_prog, "u_screenwidth");
+    loc = glGetUniformLocation(m_indirectDiffuse_prog, "u_screenwidth");
     glUniform1ui(loc, vars.screen_width);
-    loc = glGetUniformLocation(m_indirect_prog, "u_screenheight");
+    loc = glGetUniformLocation(m_indirectDiffuse_prog, "u_screenheight");
     glUniform1ui(loc, vars.screen_height);
-    loc = glGetUniformLocation(m_indirect_prog, "u_treeLevels");
+    loc = glGetUniformLocation(m_indirectDiffuse_prog, "u_treeLevels");
     glUniform1ui(loc, m_treeLevels);
-    loc = glGetUniformLocation(m_indirect_prog, "u_coneGridSize");
+    loc = glGetUniformLocation(m_indirectDiffuse_prog, "u_coneGridSize");
     glUniform1ui(loc, m_coneGridSize);
-    loc = glGetUniformLocation(m_indirect_prog, "u_numSteps");
+    loc = glGetUniformLocation(m_indirectDiffuse_prog, "u_numSteps");
+    glUniform1ui(loc, m_coneSteps);
+
+    glBindVertexArray(m_vao_ssq);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+}
+
+/****************************************************************************/
+
+void RendererInterface::renderIndirectSpecularLighting() const
+{
+
+    renderToGBuffer();
+
+    /*
+     *  Render screen space quad
+     */
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(m_indirectSpecular_prog);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_tex_position);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, m_tex_normal);
+
+    auto loc = glGetUniformLocation(m_indirectSpecular_prog, "u_pos");
+    glUniform1i(loc, 0);
+    loc = glGetUniformLocation(m_indirectSpecular_prog, "u_normal");
+    glUniform1i(loc, 1);
+
+    const auto voxelDim = static_cast<unsigned int>(std::pow(2, m_treeLevels - 1));
+    loc = glGetUniformLocation(m_indirectSpecular_prog, "u_voxelDim");
+    glUniform1ui(loc, voxelDim);
+    loc = glGetUniformLocation(m_indirectSpecular_prog, "u_bboxMin");
+    glUniform3f(loc, m_scene_bbox.pmin.x, m_scene_bbox.pmin.y, m_scene_bbox.pmin.z);
+    loc = glGetUniformLocation(m_indirectSpecular_prog, "u_bboxMax");
+    glUniform3f(loc, m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z);
+    loc = glGetUniformLocation(m_indirectSpecular_prog, "u_screenwidth");
+    glUniform1ui(loc, vars.screen_width);
+    loc = glGetUniformLocation(m_indirectSpecular_prog, "u_screenheight");
+    glUniform1ui(loc, vars.screen_height);
+    loc = glGetUniformLocation(m_indirectSpecular_prog, "u_treeLevels");
+    glUniform1ui(loc, m_treeLevels);
+    loc = glGetUniformLocation(m_indirectSpecular_prog, "u_numSteps");
     glUniform1ui(loc, m_coneSteps);
 
     glBindVertexArray(m_vao_ssq);

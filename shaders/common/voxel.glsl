@@ -8,7 +8,8 @@
 struct voxelStruct {
     uint position; // 2 bits unused, 10/10/10 bits pos.x/y/z
     uint color; // 11/11/10 RGB
-    uint padding, padding2;
+    uint normal;
+    uint padding;
 };
 
 layout (std430, binding = VOXEL_BINDING) restrict buffer voxelBlock {
@@ -28,6 +29,7 @@ layout(std430, binding = OCTREE_BINDING) restrict buffer octreeBlock
 struct octreeColorBuffer
 {
     vec4 color;
+    vec4 normal;
 };
 
 layout(std430, binding = OCTREE_COLOR_BINDING) restrict buffer octreeColorBlock

@@ -39,7 +39,8 @@ public:
         m_ao_max_samples = max_samples;
         m_ao_weight = weight;
     }
-    void setIndirect(bool renderIndirect) { m_renderIndirect = renderIndirect; }
+    void setIndirectDiffuse(bool renderIndirect) { m_renderIndirectDiffuse = renderIndirect; }
+    void setIndirectSpecular(bool renderIndirect) { m_renderIndirectSpecular = renderIndirect; }
     void setConeGridSize(unsigned int size) { m_coneGridSize = size; }
     void setConeSteps(unsigned int steps) { m_coneSteps = steps; }
 
@@ -56,7 +57,8 @@ protected:
     void renderVoxelBoundingBoxes() const;
     void renderVoxelColors() const;
     void renderToGBuffer() const;
-    void renderIndirectLighting() const;
+    void renderIndirectDiffuseLighting() const;
+    void renderIndirectSpecularLighting() const;
 
     void createVoxelBBoxes(unsigned int num);
     void resizeFBO() const;
@@ -116,8 +118,10 @@ protected:
     gl::Buffer                          m_vbo_ssq;
 
     // indirect
-    core::Program                       m_indirect_prog;
-    bool                                m_renderIndirect;
+    core::Program                       m_indirectDiffuse_prog;
+    core::Program                       m_indirectSpecular_prog;
+    bool                                m_renderIndirectDiffuse;
+    bool                                m_renderIndirectSpecular;
     unsigned int                        m_coneGridSize = 10;
     unsigned int                        m_coneSteps = 1;
 

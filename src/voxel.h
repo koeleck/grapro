@@ -7,7 +7,8 @@ struct VoxelStruct
 {
     unsigned int position; // 2 bits unused, 10/10/10 bits pos.x/y/z
     unsigned int color; // 11/11/10
-    unsigned int padding, padding2;
+    unsigned int normal;
+    unsigned int padding;
 };
 
 struct OctreeNodeStruct
@@ -18,6 +19,7 @@ struct OctreeNodeStruct
 struct OctreeNodeColorStruct
 {
     glm::vec4 color;
+    glm::vec4 normal;
 };
 
 struct BrickStruct

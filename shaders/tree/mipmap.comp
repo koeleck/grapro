@@ -19,30 +19,45 @@ void main()
     uint parent = u_nodeOffset + threadId;
     uint child = octree[parent].id & 0x7FFFFFFF;
     vec4 colorSum = vec4(0.0);
+    vec4 normalSum = vec4(0.0);
 
     // check each child
     for (uint i = 0; i < 8; ++i) {
 
         vec4 col = octreeColor[child + i].color;
-        if (col.w > 1.0) {
+        vec4 normal = octreeColor[child + i].normal;
+        if (col.a > 1.0) {
             // normalize
-            col /= col.w;
+            col /= col.a;
         }
-        if (col.w > 0.0) {
+        if (normal.w > 1.0) {
+            // normalize
+            normal /= normal.w;
+        }
+        if (col.a > 0.0) {
             // has color
             colorSum += col;
+        }
+        if (normal.w > 0.0) {
+            // has normal
+            normalSum += normal;
         }
 
     }
 
-    if (colorSum.w != 0) {
+    if (colorSum.a != 0) {
 
         // write average into parent
-        colorSum /= colorSum.w;
+        colorSum /= colorSum.a;
         atomicAdd(octreeColor[parent].color.x, colorSum.x);
         atomicAdd(octreeColor[parent].color.y, colorSum.y);
         atomicAdd(octreeColor[parent].color.z, colorSum.z);
-        atomicAdd(octreeColor[parent].color.w, colorSum.w);
+        atomicAdd(octreeColor[parent].color.a, colorSum.a);
+        normalSum /= normalSum.w;
+        atomicAdd(octreeColor[parent].normal.x, normalSum.x);
+        atomicAdd(octreeColor[parent].normal.y, normalSum.y);
+        atomicAdd(octreeColor[parent].normal.z, normalSum.z);
+        atomicAdd(octreeColor[parent].normal.w, normalSum.w);
 
     }
 

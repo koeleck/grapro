@@ -49,10 +49,15 @@ void main()
     // store color if it's a leaf
     if (u_isLeaf == 1) {
         const vec3 col = convertColor(voxel[threadID].color);
+        const vec3 normal = unpackUnorm4x8(voxel[threadID].normal).xyz;
         atomicAdd(octreeColor[childIdx].color.r, col.r);
         atomicAdd(octreeColor[childIdx].color.g, col.g);
         atomicAdd(octreeColor[childIdx].color.b, col.b);
-        atomicAdd(octreeColor[childIdx].color.w, 1.f);
+        atomicAdd(octreeColor[childIdx].color.a, 1.f);
+        atomicAdd(octreeColor[childIdx].normal.x, normal.x);
+        atomicAdd(octreeColor[childIdx].normal.y, normal.y);
+        atomicAdd(octreeColor[childIdx].normal.z, normal.z);
+        atomicAdd(octreeColor[childIdx].normal.w, 1.f);
     }
 
 }

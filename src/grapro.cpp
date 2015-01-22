@@ -27,7 +27,8 @@ GraPro::GraPro(GLFWwindow* window)
     m_render_octree{false},
     m_render_voxelColors{false},
     m_render_ao{false},
-    m_render_indirect{false},
+    m_render_indirectDiffuse{false},
+    m_render_indirectSpecular{false},
     m_debug_output{false},
     m_tree_levels{static_cast<int>(vars.voxel_octree_levels)},
     m_coneGridSize{10},
@@ -114,12 +115,18 @@ void GraPro::update_gui(const double delta_t)
                 ImGui::SliderInt("weight by angle", &m_ao_weight, 0, 3);
             }
             m_renderer->setAO(m_render_ao, m_ao_num_cones, m_ao_max_samples, m_ao_weight);
-            ImGui::Checkbox("render Indirect", &m_render_indirect);
-            m_renderer->setIndirect(m_render_indirect);
-            if (m_render_indirect) {
+            ImGui::Checkbox("render Indirect Diffuse", &m_render_indirectDiffuse);
+            m_renderer->setIndirectDiffuse(m_render_indirectDiffuse);
+            if (m_render_indirectDiffuse) {
                 ImGui::SliderInt("cone grid size", &m_coneGridSize, 2, 32);
                 m_renderer->setConeGridSize(m_coneGridSize);
-                ImGui::SliderInt("cone steps", &m_coneSteps, 1, 5);
+                ImGui::SliderInt("cone steps", &m_coneSteps, 1, 15);
+                m_renderer->setConeSteps(m_coneSteps);
+            }
+            ImGui::Checkbox("render Indirect Specular", &m_render_indirectSpecular);
+            m_renderer->setIndirectSpecular(m_render_indirectSpecular);
+            if (m_render_indirectSpecular) {
+                ImGui::SliderInt("cone steps", &m_coneSteps, 1, 15);
                 m_renderer->setConeSteps(m_coneSteps);
             }
         }
