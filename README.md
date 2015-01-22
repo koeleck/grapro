@@ -23,4 +23,5 @@ octree node buffer:
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if leaf:  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;atomicAdd color, emissive, normal, counter  
 &nbsp;&nbsp;&nbsp;&nbsp;c) injectLightingInformation:  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;walk over all leafs and compute radiance (walk over all lights) ("shadowmapping to octree")  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;walk over all leafs and compute radiance (walk over all lights) ("shadowmapping to octree"):
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;27 mal -> speicher in 3d textur in 3x3 texels
