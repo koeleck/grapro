@@ -32,8 +32,16 @@ private:
     core::GPUTimer*                     m_render_timer;
     bool                                m_render_bboxes;
     bool                                m_render_octree;
+    bool                                m_render_voxelColors;
+    bool                                m_render_ao;
+    int                                 m_ao_num_cones = 10;
+    int                                 m_ao_max_samples = 1;
+    int                                 m_ao_weight = 1;
+    bool                                m_render_indirect;
     bool                                m_debug_output;
     int                                 m_tree_levels;
+    int                                 m_coneGridSize;
+    int                                 m_coneSteps;
 
     std::unique_ptr<RendererInterface>  m_renderer;
 

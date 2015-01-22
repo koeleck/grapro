@@ -36,7 +36,7 @@ public:
     void bind() const;
 
 private:
-    using MeshPool = BufferStoragePool<sizeof(shader::MeshStruct)>;
+    using MeshPool = BufferStoragePool<shader::MeshStruct>;
     using MeshMap = std::unordered_map<std::string, std::unique_ptr<Mesh>>;
     using VAOMap = std::unordered_map<unsigned char, gl::VertexArray>;
 

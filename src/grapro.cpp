@@ -10,6 +10,7 @@
 #include "core/instance_manager.h"
 #include "core/camera_manager.h"
 #include "core/shader_manager.h"
+#include "core/light_manager.h"
 
 #include "log/log.h"
 
@@ -24,10 +25,15 @@ GraPro::GraPro(GLFWwindow* window)
     m_showgui{true},
     m_render_bboxes{false},
     m_render_octree{false},
+    m_render_voxelColors{false},
+    m_render_ao{false},
+    m_render_indirect{false},
     m_debug_output{false},
     m_tree_levels{static_cast<int>(vars.voxel_octree_levels)},
+    m_coneGridSize{10},
+    m_coneSteps{1},
     m_renderer{new RendererImplBM(m_timers, m_tree_levels)}
-    //m_renderer{new RendererImplPK(m_timers, m_tree_levels)}
+    //m_renderer{new RendererImplPK(m_timers, m_tree_levels)} // does not work anymore!
 {
     const auto* instances = core::res::instances;
     m_renderer->setGeometry(instances->getInstances());
@@ -36,6 +42,27 @@ GraPro::GraPro(GLFWwindow* window)
     m_cam->setFixedYawAxis(true, up);
 
     m_render_timer = m_timers.addGPUTimer("Render");
+
+    // fix lights
+//    const auto& bbox = m_renderer.getSceneBBox();
+    const auto& bbox = m_renderer.get()->getSceneBBox();
+    const auto maxExtend = bbox.maxExtend();
+    const auto maxDist = bbox.pmax[maxExtend] - bbox.pmin[maxExtend];
+    for (auto& light : core::res::lights->getLights()) {
+    light->setMaxDistance(2500.f);
+    if (light->getType() != core::LightType::DIRECTIONAL ||
+    light->isShadowcasting() == false)
+    {
+    continue;
+    }
+    auto pos = light->getPosition();
+    pos.y = bbox.pmax.y;
+    light->setPosition(pos);
+    auto* dlight = static_cast<core::DirectionalLight*>(light.get());
+    dlight->setSize(maxDist);
+    }
+    // done. print gpu mem usage
+    gl::printInfo();
 }
 
 /****************************************************************************/
@@ -46,7 +73,8 @@ void GraPro::render_scene()
 
     m_render_timer->start();
     m_renderer->render(std::make_unsigned<int>::type(m_tree_levels),
-                      m_render_bboxes, m_render_octree, m_debug_output);
+                       m_render_bboxes, m_render_octree, m_render_voxelColors,
+                       m_debug_output);
     m_render_timer->stop();
 }
 
@@ -69,18 +97,36 @@ void GraPro::update_gui(const double delta_t)
         ImGui::Checkbox("bounding boxes", &m_render_bboxes);
 
         // octree
-        if (ImGui::CollapsingHeader("Octree", nullptr, false, true)) {
-            if (ImGui::Button("rebuild octree")) {
-                m_renderer->markTreeInvalid();
-            }
-            ImGui::SliderInt("tree levels", &m_tree_levels, 1, 8);
-            ImGui::Checkbox("show voxel bounding boxes", &m_render_octree);
+        if (ImGui::CollapsingHeader("Octree", nullptr, true, true)) {
             ImGui::Checkbox("show debug output", &m_debug_output);
+            ImGui::SliderInt("tree levels", &m_tree_levels, 1, 10);
+            ImGui::Checkbox("show voxel bounding boxes", &m_render_octree);
+        }
+
+        // other
+        if (ImGui::CollapsingHeader("Other", nullptr, true, true)) {
+            ImGui::Checkbox("render voxel colors", &m_render_voxelColors);
+            ImGui::Checkbox("render AO", &m_render_ao);
+            if(m_render_ao)
+            {
+                ImGui::SliderInt("#cones", &m_ao_num_cones, 2, 32);
+                ImGui::SliderInt("max samples", &m_ao_max_samples, 1, 5);
+                ImGui::SliderInt("weight by angle", &m_ao_weight, 0, 3);
+            }
+            m_renderer->setAO(m_render_ao, m_ao_num_cones, m_ao_max_samples, m_ao_weight);
+            ImGui::Checkbox("render Indirect", &m_render_indirect);
+            m_renderer->setIndirect(m_render_indirect);
+            if (m_render_indirect) {
+                ImGui::SliderInt("cone grid size", &m_coneGridSize, 2, 32);
+                m_renderer->setConeGridSize(m_coneGridSize);
+                ImGui::SliderInt("cone steps", &m_coneSteps, 1, 5);
+                m_renderer->setConeSteps(m_coneSteps);
+            }
         }
 
         // Timers: Just create your timer via m_timers and they will
         // appear here
-        if (ImGui::CollapsingHeader("Time", nullptr, false, true)) {
+        if (ImGui::CollapsingHeader("Time", nullptr, true, true)) {
             ImGui::Columns(2, "data", true);
             ImGui::Text("Timer");
             ImGui::NextColumn();
@@ -88,13 +134,26 @@ void GraPro::update_gui(const double delta_t)
             ImGui::NextColumn();
             ImGui::Separator();
 
+            auto msecTotal = 0;
             for (const auto& t : m_timers.getTimers()) {
+
+                if (t.first == "Render") {
+                    ImGui::Text("Total");
+                    ImGui::NextColumn();
+                    ImGui::Text("%d ms", msecTotal);
+                    ImGui::NextColumn();
+                }
+
                 ImGui::Text(t.first.c_str());
                 ImGui::NextColumn();
                 auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(
                         t.second->time()).count();
                 ImGui::Text("%d ms", static_cast<int>(msec));
                 ImGui::NextColumn();
+
+                if (t.first != "Render") {
+                    msecTotal += static_cast<int>(msec);
+                }
             }
         }
     }

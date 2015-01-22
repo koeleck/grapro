@@ -34,7 +34,7 @@ public:
     void bind() const;
 
 private:
-    using MaterialPool = BufferStoragePool<sizeof(shader::MaterialStruct)>;
+    using MaterialPool = BufferStoragePool<shader::MaterialStruct>;
     using MaterialMap = std::unordered_map<std::string, std::unique_ptr<Material>>;
 
     MaterialPool        m_material_buffer;

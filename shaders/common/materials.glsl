@@ -35,6 +35,7 @@ struct Material
 
 layout(std430, binding = MATERIAL_BINDING) restrict readonly buffer MaterialBlock
 {
+    int         numMaterials;
     Material    materials[];
 };
 

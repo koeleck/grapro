@@ -3,6 +3,7 @@
 *.tmp
 *.swp
 *.pyc
+*.aux
 contrib/glfw
 bin/
 build/

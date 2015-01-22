@@ -16,17 +16,20 @@
 
 RendererInterface::RendererInterface(core::TimerArray& timer_array, unsigned int treeLevels)
   : m_numVoxelFrag{0u},
-  	m_timers(timer_array), // bug in gcc
+    m_rebuildTree{true},
+    m_treeLevels{treeLevels},
+  	m_timers(timer_array), // bug in gcc 4.8.2
   	m_voxelize_timer{m_timers.addGPUTimer("Voxelize")},
   	m_tree_timer{m_timers.addGPUTimer("Octree")},
-    m_rebuildTree{true},
-    m_treeLevels{treeLevels}
+    m_mipmap_timer{m_timers.addGPUTimer("Mipmap")}
 {
 
 	initBBoxes();
 	initVertexPulling();
 	initVoxelization();
 	initVoxelBBoxes();
+    initVoxelColors();
+    initGBuffer();
 
 }
 
@@ -110,7 +113,6 @@ void RendererInterface::initBBoxes()
     glBindVertexArray(m_bbox_vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_bbox_buffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
     glBindVertexArray(0);
 
     core::res::shaders->registerShader("bbox_vert", "basic/bbox.vert", GL_VERTEX_SHADER);
@@ -162,7 +164,81 @@ void RendererInterface::initVoxelBBoxes()
 
 /****************************************************************************/
 
-void RendererInterface::renderBoundingBoxes()
+void RendererInterface::initVoxelColors()
+{
+    core::res::shaders->registerShader("colorboxes_vert", "tree/colorboxes.vert", GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("colorboxes_geom", "tree/colorboxes.geom", GL_GEOMETRY_SHADER);
+    core::res::shaders->registerShader("colorboxes_frag", "tree/colorboxes.frag", GL_FRAGMENT_SHADER);
+    m_colorboxes_prog = core::res::shaders->registerProgram("colorboxes_prog",
+            {"colorboxes_vert", "colorboxes_geom", "colorboxes_frag"});
+}
+
+/****************************************************************************/
+
+void RendererInterface::initGBuffer()
+{
+    core::res::shaders->registerShader("vertexpulling_vert", "basic/vertexpulling.vert", GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("gbuffer_frag", "conetracing/gbuffer.frag", GL_FRAGMENT_SHADER);
+    m_gbuffer_prog = core::res::shaders->registerProgram("gbuffer_prog", {"vertexpulling_vert", "gbuffer_frag"});
+
+    // textures
+    glBindTexture(GL_TEXTURE_2D, m_tex_position);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, vars.screen_width, vars.screen_height);
+
+    glBindTexture(GL_TEXTURE_2D, m_tex_normal);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, vars.screen_width, vars.screen_height);
+
+    glBindTexture(GL_TEXTURE_2D, m_tex_color);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, vars.screen_width, vars.screen_height);
+
+    glBindTexture(GL_TEXTURE_2D, m_tex_depth);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT32F, vars.screen_width, vars.screen_height);
+
+    // FBO
+    glBindFramebuffer(GL_FRAMEBUFFER, m_gbuffer_FBO);
+
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, m_tex_depth, 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_tex_position, 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, m_tex_normal, 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, m_tex_color, 0);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        LOG_ERROR("Empty gbuffer framebuffer is not complete (WTF?!?)");
+    }
+    GLenum DrawBuffers[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+    glDrawBuffers(3, DrawBuffers);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // screen space quad
+    glBindVertexArray(m_vao_ssq);
+    float ssq[] = { -1.f, -1.f, 0.f,
+                    1.f, -1.f, 0.f,
+                    1.f, 1.f, 0.f,
+                    1.f, 1.f, 0.f,
+                    -1.f, 1.f, 0.f,
+                    -1.f, -1.f, 0.f };
+
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_ssq);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(ssq), ssq, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(0);
+}
+
+/****************************************************************************/
+
+void RendererInterface::recreateBuffer(gl::Buffer & buf, const size_t size) const
+{
+    gl::Buffer tmp;
+    buf.swap(tmp);
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, buf);
+    glBufferStorage(GL_SHADER_STORAGE_BUFFER, size, nullptr, GL_MAP_READ_BIT);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+}
+
+/****************************************************************************/
+
+void RendererInterface::renderBoundingBoxes() const
 {
     if (m_geometry.empty())
         return;
@@ -182,7 +258,7 @@ void RendererInterface::renderBoundingBoxes()
 
 /****************************************************************************/
 
-void RendererInterface::renderVoxelBoundingBoxes()
+void RendererInterface::renderVoxelBoundingBoxes() const
 {
     if (m_voxel_bboxes.empty())
         return;
@@ -192,22 +268,22 @@ void RendererInterface::renderVoxelBoundingBoxes()
 
     glEnable(GL_DEPTH_TEST);
 
-    for (const auto& bbox : m_voxel_bboxes) {
+    for (auto i = 0u; i < m_voxel_bboxes.size(); ++i) {
+        const auto & bbox = m_voxel_bboxes[i];
         float data[6] = {bbox.pmin.x, bbox.pmin.y, bbox.pmin.z,
                          bbox.pmax.x, bbox.pmax.y, bbox.pmax.z};
         glUniform3fv(0, 2, data);
         glDrawElements(GL_LINES, 24, GL_UNSIGNED_BYTE, nullptr);
     }
-
 }
 
 /****************************************************************************/
 
 void RendererInterface::createVoxelBBoxes(const unsigned int num)
 {
-    std::vector<GLuint> nodes(num);
+    std::vector<OctreeNodeStruct> nodes(num);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
-    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num * sizeof(GLuint), nodes.data());
+    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, num * sizeof(OctreeNodeStruct), nodes.data());
 
     m_voxel_bboxes.clear();
     m_voxel_bboxes.reserve(num);
@@ -218,8 +294,7 @@ void RendererInterface::createVoxelBBoxes(const unsigned int num)
         top--;
         const auto idx = stack[top].first;
         const auto bbox = stack[top].second;
-
-        const auto childidx = nodes[idx];
+        const auto childidx = nodes[idx].id;
         if (childidx == 0x80000000) {
             m_voxel_bboxes.emplace_back(bbox);
         } else if ((childidx & 0x80000000) != 0) {
@@ -247,7 +322,7 @@ void RendererInterface::createVoxelBBoxes(const unsigned int num)
 
 /****************************************************************************/
 
-void RendererInterface::renderGeometry(const GLuint prog)
+void RendererInterface::renderGeometry(const GLuint prog) const
 {
     core::res::materials->bind();
     core::res::instances->bind();
@@ -330,7 +405,7 @@ void RendererInterface::renderGeometry(const GLuint prog)
 
 /****************************************************************************/
 
-void RendererInterface::resizeFBO()
+void RendererInterface::resizeFBO() const
 {
     const auto num_voxels = static_cast<int>(std::pow(2, m_treeLevels - 1));
     glBindFramebuffer(GL_FRAMEBUFFER, m_voxelizationFBO);
@@ -340,6 +415,121 @@ void RendererInterface::resizeFBO()
         LOG_ERROR("Empty framebuffer is not complete (WTF?!?)");
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+/****************************************************************************/
+
+unsigned int RendererInterface::calculateMaxNodes() const
+{
+    auto maxNodes = 1u;
+    auto tmp = 1u;
+    for (auto i = 0u; i < m_treeLevels; ++i) {
+        tmp *= 8;
+        maxNodes += tmp;
+    }
+    return maxNodes;
+}
+
+/****************************************************************************/
+
+void RendererInterface::renderVoxelColors() const
+{
+
+    if (m_voxel_bboxes.empty())
+        return;
+
+    glUseProgram(m_colorboxes_prog);
+    glBindVertexArray(m_colorboxes_vao);
+
+    // uniforms
+    const auto dim = static_cast<int>(std::pow(2.0, m_treeLevels - 1));
+    auto loc = glGetUniformLocation(m_colorboxes_prog, "u_bboxMin");
+    glUniform3f(loc, m_scene_bbox.pmin.x, m_scene_bbox.pmin.y, m_scene_bbox.pmin.z);
+    loc = glGetUniformLocation(m_colorboxes_prog, "u_bboxMax");
+    glUniform3f(loc, m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z);
+    loc = glGetUniformLocation(m_colorboxes_prog, "u_voxelDim");
+    glUniform1ui(loc, dim);
+    loc = glGetUniformLocation(m_colorboxes_prog, "u_maxLevel");
+    glUniform1ui(loc, m_treeLevels);
+
+    for (auto i = 0u; i < m_voxel_bboxes.size(); ++i) {
+        const auto & bbox = m_voxel_bboxes[i];
+        float data[3] = {bbox.center().x, bbox.center().y, bbox.center().z};
+        glUniform3fv(0, 1, data);
+        glDrawArrays(GL_POINTS, 0, 1);
+    }
+
+}
+
+/****************************************************************************/
+
+void RendererInterface::renderToGBuffer() const
+{
+
+    // bind gbuffer texture
+    glBindTexture(GL_TEXTURE_2D, m_tex_position.get());
+    glBindTexture(GL_TEXTURE_2D, m_tex_normal.get());
+    glBindTexture(GL_TEXTURE_2D, m_tex_color.get());
+    glBindTexture(GL_TEXTURE_2D, m_tex_depth.get());
+
+    // FBO
+    glBindFramebuffer(GL_FRAMEBUFFER, m_gbuffer_FBO);
+    glViewport(0, 0, vars.screen_width, vars.screen_height);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    renderGeometry(m_gbuffer_prog);
+
+    // unbind fbo
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+}
+
+/****************************************************************************/
+
+void RendererInterface::renderIndirectLighting() const
+{
+
+    renderToGBuffer();
+
+    /*
+     *  Render screen space quad
+     */
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(m_indirect_prog);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_tex_position);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, m_tex_normal);
+
+    auto loc = glGetUniformLocation(m_indirect_prog, "u_pos");
+    glUniform1i(loc, 0);
+    loc = glGetUniformLocation(m_indirect_prog, "u_normal");
+    glUniform1i(loc, 1);
+
+    const auto voxelDim = static_cast<unsigned int>(std::pow(2, m_treeLevels - 1));
+    loc = glGetUniformLocation(m_indirect_prog, "u_voxelDim");
+    glUniform1ui(loc, voxelDim);
+    loc = glGetUniformLocation(m_indirect_prog, "u_bboxMin");
+    glUniform3f(loc, m_scene_bbox.pmin.x, m_scene_bbox.pmin.y, m_scene_bbox.pmin.z);
+    loc = glGetUniformLocation(m_indirect_prog, "u_bboxMax");
+    glUniform3f(loc, m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z);
+    loc = glGetUniformLocation(m_indirect_prog, "u_screenwidth");
+    glUniform1ui(loc, vars.screen_width);
+    loc = glGetUniformLocation(m_indirect_prog, "u_screenheight");
+    glUniform1ui(loc, vars.screen_height);
+    loc = glGetUniformLocation(m_indirect_prog, "u_treeLevels");
+    glUniform1ui(loc, m_treeLevels);
+    loc = glGetUniformLocation(m_indirect_prog, "u_coneGridSize");
+    glUniform1ui(loc, m_coneGridSize);
+    loc = glGetUniformLocation(m_indirect_prog, "u_numSteps");
+    glUniform1ui(loc, m_coneSteps);
+
+    glBindVertexArray(m_vao_ssq);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
 }
 
 /****************************************************************************/

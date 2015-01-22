@@ -34,11 +34,11 @@ Material* MaterialManager::addMaterial(const std::string& name,
                 "' with imported material: ", material->name);
         result = it->second.get();
     } else {
-        GLintptr offset = m_material_buffer.alloc();
+        const GLintptr offset = m_material_buffer.alloc();
+        const auto index = m_material_buffer.offsetToIndex(offset);
+        auto* ptr = m_material_buffer.offsetToPointer(offset);
 
-        std::unique_ptr<Material> mat{new Material(
-                static_cast<GLuint>(offset / static_cast<GLintptr>(sizeof(shader::MaterialStruct))),
-                m_material_buffer.offsetToPointer(offset))};
+        std::unique_ptr<Material> mat{new Material(index, ptr)};
         auto res = m_materials.emplace(name, std::move(mat));
         result = res.first->second.get();
     }
@@ -85,11 +85,11 @@ Material* MaterialManager::addMaterial(const std::string& name)
         return it->second.get();
     }
 
-    GLintptr offset = m_material_buffer.alloc();
+    const GLintptr offset = m_material_buffer.alloc();
+    const auto index = m_material_buffer.offsetToIndex(offset);
+    auto* ptr = m_material_buffer.offsetToPointer(offset);
 
-    std::unique_ptr<Material> mat{new Material(
-            static_cast<GLuint>(offset / static_cast<GLintptr>(sizeof(shader::MaterialStruct))),
-            m_material_buffer.offsetToPointer(offset))};
+    std::unique_ptr<Material> mat{new Material(index, ptr)};
     auto res = m_materials.emplace(name, std::move(mat));
     return res.first->second.get();
 }

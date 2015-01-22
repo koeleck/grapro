@@ -10,6 +10,7 @@ class TextureManager;
 class MaterialManager;
 class InstanceManager;
 class MeshManager;
+class LightManager;
 
 namespace res
 {
@@ -19,6 +20,7 @@ extern TextureManager* textures;
 extern MaterialManager* materials;
 extern InstanceManager* instances;
 extern MeshManager* meshes;
+extern LightManager* lights;
 } // namespace res
 
 

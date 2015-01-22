@@ -14,6 +14,8 @@ struct Mesh
     uint    stride;
     uint    components;
     uint    first;
+    uint    firstIndex;
+    uint    count;
 };
 
 // keep in sync with core/mesh.h: MeshComponents
@@ -23,6 +25,7 @@ struct Mesh
 
 layout(std430, binding = MESH_BINDING) restrict readonly buffer MeshBlock
 {
+    int     numMeshes;
     Mesh    meshes[];
 };
 
