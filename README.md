@@ -1,26 +1,26 @@
 grapro
 ======
 
-voxel fragment buffer:
-    uint pos3col1
-    uint col2em2
-    uint em1norm3
-    use (un)packUnorm4x8
+voxel fragment buffer:  
+&nbsp;&nbsp;&nbsp;&nbsp;uint pos3col1  
+&nbsp;&nbsp;&nbsp;&nbsp;uint col2em2  
+&nbsp;&nbsp;&nbsp;&nbsp;uint em1norm3  
+&nbsp;&nbsp;&nbsp;&nbsp;use (un)packUnorm4x8  
 
-octree node buffer:
-    vec4 col.xyz_em.x (vec4 because of atomic add)
-    vec4 em.yz_norm.xy
-    float norm.z
-    uint pos
-    uint counter (to count how many fragments in a leaf)
-    uint padding
+octree node buffer:  
+&nbsp;&nbsp;&nbsp;&nbsp;vec4 col.xyz_em.x (vec4 because of atomic add)  
+&nbsp;&nbsp;&nbsp;&nbsp;vec4 em.yz_norm.xy  
+&nbsp;&nbsp;&nbsp;&nbsp;float norm.z  
+&nbsp;&nbsp;&nbsp;&nbsp;uint pos  
+&nbsp;&nbsp;&nbsp;&nbsp;uint counter (to count how many fragments in a leaf)  
+&nbsp;&nbsp;&nbsp;&nbsp;uint padding  
     
-1) voxelization:
-    save all conservative fragments in voxel fragment buffer
-2)
-    a) node alloc
-    b) node flag
-        if leaf:
-        atomicAdd color, emissive, normal, counter
-    c) injectLightingInformation:
-        walk over all leafs and compute radiance (walk over all lights) ("shadowmapping to octree")
+1) voxelization:  
+&nbsp;&nbsp;&nbsp;&nbsp;save all conservative fragments in voxel fragment buffer  
+2)  
+&nbsp;&nbsp;&nbsp;&nbsp;a) node alloc  
+&nbsp;&nbsp;&nbsp;&nbsp;b) node flag  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if leaf:  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;atomicAdd color, emissive, normal, counter  
+&nbsp;&nbsp;&nbsp;&nbsp;c) injectLightingInformation:  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;walk over all leafs and compute radiance (walk over all lights) ("shadowmapping to octree")  
