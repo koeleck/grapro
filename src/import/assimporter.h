@@ -9,7 +9,7 @@ namespace import
 
 struct Scene;
 
-constexpr int ASSIMPORTER_VERSION = 3;
+constexpr int ASSIMPORTER_VERSION = 4;
 
 std::unique_ptr<Scene> assimport(const std::string& filename);
 
