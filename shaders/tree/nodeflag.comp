@@ -1,5 +1,7 @@
 #version 440 core
 
+#include "common/extensions.glsl"
+
 layout (local_size_x = LOCAL_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 #include "common/bindings.glsl"
@@ -45,5 +47,9 @@ void main()
 
     // flag node
     octree[childidx].id = 0x80000000u;
+
+    if (uMaxLevel == uTreeLevels) {
+        // TODO write leafs
+    }
 
 }

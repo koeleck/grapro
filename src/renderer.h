@@ -67,6 +67,7 @@ private:
     gl::Buffer                          m_atomicCounterBuffer;
     gl::Buffer                          m_voxelBuffer;
     gl::Buffer                          m_octreeNodeBuffer;
+    gl::Buffer                          m_octreeInfoBuffer;
     gl::Framebuffer                     m_voxelizationFBO;
     unsigned int                        m_numVoxelFrag;
     bool                                m_rebuildTree;

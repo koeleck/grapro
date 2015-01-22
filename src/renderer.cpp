@@ -151,7 +151,7 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
         max_num_nodes += tmp;
     }
     max_num_nodes = std::min(max_num_nodes, vars.max_voxel_nodes);
-    unsigned int mem = max_num_nodes * 4 +
+    unsigned int mem = max_num_nodes * (4 + static_cast<unsigned int>(sizeof(VoxelNodeInfo))) +
         static_cast<unsigned int>(vars.max_voxel_fragments * sizeof(VoxelFragmentStruct));
     std::string unit = "B";
     if (mem > 1024) {
@@ -167,10 +167,14 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
         mem /= 1024;
     }
     LOG_INFO("max nodes: ", max_num_nodes, ", max fragments: ", vars.max_voxel_fragments, " (", mem, unit, ")");
+    // node buffer:
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
     glBufferStorage(GL_SHADER_STORAGE_BUFFER, max_num_nodes * sizeof(GLuint), nullptr, GL_MAP_READ_BIT);
 
-    // TODO voxel nodeinfo buffer
+    // node/leaf info buffer:
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeInfoBuffer);
+    glBufferStorage(GL_SHADER_STORAGE_BUFFER, max_num_nodes * sizeof(VoxelNodeInfo), nullptr, 0);
+
     // TODO brick 3d texture
 
     // Atomic counter
@@ -384,7 +388,7 @@ void Renderer::createVoxelList()
     glDisable(GL_CULL_FACE);
     glDepthFunc(GL_ALWAYS);
 
-    renderGeometry(voxel_prog, false, core::res::cameras->getDefaultCam());
+    renderGeometry(voxel_prog, false, nullptr);
 
     // TODO move to shader
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
@@ -471,6 +475,8 @@ void Renderer::buildVoxelTree()
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::OCTREE, m_octreeNodeBuffer);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::VOXEL_FRAGMENTS, m_voxelBuffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::VOXEL_LEAF_INFO, m_octreeInfoBuffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::VOXEL_NODE_INFO, m_octreeInfoBuffer);
     glBindBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, m_atomicCounterBuffer, sizeof(GLuint), sizeof(GLuint));
 
     unsigned int previously_allocated = 8; // only root node was allocated
@@ -478,7 +484,13 @@ void Renderer::buildVoxelTree()
     unsigned int start_node = 0;
 
     std::vector<std::pair<int, int>> levels;
+    float quarterVoxelSize = 5.f;
     for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
+
+        quarterVoxelSize *= .5f;
+
+        // save index of first node and number of nodes in current level
+        levels.emplace_back(start_node, previously_allocated);
 
         LOG_INFO("Starting with max level ", i);
 
@@ -505,7 +517,26 @@ void Renderer::buildVoxelTree()
             glClearBufferSubData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, sizeof(GLuint), sizeof(GLuint),
                 GL_RED_INTEGER, GL_UNSIGNED_INT, &one);
 
+            // set position in node info buffer
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeInfoBuffer);
+            const GLfloat pos[3] = {.5f, .5f, .5f};
+            glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_RGB32F, 0, 3 * sizeof(GLfloat),
+                    GL_RGB, GL_FLOAT, pos);
+            // clear rest of info
+            glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, 3 * sizeof(GLfloat),
+                    13 * sizeof(GLfloat), GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+
         } else {
+
+            if (i + 1 == vars.voxel_octree_levels) {
+                // leaf will be written in nodeflag.comp, so zero out the buffer
+                glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeInfoBuffer); // should already be bound
+                const GLuint zero = 0;
+                glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI,
+                        start_node * sizeof(VoxelNodeInfo),
+                        previously_allocated * sizeof(VoxelNodeInfo),
+                        GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+            }
             glUseProgram(flag_prog);
 
             glProgramUniform1ui(flag_prog, 2, i);
@@ -514,8 +545,6 @@ void Renderer::buildVoxelTree()
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
         }
 
-        // save index of first node and number of nodes in current level
-        levels.emplace_back(start_node, previously_allocated);
 
         if (i + 1 == vars.voxel_octree_levels) {
             // no more nodes required
@@ -529,6 +558,7 @@ void Renderer::buildVoxelTree()
 
         glProgramUniform1ui(alloc_prog, 0, previously_allocated);
         glProgramUniform1ui(alloc_prog, 1, start_node);
+        glProgramUniform1f(alloc_prog, 2, quarterVoxelSize);
 
         GLuint alloc_workgroups = (previously_allocated + ALLOC_PROG_LOCAL_SIZE - 1) / ALLOC_PROG_LOCAL_SIZE;
         glDispatchCompute(alloc_workgroups, 1, 1);
@@ -552,11 +582,6 @@ void Renderer::buildVoxelTree()
     m_tree_timer->stop();
 
     LOG_INFO(":: Total Nodes created: ", numAllocated);
-
-    // TODO
-    ///*
-    // *  write information to leafs
-    // */
 
 
     // DEBUG --- create bounding boxes

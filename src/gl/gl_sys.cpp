@@ -198,6 +198,7 @@ bool initGL()
     REQUIRES_EXTENSION(GL_EXT_direct_state_access)
     REQUIRES_EXTENSION(GL_ARB_shader_draw_parameters);
     REQUIRES_EXTENSION(GL_EXT_texture_filter_anisotropic);
+    REQUIRES_EXTENSION(GL_NV_shader_atomic_float);
 
     if (vars.gl_debug_context) {
         if (!glewIsSupported("GL_ARB_debug_output")) {

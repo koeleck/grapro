@@ -31,22 +31,23 @@ layout(std430, binding = OCTREE_BINDING) restrict buffer OctreeNodeBlock
 // store them in the same buffer
 struct NodeInfo
 {
+    vec3 position;
     uint x_neg_neighbor;
     uint x_pos_neighbor;
     uint y_neg_neighbor;
     uint y_pos_neighbor;
     uint z_neg_neighbor;
     uint z_pos_neighbor;
-    uint padding[10];
+    uint padding[7];
 }; // 64 bytes
 
 struct LeafInfo
 {
+    vec3 position;
+    uint count;
     vec4 diffuse;
     vec4 emissive;
     vec4 normal;
-    vec3 position;
-    uint count;
 }; // 64 bytes
 
 layout(std430, binding = OCTREE_INFO_BINDING) restrict buffer OctreeInfoBlock
