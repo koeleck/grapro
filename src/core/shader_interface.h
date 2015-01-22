@@ -26,10 +26,12 @@ constexpr int MESH      = 2;
 constexpr int MATERIAL  = 3;
 constexpr int INSTANCE  = 4;
 constexpr int VERTEX    = 5;
-constexpr int VOXEL     = 6;
+constexpr int VOXEL_FRAGMENTS = 6;
 constexpr int OCTREE    = 7;
 constexpr int LIGHT     = 8;
 constexpr int LIGHT_IDS = 9;
+constexpr int VOXEL_NODE_INFO = 10;
+constexpr int VOXEL_LEAF_INFO = 11;
 
 // Vertex Attrib Arrays
 constexpr int POSITIONS = 0;

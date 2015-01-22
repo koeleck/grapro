@@ -24,8 +24,6 @@ layout(std430, binding = LIGHT_ID_BINDING) restrict readonly buffer LightIDBlock
     int     lightID[];
 };
 
-// TODO
-const float BIAS = 0.2;
 
 void emitTriangle(in int ID, in vec4 vertex[3], in int layer)
 {

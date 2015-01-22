@@ -1,32 +1,14 @@
 #version 440 core
 
-#include "common/bindings.glsl"
-
 layout (local_size_x = LOCAL_SIZE, local_size_y = 1, local_size_z = 1) in;
 
-// voxel buffer
-struct voxelStruct {
-    uvec4 position;
-    vec4 color;
-    vec4 normal;
-};
+#include "common/bindings.glsl"
+#include "voxel.glsl"
 
-layout (std430, binding = VOXEL_BINDING) restrict readonly buffer voxelBlock {
-    voxelStruct voxel[];
-};
-
-// octree buffer
-struct octreeBuffer {
-    uint id;
-};
-
-layout (std430, binding = OCTREE_BINDING) restrict buffer octreeBlock {
-    octreeBuffer octree[];
-};
-
-uniform uint uNumVoxelFrag;
-uniform uint uTreeLevels;
-uniform uint uMaxLevel;
+layout(location = 0) uniform uint uNumVoxelFrag;
+layout(location = 1) uniform uint uTreeLevels;
+layout(location = 2) uniform uint uMaxLevel;
+layout(location = 3) uniform uint uNumVoxelsPerDim;
 
 void main()
 {
@@ -35,9 +17,10 @@ void main()
     if (ID >= uNumVoxelFrag)
         return;
 
-    uint voxel_dim = uint(pow(2u, uTreeLevels - 1));
+    uint voxel_dim = uNumVoxelsPerDim;
     uvec3 umin = uvec3(0u);
-    uvec3 pos  = voxel[ID].position.xyz;
+    uvec3 pos  = uvec3(unpackUnorm4x8(voxelFragment[ID].position_diff_r).xyz *
+            float(voxel_dim));
 
     // index of first child
     uint childidx = 0u;

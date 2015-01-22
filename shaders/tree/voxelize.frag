@@ -3,6 +3,7 @@
 #include "common/materials.glsl"
 #include "common/bindings.glsl"
 #include "common/textures.glsl"
+#include "voxel.glsl"
 
 in VertexFragmentData
 {
@@ -19,27 +20,12 @@ in VertexFragmentData
 // atomic counter
 layout(binding = 0) uniform atomic_uint uVoxelFragCount;
 
-// voxel buffer
-struct voxelStruct {
-    uvec4 position;
-    vec4 color;
-    vec4 normal;
-};
-
-layout (std430, binding = VOXEL_BINDING) buffer voxelBlock {
-    voxelStruct voxel[];
-};
 
 uniform int uNumVoxels;
 
-vec3 m_normal;
-vec3 m_diffuse_color;
-vec3 m_specular_color;
-vec3 m_emissive_color;
-vec3 m_ambient_color;
-
-void setNormal() {
-
+vec3 getNormal()
+{
+    vec3 normal;
     if (materials[inData.materialID].hasNormalTex != 0) {
         vec3 texNormal = texture(uNormalTex, inData.uv).rgb;
         texNormal.xy = texNormal.xy * 2.0 - 1.0;
@@ -49,21 +35,22 @@ void setNormal() {
                 inData.tangent.x, inData.bitangent.x, inData.normal.x,
                 inData.tangent.y, inData.bitangent.y, inData.normal.y,
                 inData.tangent.z, inData.bitangent.z, inData.normal.z);
-        m_normal = texNormal * localToWorld_T;
+        normal = texNormal * localToWorld_T;
     } else {
-        m_normal = inData.normal;
+        normal = inData.normal;
     }
-
+    return normal;
 }
 
-void setColor() {
-
+vec3 getColor()
+{
+    vec3 color;
     if (materials[inData.materialID].hasDiffuseTex != 0) {
-        m_diffuse_color = texture(uDiffuseTex, inData.uv).rgb;
+        color = texture(uDiffuseTex, inData.uv).rgb;
     } else {
-        m_diffuse_color = materials[inData.materialID].diffuseColor;
+        color = materials[inData.materialID].diffuseColor;
     }
-
+    return color;
 }
 
 void main()
@@ -74,10 +61,43 @@ void main()
     {
         return;
     }
+    const uint materialID = inData.materialID;
+    const vec2 uv = inData.uv;
+    if (materials[materialID].hasAlphaTex != 0) {
+        if (0.5 > texture(uAlphaTex, uv).r) {
+            return;
+        }
+    }
 
-    //setNormal();
-    //setColor();
+    // material properties
+    vec3 diffuse_color;
+    if (materials[materialID].hasDiffuseTex != 0) {
+        diffuse_color = texture(uDiffuseTex, uv).rgb;
+    } else {
+        diffuse_color = materials[materialID].diffuseColor;
+    }
+    vec3 normal;
+    if (materials[materialID].hasNormalTex != 0) {
+        vec3 texNormal = texture(uNormalTex, uv).rgb;
+        texNormal.xy = texNormal.xy * 2.0 - 1.0;
+        texNormal = normalize(texNormal);
 
+        mat3 localToWorld_T = mat3(
+                inData.tangent.x, inData.bitangent.x, inData.normal.x,
+                inData.tangent.y, inData.bitangent.y, inData.normal.y,
+                inData.tangent.z, inData.bitangent.z, inData.normal.z);
+        normal = texNormal * localToWorld_T;
+    } else {
+        normal = inData.normal;
+    }
+    vec3 emissive_color;
+    if (materials[materialID].hasEmissiveTex != 0) {
+        emissive_color = texture(uEmissiveTex, uv).rgb;
+    } else {
+        emissive_color = materials[materialID].emissiveColor;
+    }
+
+    // save fragment
     vec3 pos = inData.position.xyz;
     if (inData.axis == 0) {
         float tmp = pos.x;
@@ -88,14 +108,16 @@ void main()
         pos.y = pos.z;
         pos.z = tmp;
     }
-    uvec3 texcoord = uvec3((pos * 0.5 + 0.5) * float(uNumVoxels));
+    vec3 unorm_pos = fma(pos, vec3(0.5), vec3(0.5));
+    vec3 unorm_normal = fma(normal, vec3(0.5), vec3(0.5));
+    uvec3 texcoord = uvec3(unorm_pos * float(uNumVoxels));
 
     texcoord = clamp(texcoord, uvec3(0), uvec3(uNumVoxels - 1));
 
     const uint idx = atomicCounterIncrement(uVoxelFragCount);
 
-    voxel[idx].position = uvec4(texcoord.xyz, 0);
-    voxel[idx].color = vec4(m_diffuse_color, 0.f);
-    voxel[idx].normal = vec4(m_normal, 0.f);
+    voxelFragment[idx].position_diff_r = packUnorm4x8(vec4(unorm_pos, diffuse_color.r));
+    voxelFragment[idx].diff_gb_normal_xy = packUnorm4x8(vec4(diffuse_color.gb, unorm_normal.xy));
+    voxelFragment[idx].normal_z_emissive = packUnorm4x8(vec4(unorm_normal.z, emissive_color));
 
 }

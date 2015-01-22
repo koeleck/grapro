@@ -1,18 +1,22 @@
 #ifndef VOXEL_H
 #define VOXEL_H
 
-#include <glm/glm.hpp>
+#include <cstdint>
 
-struct VoxelStruct
+struct VoxelFragmentStruct
 {
-    glm::uvec4 position;
-    glm::vec4 color;
-    glm::vec4 normal;
+    // details don't matter
+    std::int32_t data[3];
 };
 
 struct OctreeNodeStruct
 {
     unsigned int id;
+};
+
+struct VoxelNodeInfo
+{
+    std::uint32_t data[16];
 };
 
 #endif // VOXEL_H

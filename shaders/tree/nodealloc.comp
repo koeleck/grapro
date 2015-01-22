@@ -1,22 +1,15 @@
 #version 440 core
 
 #include "common/bindings.glsl"
+#include "voxel.glsl"
 
-layout (local_size_x = LOCAL_SIZE, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = LOCAL_SIZE, local_size_y = 1, local_size_z = 1) in;
 
-// octree buffer
-struct octreeBuffer {
-    uint id;
-};
 
-layout (std430, binding = OCTREE_BINDING) restrict buffer octreeBlock {
-    octreeBuffer octree[];
-};
+layout(binding = 0) uniform atomic_uint uAllocCount;
 
-layout (binding = 0) uniform atomic_uint uAllocCount;
-
-uniform uint uCount;
-uniform uint uStartNode;
+layout(location = 0) uniform uint uCount;
+layout(location = 1) uniform uint uStartNode;
 
 void main()
 {

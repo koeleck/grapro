@@ -33,6 +33,7 @@ DEF_VAR(shader_dir, std::string, "shaders/")
 // Voxel
 DEF_VAR(max_voxel_fragments, unsigned int, 2097152)
 DEF_VAR(voxel_octree_levels, unsigned int, 8)
+DEF_VAR(max_voxel_nodes, unsigned int, 2097152)
 
 // Lights
 DEF_VAR(max_num_lights, int, 1024)
@@ -41,6 +42,11 @@ DEF_VAR(max_num_cube_shadowmaps, int, 10)
 DEF_VAR(shadowmap_res, int, 512)
 DEF_VAR(shadowcubemap_res, int, 256)
 DEF_VAR(shadowmap_internalformat, std::string, "GL_DEPTH_COMPONENT24")
+DEF_VAR(light_bias, float, .0f)
+DEF_VAR(light_nearplane, float, .1f)
+
+// Camera
+DEF_VAR(cam_nearplane, double, 0.1)
 
 /***************************************************************
  *
@@ -59,3 +65,4 @@ DEF_VAR(gl_version_minor, int, 4)
 DEF_VAR(gl_debug_context, bool, false)
 DEF_VAR(gl_debug_break, bool, false)
 DEF_VAR(gl_debug_min_severity, std::string, "GL_DEBUG_SEVERITY_NOTIFICATION")
+

@@ -6,14 +6,11 @@
 #include "light.h"
 #include "shader_interface.h"
 #include "log/log.h"
+#include "framework/vars.h"
 
 namespace core
 {
 
-namespace
-{
-constexpr auto NEAR_PLANE = 5.f; // optimized for sponza
-} // anonymous namespace
 
 /*****************************************************************************
  *
@@ -29,7 +26,7 @@ Light::Light(shader::LightStruct* const data, const LightType type,
     m_constant_attenuation{.0f},
     m_linear_attenuation{.0f},
     m_quadratic_attenuation{.0f},
-    m_max_distance{10.f},
+    m_max_distance{vars.light_nearplane + 10.f},
     m_type{type},
     m_depth_tex{depthTex}
 {
@@ -254,10 +251,11 @@ void SpotLight::updateMatrix()
 {
     glm::dmat4 projmat;
     if (getMaxDistance() == std::numeric_limits<float>::infinity()) {
-        projmat = glm::infinitePerspective<double>(getAngleOuterCone(), 1.f, NEAR_PLANE);
+        projmat = glm::infinitePerspective<double>(getAngleOuterCone(), 1.f,
+                vars.light_nearplane);
     } else {
-        projmat = glm::perspective<double>(getAngleOuterCone(), 1.f, NEAR_PLANE,
-                getMaxDistance());
+        projmat = glm::perspective<double>(getAngleOuterCone(), 1.f,
+                vars.light_nearplane, getMaxDistance());
     }
     glm::dmat4 viewmat = glm::lookAt<double, glm::defaultp>(getPosition(),
             getPosition() + getDirection(), glm::vec3(.0f, 1.f, .0f));
@@ -348,7 +346,7 @@ void DirectionalLight::updateMatrix()
 
     const double dist = m_size / 2.f;
     glm::dmat4 projmat = glm::ortho<double>(-dist, dist, -dist, dist,
-            NEAR_PLANE, getMaxDistance());
+            vars.light_nearplane, getMaxDistance());
 
     // TODO Rotation
     glm::dmat4 viewmat = glm::lookAt<double, glm::defaultp>(getPosition(),
@@ -378,10 +376,11 @@ void PointLight::updateMatrix()
     double angle = glm::radians(90.0);
     glm::dmat4 projmat;
     if (getMaxDistance() == std::numeric_limits<float>::infinity()) {
-        projmat = glm::infinitePerspective<double>(angle, 1.f, NEAR_PLANE);
+        projmat = glm::infinitePerspective<double>(angle, 1.f,
+                vars.light_nearplane);
     } else {
-        projmat = glm::perspective<double>(angle, 1.f, NEAR_PLANE,
-                getMaxDistance());
+        projmat = glm::perspective<double>(angle, 1.f,
+                vars.light_nearplane, getMaxDistance());
     }
     // view transformation will be done in the shaders
     m_data->projViewMatrix = glm::mat4(projmat);

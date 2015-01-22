@@ -98,7 +98,17 @@ void main()
                 vec4 tmp = lights[i].ProjViewMatrix * vec4(inData.wpos, 1.0);
                 tmp.xyz = (tmp.xyz / tmp.w) * 0.5 + 0.5;
                 vec4 texcoord = vec4(tmp.xy, float(layer), tmp.z);
-                attenuation *= texture(uShadowMapTex, texcoord);
+                //attenuation *= texture(uShadowMapTex, texcoord);
+                // PCF:
+                attenuation *= (textureOffset(uShadowMapTex, texcoord, ivec2(-2, -2)) +
+                                textureOffset(uShadowMapTex, texcoord, ivec2( 0, -2)) +
+                                textureOffset(uShadowMapTex, texcoord, ivec2( 2, -2)) +
+                                textureOffset(uShadowMapTex, texcoord, ivec2(-2,  0)) +
+                                textureOffset(uShadowMapTex, texcoord, ivec2( 0,  0)) +
+                                textureOffset(uShadowMapTex, texcoord, ivec2( 2,  0)) +
+                                textureOffset(uShadowMapTex, texcoord, ivec2(-2,  2)) +
+                                textureOffset(uShadowMapTex, texcoord, ivec2( 0,  2)) +
+                                textureOffset(uShadowMapTex, texcoord, ivec2( 2,  2))) / 9.0;
             }
         } else if ((type_texid & LIGHT_TYPE_SPOT) != 0) {
             const vec3 diff = inData.wpos - lights[i].position;
@@ -114,7 +124,17 @@ void main()
                 vec4 tmp = lights[i].ProjViewMatrix * vec4(inData.wpos, 1.0);
                 tmp.xyz = (tmp.xyz / tmp.w) * 0.5 + 0.5;
                 vec4 texcoord = vec4(tmp.xy, float(layer), tmp.z);
-                attenuation *= texture(uShadowMapTex, texcoord);
+                //attenuation *= texture(uShadowMapTex, texcoord);
+                // PCF:
+                attenuation *= (textureOffset(uShadowMapTex, texcoord, ivec2(-2, -2)) +
+                                textureOffset(uShadowMapTex, texcoord, ivec2( 0, -2)) +
+                                textureOffset(uShadowMapTex, texcoord, ivec2( 2, -2)) +
+                                textureOffset(uShadowMapTex, texcoord, ivec2(-2,  0)) +
+                                textureOffset(uShadowMapTex, texcoord, ivec2( 0,  0)) +
+                                textureOffset(uShadowMapTex, texcoord, ivec2( 2,  0)) +
+                                textureOffset(uShadowMapTex, texcoord, ivec2(-2,  2)) +
+                                textureOffset(uShadowMapTex, texcoord, ivec2( 0,  2)) +
+                                textureOffset(uShadowMapTex, texcoord, ivec2( 2,  2))) / 9.0;
             }
         } else { // POINT
             const vec3 diff = inData.wpos - lights[i].position;
