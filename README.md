@@ -30,5 +30,6 @@ octree node buffer:
 &nbsp;&nbsp;&nbsp;&nbsp;a) render from camera  
 &nbsp;&nbsp;&nbsp;&nbsp;b) at every pixel:  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- direct lighting: from gbuffer  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- indirect lighting: get voxel position; setup cone grid; walk along cones and accumulate color from walked through voxels (interpolate with 3d texture brick)  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- indirect lighting (diffuse): get voxel position; setup cone grid; walk along cones and accumulate color from walked through voxels (interpolate with 3d texture brick)  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- indirect lighting (specular): reflect view dir at normal; walk cone along that line; see above  
         
