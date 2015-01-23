@@ -48,8 +48,42 @@ void main()
     // flag node
     octree[childidx].id = 0x80000000u;
 
-    if (uMaxLevel == uTreeLevels) {
-        // TODO write leafs
+    if (uMaxLevel + 1 == uTreeLevels) {
+
+        // unpack stuff
+        vec4 tmp = unpackUnorm4x8(voxelFragment[ID].position_diff_r);
+        vec3 position = tmp.xyz;
+        vec3 diffuse;
+        diffuse.r = tmp.w;
+
+        tmp = unpackUnorm4x8(voxelFragment[ID].diff_gb_normal_xy);
+        diffuse.gb = tmp.xy;
+
+        vec3 normal;
+        normal.xy = tmp.zw;
+
+        tmp = unpackUnorm4x8(voxelFragment[ID].normal_z_emissive);
+        normal.z = tmp.x;
+        normal = (normal * 2.0) - 1.0;
+
+        vec3 emissive = tmp.ywz;
+
+        // add
+        atomicAdd(octreeColor[childidx].count, 1);
+        // TODO position
+
+        atomicAdd(octreeColor[childidx].diffuse.r, diffuse.r);
+        atomicAdd(octreeColor[childidx].diffuse.g, diffuse.g);
+        atomicAdd(octreeColor[childidx].diffuse.b, diffuse.b);
+
+        atomicAdd(octreeColor[childidx].emissive.r, emissive.r);
+        atomicAdd(octreeColor[childidx].emissive.g, emissive.g);
+        atomicAdd(octreeColor[childidx].emissive.b, emissive.b);
+
+        atomicAdd(octreeColor[childidx].normal.x, normal.x);
+        atomicAdd(octreeColor[childidx].normal.y, normal.y);
+        atomicAdd(octreeColor[childidx].normal.z, normal.z);
+
     }
 
 }
