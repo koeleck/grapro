@@ -86,10 +86,6 @@ vec3 calculateDiffuseColor(const vec3 normal, const vec3 pos)
 	vec4 totalColor = vec4(0);
 	const float step = (1.f / float(u_coneGridSize));
 
-	const float theta = cos(30 * int(gl_FragCoord.x) ^ int(gl_FragCoord.y) + 10 * int(gl_FragCoord.x) * int(gl_FragCoord.y));
-	const float cs = cos(theta);
-	const float sn = sin(theta);
-
     for (uint y = 0; y < u_coneGridSize; ++y) {
 
         const float uy = (0.5f + float(y)) * step;
@@ -98,12 +94,9 @@ vec3 calculateDiffuseColor(const vec3 normal, const vec3 pos)
 
             const float ux = (0.5f + float(x)) * step;
 
-            const float uxRot = ux * cs - uy * sn;
-            const float uyRot = ux * sn + uy * cs;
-
             // create the cone
             ONB onb = toONB(normal);
-            vec3 v = uniformHemisphereSampling(ux, uy); //  do random here if you want
+            vec3 v = uniformHemisphereSampling(ux, uy);
             Cone cone;
             cone.dir   = normalize(toWorld(onb, v));
             cone.angle = 180.f / float(u_coneGridSize);
@@ -129,9 +122,9 @@ vec3 calculateDiffuseColor(const vec3 normal, const vec3 pos)
                 // get indirect color
                 const vec3 wpos = pos + totalDist * cone.dir;
                 const vec3 normal = getNormal(level, wpos).xyz;
-                if (dot(normal, cone.dir) > 0.f) {
+                /*if (dot(normal, cone.dir) > 0.f) {
                     continue;
-                }
+                }*/
                 vec4 color = getColor(level, wpos);
                 if (color.w > 0) {
                     // color found -> stop walking!
@@ -163,7 +156,7 @@ vec3 calculateSpecularColor(const vec3 normal, const vec3 pos)
 
 	Cone cone;
     cone.dir = reflectVec;
-    cone.angle = 20.f; //  TODO
+    cone.angle = 10.f; //  TODO
 
     vec4 totalColor = vec4(0);
     float actualVoxelSize = voxelSize;
@@ -187,9 +180,9 @@ vec3 calculateSpecularColor(const vec3 normal, const vec3 pos)
         // get indirect color
         const vec3 wpos = pos + totalDist * cone.dir;
         const vec3 normal = getNormal(level, wpos).xyz;
-        if (dot(normal, cone.dir) > 0.f) {
+        /*if (dot(normal, cone.dir) > 0.f) {
             continue;
-        }
+        }*/
         const vec4 color = getColor(level, wpos);
         if (color.w > 0) {
             // color found -> stop walking!;
@@ -216,8 +209,10 @@ void main()
     vec3 diffuse = calculateDiffuseColor(normal, pos);
     //vec3 specular = calculateSpecularColor(normal, pos);
 
-    //out_color = vec4(mix(mix(color, diffuse, 0.5), specular, 0.5), 1);
-    out_color = vec4(mix(color, diffuse, 0.3), 1);
+    //out_color = vec4(mix(mix(color, diffuse, 0.3), specular, 0.1), 1);
+    //out_color = vec4(mix(color, diffuse, 0.5), 1);
+    vec3 pre_col = mix(color, diffuse, 0.4);
+    out_color = vec4(pre_col, 1);
 }
 
 /******************************************************************************/
