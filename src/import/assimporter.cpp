@@ -95,12 +95,12 @@ struct AssimpMesh
     const aiMesh* ptr;
 };
 
-// local function declarations:
 glm::vec3 to_glm(const aiVector3D& vec3);
 glm::vec3 to_glm(const aiColor3D& col);
 glm::vec3 to_glm(const aiColor4D& col);
 glm::mat4 to_glm(const aiMatrix4x4& mat);
 
+// local function declarations:
 std::size_t getSceneInfo(const std::string& filename, const aiScene* scene,
         std::vector<std::pair<std::string, const aiCamera*>>& cameras,
         std::vector<std::pair<std::string, const aiLight*>>& lights,
@@ -669,8 +669,8 @@ char* dumpMesh(char* ptr, const std::pair<std::string, AssimpMesh>& mesh)
 
 /***************************************************************************/
 
-char* dumpLight(const aiNode* const root, char* ptr,
-        const std::pair<std::string, const aiLight*>& light)
+char* dumpLight(const aiNode* const root, char* ptr, const std::pair<std::string,
+        const aiLight*>& light)
 {
     Light* my_light = reinterpret_cast<Light*>(ptr);
     ptr += sizeof(Light);
