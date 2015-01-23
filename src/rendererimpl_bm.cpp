@@ -105,9 +105,9 @@ void RendererImplBM::initShaders()
     core::res::shaders->registerShader("shadow_vert", "basic/shadow.vert",
     GL_VERTEX_SHADER);
     core::res::shaders->registerShader("shadow_geom", "basic/shadow.geom",
-    GL_GEOMETRY_SHADER, "NUM_SHADOWMAPS " + std::to_string(core::res::lights->getNumShadowMapsUsed()));
+    GL_GEOMETRY_SHADER, "NUM_SHADOWMAPS " + std::to_string(std::max(1, core::res::lights->getNumShadowMapsUsed())));
     core::res::shaders->registerShader("shadow_cube_geom", "basic/shadow_cube.geom",
-    GL_GEOMETRY_SHADER, "NUM_SHADOWCUBEMAPS " + std::to_string(core::res::lights->getNumShadowCubeMapsUsed()));
+    GL_GEOMETRY_SHADER, "NUM_SHADOWCUBEMAPS " + std::to_string(std::max(1, core::res::lights->getNumShadowCubeMapsUsed())));
     core::res::shaders->registerShader("depth_only_frag", "basic/depth_only.frag",
     GL_FRAGMENT_SHADER);
     m_2d_shadow_prog = core::res::shaders->registerProgram("shadow2d_prog",
