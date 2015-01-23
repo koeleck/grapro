@@ -3,11 +3,14 @@
 
 #include "common/bindings.glsl"
 
+// keep in sync with src/voxel.h
+
 struct VoxelFragment
 {
-    uint position_diff_r;
-    uint diff_gb_normal_xy;
-    uint normal_z_emissive;
+    uint position_xyz;
+    uint diff_rgb_normal_x;
+    uint normal_yz_emissive_rg;
+    uint emissive_b;
 };
 
 layout(std430, binding = VOXEL_BINDING) restrict buffer VoxelFragmentBlock

@@ -19,7 +19,7 @@ public:
     ~Renderer();
 
     void setGeometry(std::vector<const core::Instance*> geometry);
-    void render(bool renderBBoxes = false, bool render_octree = false);
+    void render(bool renderBBoxes = false, bool render_octree = false, int octree_level = -1);
 
     void resize(int width, int height);
 
@@ -34,7 +34,7 @@ private:
 
     void renderGeometry(GLuint prog, bool depthOnly,
             const core::Camera* cam);
-    void debugRenderTree(bool solid);
+    void debugRenderTree(bool solid, int level);
     void renderBoundingBoxes();
     void renderShadowmaps();
 
@@ -70,6 +70,7 @@ private:
     gl::Buffer                          m_octreeInfoBuffer;
     gl::Framebuffer                     m_voxelizationFBO;
     unsigned int                        m_numVoxelFrag;
+    std::vector<std::pair<int, int>>    m_tree_levels;
     bool                                m_rebuildTree;
     core::TimerArray&                   m_timers;
     core::GPUTimer*                     m_tree_timer;

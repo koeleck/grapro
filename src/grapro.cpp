@@ -19,7 +19,8 @@ GraPro::GraPro(GLFWwindow* window)
     m_showgui{true},
     m_render_bboxes{false},
     m_render_octree{false},
-    m_renderer{getWidth(), getHeight(), m_timers}
+    m_renderer{getWidth(), getHeight(), m_timers},
+    m_octree_debug_level{static_cast<int>(vars.voxel_octree_levels) - 1}
 {
     const auto* instances = core::res::instances;
     m_renderer.setGeometry(instances->getInstances());
@@ -58,7 +59,7 @@ void GraPro::render_scene()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     m_render_timer->start();
-    m_renderer.render(m_render_bboxes, m_render_octree);
+    m_renderer.render(m_render_bboxes, m_render_octree, m_octree_debug_level);
     m_render_timer->stop();
 }
 
@@ -89,6 +90,7 @@ void GraPro::update_gui(const double delta_t)
             vars.voxel_octree_levels = static_cast<unsigned int>(next_levels);
             m_renderer.markTreeInvalid();
         }
+        ImGui::SliderInt("Debug tree level", &m_octree_debug_level, 0, max_levels - 1);
 
         // Timers: Just create your timer via m_timers and they will
         // appear here
@@ -133,6 +135,8 @@ void GraPro::handle_keyboard(const double delta_t)
         m_cam->move(movement_scale * glm::dvec3(0.0, 1.0, 0.0));
     if (glfwGetKey(*this, GLFW_KEY_F) == GLFW_PRESS)
         m_cam->move(movement_scale * glm::dvec3(0.0, -1.0, 0.0));
+    if (glfwGetKey(*this, GLFW_KEY_C) == GLFW_PRESS)
+        m_cam->lookAt(glm::dvec3(0.));
 
     // misc:
     if (getKey(GLFW_KEY_T) & framework::KeyState::PRESS)

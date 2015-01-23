@@ -3,6 +3,7 @@
 #include "common/materials.glsl"
 #include "common/bindings.glsl"
 #include "common/textures.glsl"
+#include "common/compression.glsl"
 #include "voxel.glsl"
 
 in VertexFragmentData
@@ -116,8 +117,9 @@ void main()
 
     const uint idx = atomicCounterIncrement(uVoxelFragCount);
 
-    voxelFragment[idx].position_diff_r = packUnorm4x8(vec4(unorm_pos, diffuse_color.r));
-    voxelFragment[idx].diff_gb_normal_xy = packUnorm4x8(vec4(diffuse_color.gb, unorm_normal.xy));
-    voxelFragment[idx].normal_z_emissive = packUnorm4x8(vec4(unorm_normal.z, emissive_color));
+    voxelFragment[idx].position_xyz = packUInt3x10(texcoord);
+    voxelFragment[idx].diff_rgb_normal_x = packUnorm4x8(vec4(diffuse_color, unorm_normal.x));
+    voxelFragment[idx].normal_yz_emissive_rg = packUnorm4x8(vec4(unorm_normal.yz, emissive_color.rb));
+    voxelFragment[idx].emissive_b = packUnorm4x8(vec4(emissive_color.b, vec3(0.0)));
 
 }

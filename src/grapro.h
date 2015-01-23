@@ -26,6 +26,7 @@ private:
     bool                m_render_bboxes;
     bool                m_render_octree;
     Renderer            m_renderer;
+    int                 m_octree_debug_level;
 };
 
 #endif // GRAPRO_H

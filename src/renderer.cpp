@@ -473,9 +473,9 @@ void Renderer::buildVoxelTree()
     glProgramUniform1ui(flag_prog, 1, vars.voxel_octree_levels);
     glProgramUniform1ui(flag_prog, 3, static_cast<GLuint>(num_voxels));
 
-    float bbox[6] = {m_scene_bbox.pmin.x, m_scene_bbox.pmin.y, m_scene_bbox.pmin.z,
+    float scene_bbox[6] = {m_scene_bbox.pmin.x, m_scene_bbox.pmin.y, m_scene_bbox.pmin.z,
                      m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z};
-    glProgramUniform3fv(flag_prog, 4, 2, bbox);
+    glProgramUniform3fv(flag_prog, 4, 2, scene_bbox);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::OCTREE, m_octreeNodeBuffer);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::VOXEL_FRAGMENTS, m_voxelBuffer);
@@ -487,7 +487,7 @@ void Renderer::buildVoxelTree()
     unsigned int numAllocated = 8; // we're only allocating one block of 8 nodes, so yeah, 8;
     unsigned int start_node = 0;
 
-    std::vector<std::pair<int, int>> levels;
+    m_tree_levels.clear();
 
     float quarterVoxelSize = (m_scene_bbox.pmax.x - m_scene_bbox.pmin.x) / 2.f;
     for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
@@ -495,7 +495,7 @@ void Renderer::buildVoxelTree()
         quarterVoxelSize *= .5f;
 
         // save index of first node and number of nodes in current level
-        levels.emplace_back(start_node, previously_allocated);
+        m_tree_levels.emplace_back(start_node, previously_allocated);
 
         LOG_INFO("Starting with max level ", i);
 
@@ -524,10 +524,9 @@ void Renderer::buildVoxelTree()
 
             // set position in node info buffer
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeInfoBuffer);
-            const float midpoint = (m_scene_bbox.pmax.x - m_scene_bbox.pmin.x) / 2.f;
-            const GLfloat pos[3] = {midpoint, midpoint, midpoint};
+            const glm::vec3 midpoint = .5f * (m_scene_bbox.pmax + m_scene_bbox.pmin);
             glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_RGB32F, 0, 3 * sizeof(GLfloat),
-                    GL_RGB, GL_FLOAT, pos);
+                    GL_RGB, GL_FLOAT, glm::value_ptr(midpoint));
             // clear rest of info
             glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, 3 * sizeof(GLfloat),
                     13 * sizeof(GLfloat), GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
@@ -588,6 +587,10 @@ void Renderer::buildVoxelTree()
     m_tree_timer->stop();
 
     LOG_INFO(":: Total Nodes created: ", numAllocated);
+    if (numAllocated > vars.max_voxel_nodes) {
+        LOG_ERROR("More nodes allocated than allowed!!! (", numAllocated,
+                "/", vars.max_voxel_nodes, ")");
+    }
 
 
     // DEBUG --- create bounding boxes
@@ -633,10 +636,13 @@ void Renderer::buildVoxelTree()
 
 /****************************************************************************/
 
-void Renderer::render(const bool renderBBoxes, const bool renderOctree)
+void Renderer::render(const bool renderBBoxes, const bool renderOctree, int octree_level)
 {
     if (m_geometry.empty())
         return;
+
+    if (octree_level < 0)
+        octree_level = static_cast<int>(vars.voxel_octree_levels);
 
     core::res::materials->bind();
     core::res::instances->bind();
@@ -649,13 +655,21 @@ void Renderer::render(const bool renderBBoxes, const bool renderOctree)
         glDisable(GL_CULL_FACE);
         renderShadowmaps();
 
+        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //glDisable(GL_DEPTH_TEST);
+        //glActiveTexture(GL_TEXTURE0);
+        //glBindTexture(GL_TEXTURE_2D_ARRAY, core::res::lights->getShadowMapTexture());
+        //glUseProgram(m_debug_tex_prog);
+        //glDrawArrays(GL_TRIANGLES, 0, 3);
+        //return;
+
         createVoxelList();
         buildVoxelTree();
         m_rebuildTree = false;
     }
 
     if (renderOctree) {
-        debugRenderTree(true);
+        debugRenderTree(false, octree_level);
     }
 
     glEnable(GL_DEPTH_TEST);
@@ -764,7 +778,7 @@ void Renderer::renderBoundingBoxes()
 
     for (const auto* g : m_geometry) {
         glDrawElementsInstancedBaseVertexBaseInstance(GL_LINES, 24, GL_UNSIGNED_BYTE,
-                nullptr, 1, g->getMesh()->basevertex(), g->getIndex());
+                nullptr, 1, 0, g->getIndex());
     }
 }
 
@@ -816,7 +830,7 @@ void Renderer::initBBoxStuff()
 
 /****************************************************************************/
 
-void Renderer::debugRenderTree(const bool solid)
+void Renderer::debugRenderTree(const bool solid, const int level)
 {
     if (m_voxel_bboxes.empty())
         return;
@@ -826,22 +840,25 @@ void Renderer::debugRenderTree(const bool solid)
     glBindVertexArray(m_bbox_vao);
 
     glEnable(GL_DEPTH_TEST);
-    //glDisable(GL_DEPTH_TEST);
 
-    for (const auto& bbox : m_voxel_bboxes) {
-        float data[6] = {bbox.pmin.x, bbox.pmin.y, bbox.pmin.z,
-                         bbox.pmax.x, bbox.pmax.y, bbox.pmax.z};
-        glUniform3fv(0, 2, data);
-        if (!solid) {
-            glDrawElements(GL_LINES, 24, GL_UNSIGNED_BYTE, nullptr);
-        } else {
-            // TODO different program
-            glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, reinterpret_cast<void*>(24));
-        }
+    const int num_voxels = static_cast<int>(std::pow(2.0, level));
+    const float halfSize = (m_scene_bbox.pmax.x - m_scene_bbox.pmin.x) /
+        static_cast<float>(2 * num_voxels);
+    glProgramUniform1f(prog, 0, halfSize);
 
-        //glDrawElementsInstancedBaseVertexBaseInstance(GL_LINES, 24, GL_UNSIGNED_BYTE,
-        //        nullptr, 1, g->getMesh()->basevertex(), g->getIndex());
+    const auto& level_info = m_tree_levels[static_cast<std::size_t>(level)];
+
+    if (!solid) {
+        glDrawElementsInstancedBaseInstance(GL_LINES, 24, GL_UNSIGNED_BYTE, nullptr,
+                level_info.second,
+                static_cast<GLuint>(level_info.first));
+    } else {
+        glDrawElementsInstancedBaseInstance(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE,
+                reinterpret_cast<void*>(24),
+                level_info.second,
+                static_cast<GLuint>(level_info.first));
     }
+
 }
 
 /****************************************************************************/

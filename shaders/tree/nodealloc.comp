@@ -39,7 +39,7 @@ void main()
         octree[idx].id = off | 0x80000000u;
 
         // get informations about current node:
-        vec3 pos = octreeInfo[idx].position;
+        const vec3 pos = octreeInfo[idx].position;
         uvec2 x_neighbor = uvec2(octreeInfo[idx].x_neg_neighbor,
                                  octreeInfo[idx].x_pos_neighbor);
         uvec2 y_neighbor = uvec2(octreeInfo[idx].y_neg_neighbor,
@@ -97,8 +97,7 @@ void main()
         octreeInfo[off + 2].z_pos_neighbor = off + 6;
 
         // child 3:
-        octreeInfo[off + 3].position = vec3(pos.x + uQuarterVoxelSize, pos.y + uQuarterVoxelSize,
-                pos.z - uQuarterVoxelSize);
+        octreeInfo[off + 3].position = vec3(pos.xy + uQuarterVoxelSize, pos.z - uQuarterVoxelSize);
         octreeInfo[off + 3].x_neg_neighbor = off + 2;
         octreeInfo[off + 3].x_pos_neighbor = findChild(x_neighbor[1], 2);
         octreeInfo[off + 3].y_neg_neighbor = off + 1;
@@ -126,8 +125,7 @@ void main()
         octreeInfo[off + 5].z_pos_neighbor = findChild(z_neighbor[1], 1);
 
         // child 6:
-        octreeInfo[off + 6].position = vec3(pos.x - uQuarterVoxelSize, pos.y + uQuarterVoxelSize,
-                pos.z + uQuarterVoxelSize);
+        octreeInfo[off + 6].position = vec3(pos.x - uQuarterVoxelSize, pos.yz + uQuarterVoxelSize);
         octreeInfo[off + 6].x_neg_neighbor = findChild(x_neighbor[0], 7);
         octreeInfo[off + 6].x_pos_neighbor = off + 7;
         octreeInfo[off + 6].y_neg_neighbor = off + 4;

@@ -6,7 +6,7 @@
 struct VoxelFragmentStruct
 {
     // details don't matter
-    std::int32_t data[3];
+    std::int32_t data[4];
 };
 
 struct OctreeNodeStruct

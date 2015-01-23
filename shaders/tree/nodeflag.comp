@@ -6,6 +6,7 @@ layout (local_size_x = LOCAL_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 #include "common/bindings.glsl"
 #include "voxel.glsl"
+#include "common/compression.glsl"
 
 layout(location = 0) uniform uint uNumVoxelFrag;
 layout(location = 1) uniform uint uTreeLevels;
@@ -22,8 +23,7 @@ void main()
 
     uint voxel_dim = uNumVoxelsPerDim;
     uvec3 umin = uvec3(0u);
-    uvec3 pos  = uvec3(unpackUnorm4x8(voxelFragment[ID].position_diff_r).xyz *
-            float(voxel_dim));
+    uvec3 pos = unpackUInt3x10(voxelFragment[ID].position_xyz);
 
     // index of first child
     uint childidx = 0u;
@@ -52,26 +52,23 @@ void main()
     if (uMaxLevel + 1 == uTreeLevels) {
 
         // unpack stuff
-        vec4 tmp = unpackUnorm4x8(voxelFragment[ID].position_diff_r);
-        vec3 position = tmp.xyz;
-        vec3 diffuse;
-        diffuse.r = tmp.w;
-
-        tmp = unpackUnorm4x8(voxelFragment[ID].diff_gb_normal_xy);
-        diffuse.gb = tmp.xy;
+        vec4 tmp = unpackUnorm4x8(voxelFragment[ID].diff_rgb_normal_x);
+        vec3 diffuse = tmp.xyz;
 
         vec3 normal;
-        normal.xy = tmp.zw;
-
-        tmp = unpackUnorm4x8(voxelFragment[ID].normal_z_emissive);
-        normal.z = tmp.x;
+        normal.x = tmp.w;
+        tmp = unpackUnorm4x8(voxelFragment[ID].normal_yz_emissive_rg);
+        normal.yz = tmp.xy;
         normal = (normal * 2.0) - 1.0;
 
-        vec3 emissive = tmp.ywz;
+        vec3 emissive;
+        emissive.rg = tmp.zw;
+        tmp = unpackUnorm4x8(voxelFragment[ID].emissive_b);
+        emissive.b = tmp.x;
 
         // set worldspace position
         octreeColor[childidx].position = uSceneBoundingBox[0] +
-            position * (uSceneBoundingBox[1] - uSceneBoundingBox[0]);
+            (vec3(pos) + 0.5) / float(uNumVoxelsPerDim) * (uSceneBoundingBox[1] - uSceneBoundingBox[0]);
 
         // add
         atomicAdd(octreeColor[childidx].count, 1);
