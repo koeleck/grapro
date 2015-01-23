@@ -126,9 +126,9 @@ void main()
                 // get indirect color
                 const vec3 wpos = pos + totalDist * cone.dir;
                 const vec3 normal = getNormal(level, wpos).xyz;
-                if (dot(normal, cone.dir) > 0.f) {
+                /*if (dot(normal, cone.dir) > 0.f) {
                     continue;
-                }
+                }*/
                 vec4 color = getColor(level, wpos);
                 if (color.w > 0) {
                     // color found -> stop walking!

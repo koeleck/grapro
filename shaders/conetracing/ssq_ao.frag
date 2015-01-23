@@ -31,14 +31,10 @@ bool isOccluded(uint maxlevel, vec3 wpos)
 {
 
     const ivec3 pos = ivec3((wpos - u_bboxMin) / voxelSize);
-
-    // local vars
     uint childIdx = 0;
     uint nodePtr = octree[childIdx].id;
-
-    uint voxelDim = u_voxelDim;
-
-    uvec3 umin = uvec3(0);
+    int voxelDim = int(u_voxelDim);
+    ivec3 umin = ivec3(0);
 
     // iterate through all tree levels
     for (uint i = 0; i < maxlevel - 1; ++i) {
@@ -49,27 +45,7 @@ bool isOccluded(uint maxlevel, vec3 wpos)
             return false;
         }
 
-        // go to next dimension
-        voxelDim /= 2;
-
-        // mask out flag bit to get child idx
-        childIdx = int(nodePtr & 0x7FFFFFFF);
-
-        // create subnodes
-        ivec3 subnodeptrXYZ = clamp(ivec3(1 + pos - umin - voxelDim), 0, 1);
-
-        int subnodeptr = subnodeptrXYZ.x;
-        subnodeptr += 2 * subnodeptrXYZ.y;
-        subnodeptr += 4 * subnodeptrXYZ.z;
-
-        childIdx += subnodeptr;
-
-        umin.x += voxelDim * subnodeptrXYZ.x;
-        umin.y += voxelDim * subnodeptrXYZ.y;
-        umin.z += voxelDim * subnodeptrXYZ.z;
-
-        // update node
-        nodePtr = octree[childIdx].id;
+        iterateTreeLevel(pos, nodePtr, voxelDim, childIdx, umin);
 
     }
 
@@ -77,6 +53,33 @@ bool isOccluded(uint maxlevel, vec3 wpos)
     if (col.w == 0.f) return false;
     return true;
 
+}
+
+/******************************************************************************/
+
+vec4 getNormal(uint maxlevel, vec3 wpos)
+{
+    const ivec3 pos = ivec3((wpos - u_bboxMin) / voxelSize);
+    uint childIdx = 0;
+    uint nodePtr = octree[childIdx].id;
+    int voxelDim = int(u_voxelDim);
+    ivec3 umin = ivec3(0);
+
+    for (uint i = 0; i < maxlevel - 1; ++i) {
+
+        if ((nodePtr & 0x80000000) == 0) {
+            // no flag set -> no child nodes
+            return vec4(0);
+        }
+
+        iterateTreeLevel(pos, nodePtr, voxelDim, childIdx, umin);
+
+    }
+
+    vec4 normal = octreeColor[childIdx].normal;
+    if (normal.w == 0.f) return vec4(0);
+    normal /= normal.w;
+    return normal;
 }
 
 /******************************************************************************/
@@ -108,7 +111,7 @@ void main()
             cone.dir   = normalize(toWorld(onb, v));
             cone.angle = 180 / float(u_coneGridSize);
 
-            // weight 
+            // weight
             float d = abs(dot(normalize(normal), cone.dir));
 
             // trace the cone for each sample
@@ -128,6 +131,10 @@ void main()
 
                 // ambient occlusion
                 const vec3 wpos = pos + totalDist * cone.dir;
+                const vec3 normal = getNormal(level, wpos).xyz;
+                if (dot(normal, cone.dir) > 0.f) {
+                    continue;
+                }
                 if (isOccluded(level, wpos)) {
                     // we are occluded here
                     occ += 1.f * pow(d, float(u_weight));
@@ -140,6 +147,8 @@ void main()
     // AO
     const float occlusion = clamp(occ / float(u_coneGridSize * u_coneGridSize), 0.f, 1.f);
     out_color = vec4(1.f - occlusion);
+
+    out_color = getNormal(u_treeLevels, pos);
 
 }
 
