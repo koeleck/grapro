@@ -90,7 +90,7 @@ void main() {
     }
 
     //Next we enlarge the triangle to enable conservative rasterization
-    const float hPixel = 0.5 / float(uNumVoxels);
+    const float hPixel = 1.0 / float(uNumVoxels);
 
     //calculate AABB of this triangle
     vec4 AABB = vec4(a.xy, a.xy);
