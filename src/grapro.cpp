@@ -20,7 +20,8 @@ GraPro::GraPro(GLFWwindow* window)
     m_render_bboxes{false},
     m_render_octree{false},
     m_renderer{getWidth(), getHeight(), m_timers},
-    m_octree_debug_level{static_cast<int>(vars.voxel_octree_levels) - 1}
+    m_octree_debug_level{static_cast<int>(vars.voxel_octree_levels) - 1},
+    m_octree_debug_solid{true}
 {
     const auto* instances = core::res::instances;
     m_renderer.setGeometry(instances->getInstances());
@@ -59,7 +60,8 @@ void GraPro::render_scene()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     m_render_timer->start();
-    m_renderer.render(m_render_bboxes, m_render_octree, m_octree_debug_level);
+    m_renderer.render(m_render_bboxes, m_render_octree, m_octree_debug_level,
+            m_octree_debug_solid);
     m_render_timer->stop();
 }
 
@@ -81,6 +83,9 @@ void GraPro::update_gui(const double delta_t)
 
         ImGui::Checkbox("bounding boxes", &m_render_bboxes);
         ImGui::Checkbox("debug octree", &m_render_octree);
+        if (m_render_octree) {
+            ImGui::Checkbox("solid", &m_octree_debug_solid);
+        }
 
         static const int max_levels = static_cast<int>(vars.voxel_octree_levels);
         int next_levels = static_cast<int>(vars.voxel_octree_levels);
@@ -90,7 +95,8 @@ void GraPro::update_gui(const double delta_t)
             vars.voxel_octree_levels = static_cast<unsigned int>(next_levels);
             m_renderer.markTreeInvalid();
         }
-        ImGui::SliderInt("Debug tree level", &m_octree_debug_level, 0, max_levels - 1);
+        if (m_render_octree)
+            ImGui::SliderInt("Debug tree level", &m_octree_debug_level, 0, max_levels - 1);
 
         // Timers: Just create your timer via m_timers and they will
         // appear here

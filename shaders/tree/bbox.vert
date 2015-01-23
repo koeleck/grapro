@@ -6,7 +6,7 @@
 
 layout(location = 0) uniform float uHalfSize;
 
-out uint ID;
+flat out uint ID;
 
 void main()
 {

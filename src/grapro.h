@@ -27,6 +27,7 @@ private:
     bool                m_render_octree;
     Renderer            m_renderer;
     int                 m_octree_debug_level;
+    bool                m_octree_debug_solid;
 };
 
 #endif // GRAPRO_H

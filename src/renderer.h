@@ -19,7 +19,8 @@ public:
     ~Renderer();
 
     void setGeometry(std::vector<const core::Instance*> geometry);
-    void render(bool renderBBoxes = false, bool render_octree = false, int octree_level = -1);
+    void render(bool renderBBoxes = false, bool render_octree = false, int octree_level = -1,
+            bool solid = false);
 
     void resize(int width, int height);
 

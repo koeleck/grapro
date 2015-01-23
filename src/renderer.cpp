@@ -639,7 +639,8 @@ void Renderer::buildVoxelTree()
 
 /****************************************************************************/
 
-void Renderer::render(const bool renderBBoxes, const bool renderOctree, int octree_level)
+void Renderer::render(const bool renderBBoxes, const bool renderOctree, int octree_level,
+        const bool solid)
 {
     if (m_geometry.empty())
         return;
@@ -672,14 +673,16 @@ void Renderer::render(const bool renderBBoxes, const bool renderOctree, int octr
     }
 
     if (renderOctree) {
-        debugRenderTree(false, octree_level);
+        debugRenderTree(solid, octree_level);
     }
 
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
-    glDepthFunc(GL_LEQUAL);
+    if (!renderOctree || !solid) {
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+        glDepthFunc(GL_LEQUAL);
 
-    renderGeometry(m_vertexpulling_prog, false, core::res::cameras->getDefaultCam());
+        renderGeometry(m_vertexpulling_prog, false, core::res::cameras->getDefaultCam());
+    }
 
     if (renderBBoxes)
         renderBoundingBoxes();
