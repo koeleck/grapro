@@ -327,9 +327,9 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
         m_scene_bbox.pmin[i] = center[i] - dist;
         m_scene_bbox.pmax[i] = center[i] + dist;
     }
-    // add adjustment
-    m_scene_bbox.pmin -= .1f * dist;
-    m_scene_bbox.pmax += .1f * dist;
+    // make bounding box 5% biffer
+    m_scene_bbox.pmin -= .05f * dist;
+    m_scene_bbox.pmax += .05f * dist;
 
     LOG_INFO("Scene bounding box: [",
             m_scene_bbox.pmin.x, ", ",
