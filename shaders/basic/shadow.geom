@@ -25,7 +25,7 @@ layout(std430, binding = LIGHT_ID_BINDING) restrict readonly buffer LightIDBlock
 };
 
 // TODO
-const float BIAS = 0.1;
+const float BIAS = 0.2;
 
 void main()
 {
@@ -37,18 +37,19 @@ void main()
     const int layer = lights[ID].type_texid & LIGHT_TEXID_BITS;
 
     // cull front faces
-    //vec3 normal = cross(gl_in[1].gl_Position.xyz - gl_in[0].gl_Position.xyz,
-    //                    gl_in[2].gl_Position.xyz - gl_in[0].gl_Position.xyz);
-    //vec3 view = lights[ID].position - gl_in[0].gl_Position.xyz;
-    //if (dot(normal, view) > 0.0)
-    //    return;
+    vec3 normal = cross(gl_in[1].gl_Position.xyz - gl_in[0].gl_Position.xyz,
+                        gl_in[2].gl_Position.xyz - gl_in[0].gl_Position.xyz);
+    vec3 view = lights[ID].position - gl_in[0].gl_Position.xyz;
+    if (dot(normal, view) > 0.0)
+        return;
 
     // frustum culling
     vec4 vertex[3];
     int outOfBound[6] = int[6](0, 0, 0, 0, 0, 0);
     for (int i = 0; i < 3; ++i) {
         vertex[i] = PVM * gl_in[i].gl_Position;
-        vertex[i].z += BIAS;
+        //vertex[i].z += BIAS;
+        vertex[i].z = -vertex[i].w;
         if (vertex[i].x > +vertex[i].w) ++outOfBound[0];
         if (vertex[i].x < -vertex[i].w) ++outOfBound[1];
         if (vertex[i].y > +vertex[i].w) ++outOfBound[2];
