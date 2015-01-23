@@ -473,6 +473,10 @@ void Renderer::buildVoxelTree()
     glProgramUniform1ui(flag_prog, 1, vars.voxel_octree_levels);
     glProgramUniform1ui(flag_prog, 3, static_cast<GLuint>(num_voxels));
 
+    float bbox[6] = {m_scene_bbox.pmin.x, m_scene_bbox.pmin.y, m_scene_bbox.pmin.z,
+                     m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z};
+    glProgramUniform3fv(flag_prog, 4, 2, bbox);
+
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::OCTREE, m_octreeNodeBuffer);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::VOXEL_FRAGMENTS, m_voxelBuffer);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::VOXEL_LEAF_INFO, m_octreeInfoBuffer);
