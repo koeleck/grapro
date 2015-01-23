@@ -41,6 +41,7 @@ public:
     }
     void setIndirectDiffuse(bool renderIndirect) { m_renderIndirectDiffuse = renderIndirect; }
     void setIndirectSpecular(bool renderIndirect) { m_renderIndirectSpecular = renderIndirect; }
+    void setConeTracing(bool b) { m_coneTracing = b; }
     void setConeGridSize(unsigned int size) { m_coneGridSize = size; }
     void setConeSteps(unsigned int steps) { m_coneSteps = steps; }
 
@@ -134,6 +135,7 @@ protected:
     // other
     gl::Buffer                          m_atomicCounterBuffer;
     core::Program                       m_coneTracing_prog;
+    bool                                m_coneTracing;
 
     // AO
     bool                                m_renderAO;

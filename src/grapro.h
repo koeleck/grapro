@@ -39,6 +39,7 @@ private:
     int                                 m_ao_weight = 1;
     bool                                m_render_indirectDiffuse;
     bool                                m_render_indirectSpecular;
+    bool                                m_coneTracing;
     bool                                m_debug_output;
     int                                 m_tree_levels;
     int                                 m_coneGridSize;

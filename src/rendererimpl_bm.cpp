@@ -439,7 +439,9 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
     glEnable(GL_CULL_FACE);
     glDepthFunc(GL_LEQUAL);
 
-    if (m_renderAO) {
+    if (m_coneTracing) {
+        coneTracing();
+    } if (m_renderAO) {
         renderAmbientOcclusion();
     } else if (m_renderIndirectDiffuse) {
         renderIndirectDiffuseLighting();
@@ -449,7 +451,6 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
         renderVoxelColors();
     } else {
         renderGeometry(m_vertexpulling_prog);
-        //coneTracing();
     }
 
     if (renderBBoxes)

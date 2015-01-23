@@ -29,6 +29,7 @@ GraPro::GraPro(GLFWwindow* window)
     m_render_ao{false},
     m_render_indirectDiffuse{false},
     m_render_indirectSpecular{false},
+    m_coneTracing{false},
     m_debug_output{false},
     m_tree_levels{static_cast<int>(vars.voxel_octree_levels)},
     m_coneGridSize{10},
@@ -106,6 +107,14 @@ void GraPro::update_gui(const double delta_t)
 
         // other
         if (ImGui::CollapsingHeader("Other", nullptr, true, true)) {
+            ImGui::Checkbox("do conetracing", &m_coneTracing);
+            m_renderer->setConeTracing(m_coneTracing);
+            if (m_coneTracing) {
+                ImGui::SliderInt("cone grid size", &m_coneGridSize, 2, 32);
+                m_renderer->setConeGridSize(m_coneGridSize);
+                ImGui::SliderInt("cone steps", &m_coneSteps, 1, 15);
+                m_renderer->setConeSteps(m_coneSteps);
+            }
             ImGui::Checkbox("render voxel colors", &m_render_voxelColors);
             ImGui::Checkbox("render AO", &m_render_ao);
             if(m_render_ao)

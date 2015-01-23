@@ -207,9 +207,10 @@ void main()
     const vec3 color = texture(u_color, uv).xyz;
 
     vec3 diffuse = calculateDiffuseColor(normal, pos);
-    vec3 specular = calculateSpecularColor(normal, pos);
+    //vec3 specular = calculateSpecularColor(normal, pos);
 
-    out_color = vec4(mix(mix(color, diffuse, 0.5), specular, 0.5), 1);
+    //out_color = vec4(mix(mix(color, diffuse, 0.5), specular, 0.5), 1);
+    out_color = vec4(mix(color, diffuse, 0.3), 1);
 }
 
 /******************************************************************************/
