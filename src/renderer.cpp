@@ -488,7 +488,8 @@ void Renderer::buildVoxelTree()
     unsigned int start_node = 0;
 
     std::vector<std::pair<int, int>> levels;
-    float quarterVoxelSize = 5.f;
+
+    float quarterVoxelSize = (m_scene_bbox.pmax.x - m_scene_bbox.pmin.x) / 2.f;
     for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
 
         quarterVoxelSize *= .5f;
@@ -523,7 +524,8 @@ void Renderer::buildVoxelTree()
 
             // set position in node info buffer
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeInfoBuffer);
-            const GLfloat pos[3] = {.5f, .5f, .5f};
+            const float midpoint = (m_scene_bbox.pmax.x - m_scene_bbox.pmin.x) / 2.f;
+            const GLfloat pos[3] = {midpoint, midpoint, midpoint};
             glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_RGB32F, 0, 3 * sizeof(GLfloat),
                     GL_RGB, GL_FLOAT, pos);
             // clear rest of info
