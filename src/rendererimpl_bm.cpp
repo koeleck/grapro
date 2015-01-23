@@ -448,8 +448,8 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
     } else if (renderVoxColors) {
         renderVoxelColors();
     } else {
-        //renderGeometry(m_vertexpulling_prog);
-        coneTracing();
+        renderGeometry(m_vertexpulling_prog);
+        //coneTracing();
     }
 
     if (renderBBoxes)
