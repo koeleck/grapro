@@ -86,6 +86,10 @@ vec3 calculateDiffuseColor(const vec3 normal, const vec3 pos)
 	vec4 totalColor = vec4(0);
 	const float step = (1.f / float(u_coneGridSize));
 
+	const float theta = cos(30 * int(gl_FragCoord.x) ^ int(gl_FragCoord.y) + 10 * int(gl_FragCoord.x) * int(gl_FragCoord.y));
+	const float cs = cos(theta);
+	const float sn = sin(theta);
+
     for (uint y = 0; y < u_coneGridSize; ++y) {
 
         const float uy = (0.5f + float(y)) * step;
@@ -94,9 +98,12 @@ vec3 calculateDiffuseColor(const vec3 normal, const vec3 pos)
 
             const float ux = (0.5f + float(x)) * step;
 
+            const float uxRot = ux * cs - uy * sn;
+            const float uyRot = ux * sn + uy * cs;
+
             // create the cone
             ONB onb = toONB(normal);
-            vec3 v = uniformHemisphereSampling(ux, uy);
+            vec3 v = uniformHemisphereSampling(ux, uy); //  do random here if you want
             Cone cone;
             cone.dir   = normalize(toWorld(onb, v));
             cone.angle = 180.f / float(u_coneGridSize);
