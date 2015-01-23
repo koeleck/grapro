@@ -71,6 +71,9 @@ void RendererInterface::setGeometry(std::vector<const core::Instance*> geometry)
         m_scene_bbox.pmin[i] = center[i] - dist;
         m_scene_bbox.pmax[i] = center[i] + dist;
     }
+    // make bounding box 5% bigger
+    m_scene_bbox.pmin -= .05f * dist;
+    m_scene_bbox.pmax += .05f * dist;
 
     LOG_INFO("Scene bounding box: [",
             m_scene_bbox.pmin.x, ", ",
