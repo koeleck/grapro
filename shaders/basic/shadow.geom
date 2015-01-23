@@ -48,8 +48,7 @@ void main()
     int outOfBound[6] = int[6](0, 0, 0, 0, 0, 0);
     for (int i = 0; i < 3; ++i) {
         vertex[i] = PVM * gl_in[i].gl_Position;
-        //vertex[i].z += BIAS;
-        vertex[i].z = -vertex[i].w;
+        vertex[i].z += BIAS;
         if (vertex[i].x > +vertex[i].w) ++outOfBound[0];
         if (vertex[i].x < -vertex[i].w) ++outOfBound[1];
         if (vertex[i].y > +vertex[i].w) ++outOfBound[2];
