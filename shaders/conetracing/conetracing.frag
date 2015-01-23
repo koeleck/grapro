@@ -130,7 +130,7 @@ vec3 calculateDiffuseColor(const vec3 normal, const vec3 pos)
                 const vec3 wpos = pos + totalDist * cone.dir;
                 const vec3 normal = getNormal(level, wpos).xyz;
                 if (dot(normal, cone.dir) > 0.f) {
-                    continue;
+                    //continue;
                 }
                 vec4 color = getColor(level, wpos);
                 if (color.w > 0) {
@@ -216,8 +216,9 @@ void main()
     vec3 diffuse = calculateDiffuseColor(normal, pos);
     //vec3 specular = calculateSpecularColor(normal, pos);
 
-    //out_color = vec4(mix(mix(color, diffuse, 0.5), specular, 0.5), 1);
-    out_color = vec4(mix(color, diffuse, 0.3), 1);
+    //out_color = vec4(mix(mix(color, diffuse, 0.2), specular, 0.01), 1);
+    vec3 diffuseMix = mix(color, diffuse, 0.3);
+    out_color = vec4(max(diffuseMix, color), 1);
 }
 
 /******************************************************************************/
