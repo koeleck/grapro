@@ -86,11 +86,11 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
             GL_VERTEX_SHADER);
     core::res::shaders->registerShader("shadow_geom", "basic/shadow.geom",
             GL_GEOMETRY_SHADER,
-            "NUM_SHADOWMAPS " + std::to_string(core::res::lights->getNumShadowMapsUsed()) +
+            "NUM_SHADOWMAPS " + std::to_string(std::max(1, core::res::lights->getNumShadowMapsUsed())) +
             ", BIAS " + std::to_string(vars.light_bias));
     core::res::shaders->registerShader("shadow_cube_geom", "basic/shadow_cube.geom",
             GL_GEOMETRY_SHADER,
-            "NUM_SHADOWCUBEMAPS " + std::to_string(core::res::lights->getNumShadowCubeMapsUsed()) +
+            "NUM_SHADOWCUBEMAPS " + std::to_string(std::max(1, core::res::lights->getNumShadowCubeMapsUsed())) +
             ", BIAS " + std::to_string(vars.light_bias));
     core::res::shaders->registerShader("depth_only_frag", "basic/depth_only.frag",
             GL_FRAGMENT_SHADER);
