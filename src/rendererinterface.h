@@ -50,6 +50,7 @@ public:
     virtual void render(const Options & options) = 0;
 
     void setGeometry(std::vector<const core::Instance*> geometry);
+    void markTreeInvalid() { m_rebuildTree = true; }
 
     const core::AABB& getSceneBBox() const { return this->m_scene_bbox; }
 protected:
