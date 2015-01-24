@@ -90,6 +90,7 @@ void GraPro::update_gui(const double delta_t)
 
         if (ImGui::Button("recompile shaders")) {
             core::res::shaders->recompile();
+            m_renderer->markTreeInvalid();
             LOG_INFO("shaders recompiled");
         }
 
