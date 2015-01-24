@@ -21,29 +21,48 @@
 
 GraPro::GraPro(GLFWwindow* window)
   : framework::MainWindow{window},
-    m_cam{core::res::cameras->getDefaultCam()},
     m_showgui{true},
-    m_render_bboxes{false},
-    m_render_octree{false},
-    m_render_voxelColors{false},
-    m_render_ao{false},
-    m_render_indirectDiffuse{false},
-    m_render_indirectSpecular{false},
-    m_coneTracing{false},
-    m_debug_output{false},
-    m_tree_levels{static_cast<int>(vars.voxel_octree_levels)},
-    m_coneGridSize{10},
-    m_coneSteps{1},
-    m_renderer{new RendererImplBM(m_timers, m_tree_levels)}
-    //m_renderer{new RendererImplPK(m_timers, m_tree_levels)} // does not work anymore!
+    m_treeLevels{static_cast<int>(vars.voxel_octree_levels)},
+    m_renderBBoxes{false},
+    m_renderVoxelBoxes{false},
+    m_renderVoxelColors{false},
+    m_renderAO{false},
+    m_renderIndirectDiffuse{false},
+    m_renderIndirectSpecular{false},
+    m_renderConeTracing{false},
+    m_aoConeGridSize{10},
+    m_aoConeSteps{2},
+    m_aoWeight{1},
+    m_diffuseConeGridSize{10},
+    m_diffuseConeSteps{2},
+    m_specularConeSteps{4},
+    m_debugOutput{false},
+    m_cam{core::res::cameras->getDefaultCam()},
+    m_renderer{new RendererImplBM(m_timers, m_treeLevels)}
 {
+    m_options.treeLevels = m_treeLevels;
+    m_options.renderBBoxes = m_renderBBoxes;
+    m_options.renderVoxelBoxes = m_renderVoxelBoxes;
+    m_options.renderVoxelColors = m_renderVoxelColors;
+    m_options.renderAO = m_renderAO;
+    m_options.renderIndirectDiffuse = m_renderIndirectDiffuse;
+    m_options.renderIndirectSpecular = m_renderIndirectSpecular;
+    m_options.renderConeTracing = m_renderConeTracing;
+    m_options.aoConeGridSize = m_aoConeGridSize;
+    m_options.aoConeSteps = m_aoConeSteps;
+    m_options.aoWeight = m_aoWeight;
+    m_options.diffuseConeGridSize = m_diffuseConeGridSize;
+    m_options.diffuseConeSteps = m_diffuseConeSteps;
+    m_options.specularConeSteps = m_specularConeSteps;
+    m_options.debugOutput = m_debugOutput;
+
     const auto* instances = core::res::instances;
     m_renderer->setGeometry(instances->getInstances());
 
     glm::dvec3 up {0.0, 1.0, 0.0};
     m_cam->setFixedYawAxis(true, up);
 
-    m_render_timer = m_timers.addGPUTimer("Render");
+    m_renderTimer = m_timers.addGPUTimer("Render");
 
     // fix lights
     const auto& bbox = m_renderer.get()->getSceneBBox();
@@ -72,11 +91,9 @@ void GraPro::render_scene()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    m_render_timer->start();
-    m_renderer->render(std::make_unsigned<int>::type(m_tree_levels),
-                       m_render_bboxes, m_render_octree, m_render_voxelColors,
-                       m_debug_output);
-    m_render_timer->stop();
+    m_renderTimer->start();
+    m_renderer->render(m_options);
+    m_renderTimer->stop();
 }
 
 /****************************************************************************/
@@ -95,48 +112,29 @@ void GraPro::update_gui(const double delta_t)
 
         ImGui::Spacing();
 
-        ImGui::Checkbox("bounding boxes", &m_render_bboxes);
+        ImGui::Checkbox("bounding boxes", &m_renderBBoxes);
 
         // octree
         if (ImGui::CollapsingHeader("Octree", nullptr, true, true)) {
-            ImGui::Checkbox("show debug output", &m_debug_output);
-            ImGui::SliderInt("tree levels", &m_tree_levels, 1, 10);
-            ImGui::Checkbox("show voxel bounding boxes", &m_render_octree);
+            ImGui::Checkbox("show debug output", &m_debugOutput);
+            ImGui::SliderInt("tree levels", &m_treeLevels, 1, 9);
+            ImGui::Checkbox("show voxel bounding boxes", &m_renderVoxelBoxes);
         }
 
-        // other
-        if (ImGui::CollapsingHeader("Other", nullptr, true, true)) {
-            ImGui::Checkbox("do conetracing", &m_coneTracing);
-            m_renderer->setConeTracing(m_coneTracing);
-            if (m_coneTracing) {
-                ImGui::SliderInt("cone grid size", &m_coneGridSize, 2, 32);
-                m_renderer->setConeGridSize(m_coneGridSize);
-                ImGui::SliderInt("cone steps", &m_coneSteps, 1, 15);
-                m_renderer->setConeSteps(m_coneSteps);
-            }
-            ImGui::Checkbox("render voxel colors", &m_render_voxelColors);
-            ImGui::Checkbox("render AO", &m_render_ao);
-            if(m_render_ao)
-            {
-                ImGui::SliderInt("#cones", &m_ao_num_cones, 2, 32);
-                ImGui::SliderInt("max samples", &m_ao_max_samples, 1, 5);
-                ImGui::SliderInt("weight by angle", &m_ao_weight, 0, 3);
-            }
-            m_renderer->setAO(m_render_ao, m_ao_num_cones, m_ao_max_samples, m_ao_weight);
-            ImGui::Checkbox("render Indirect Diffuse", &m_render_indirectDiffuse);
-            m_renderer->setIndirectDiffuse(m_render_indirectDiffuse);
-            if (m_render_indirectDiffuse) {
-                ImGui::SliderInt("cone grid size", &m_coneGridSize, 2, 32);
-                m_renderer->setConeGridSize(m_coneGridSize);
-                ImGui::SliderInt("cone steps", &m_coneSteps, 1, 15);
-                m_renderer->setConeSteps(m_coneSteps);
-            }
-            ImGui::Checkbox("render Indirect Specular", &m_render_indirectSpecular);
-            m_renderer->setIndirectSpecular(m_render_indirectSpecular);
-            if (m_render_indirectSpecular) {
-                ImGui::SliderInt("cone steps", &m_coneSteps, 1, 15);
-                m_renderer->setConeSteps(m_coneSteps);
-            }
+        // conetracing
+        if (ImGui::CollapsingHeader("Conetracing", nullptr, true, true)) {
+            ImGui::SliderInt("AO cone grid size", &m_aoConeGridSize, 2, 32);
+            ImGui::SliderInt("AO cone steps", &m_aoConeSteps, 1, 10);
+            ImGui::SliderInt("AO weight", &m_aoWeight, 0, 3);
+            ImGui::SliderInt("diffuse cone grid size", &m_diffuseConeGridSize, 2, 32);
+            ImGui::SliderInt("diffuse cone steps", &m_diffuseConeSteps, 1, 10);
+            ImGui::SliderInt("specular cone steps", &m_specularConeSteps, 1, 10);
+
+            ImGui::Checkbox("render ConeTracing", &m_renderConeTracing);
+            ImGui::Checkbox("render Voxel Colors", &m_renderVoxelColors);
+            ImGui::Checkbox("render AO", &m_renderAO);
+            ImGui::Checkbox("render Indirect Diffuse", &m_renderIndirectDiffuse);
+            ImGui::Checkbox("render Indirect Specular", &m_renderIndirectSpecular);
         }
 
         // Timers: Just create your timer via m_timers and they will
@@ -173,6 +171,22 @@ void GraPro::update_gui(const double delta_t)
         }
     }
     ImGui::End();
+
+    m_options.treeLevels = m_treeLevels;
+    m_options.renderBBoxes = m_renderBBoxes;
+    m_options.renderVoxelBoxes = m_renderVoxelBoxes;
+    m_options.renderVoxelColors = m_renderVoxelColors;
+    m_options.renderAO = m_renderAO;
+    m_options.renderIndirectDiffuse = m_renderIndirectDiffuse;
+    m_options.renderIndirectSpecular = m_renderIndirectSpecular;
+    m_options.renderConeTracing = m_renderConeTracing;
+    m_options.aoConeGridSize = m_aoConeGridSize;
+    m_options.aoConeSteps = m_aoConeSteps;
+    m_options.aoWeight = m_aoWeight;
+    m_options.diffuseConeGridSize = m_diffuseConeGridSize;
+    m_options.diffuseConeSteps = m_diffuseConeSteps;
+    m_options.specularConeSteps = m_specularConeSteps;
+    m_options.debugOutput = m_debugOutput;
 }
 
 /****************************************************************************/

@@ -14,8 +14,9 @@ uniform vec3 u_bboxMax;
 uniform uint u_screenwidth;
 uniform uint u_screenheight;
 uniform uint u_treeLevels;
-uniform uint u_coneGridSize;
-uniform uint u_numSteps;
+uniform uint u_diffuseConeGridSize;
+uniform uint u_diffuseConeSteps;
+uniform uint u_specularConeSteps;
 
 uniform sampler2D u_pos;
 uniform sampler2D u_normal;
@@ -84,17 +85,17 @@ vec4 getNormal(uint maxlevel, vec3 wpos)
 vec3 calculateDiffuseColor(const vec3 normal, const vec3 pos)
 {
 	vec4 totalColor = vec4(0);
-	const float step = (1.f / float(u_coneGridSize));
+	const float step = (1.f / float(u_diffuseConeGridSize));
 
 	const float theta = cos(30 * int(gl_FragCoord.x) ^ int(gl_FragCoord.y) + 10 * int(gl_FragCoord.x) * int(gl_FragCoord.y));
 	const float cs = cos(theta);
 	const float sn = sin(theta);
 
-    for (uint y = 0; y < u_coneGridSize; ++y) {
+    for (uint y = 0; y < u_diffuseConeGridSize; ++y) {
 
         const float uy = (0.5f + float(y)) * step;
 
-        for (uint x = 0; x < u_coneGridSize; ++x) {
+        for (uint x = 0; x < u_diffuseConeGridSize; ++x) {
 
             const float ux = (0.5f + float(x)) * step;
 
@@ -106,13 +107,13 @@ vec3 calculateDiffuseColor(const vec3 normal, const vec3 pos)
             vec3 v = uniformHemisphereSampling(ux, uy); //  do random here if you want
             Cone cone;
             cone.dir   = normalize(toWorld(onb, v));
-            cone.angle = 180.f / float(u_coneGridSize);
+            cone.angle = 180.f / float(u_diffuseConeGridSize);
 
             // calculate weight
             float d = abs(dot(normalize(normal), cone.dir));
 
             // trace the cone for each sample
-            for (uint step = 1; step <= u_numSteps; ++step) {
+            for (uint step = 1; step <= u_diffuseConeSteps; ++step) {
 
                 const float totalDist = step * voxelSize;
                 const float diameter = 2 * coneRadiusAtDistance(cone, totalDist);
@@ -169,7 +170,7 @@ vec3 calculateSpecularColor(const vec3 normal, const vec3 pos)
     float actualVoxelSize = voxelSize;
 
     // trace the cone for each sample
-    for (uint step = 1; step <= u_numSteps; ++step) {
+    for (uint step = 1; step <= u_specularConeSteps; ++step) {
 
         const float totalDist = step * actualVoxelSize;
         const float diameter = 2 * coneRadiusAtDistance(cone, totalDist);

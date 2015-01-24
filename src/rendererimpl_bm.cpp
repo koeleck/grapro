@@ -383,9 +383,7 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
 
 /****************************************************************************/
 
-void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBoxes,
-                            const bool renderOctree, const bool renderVoxColors,
-                            const bool debug_output)
+void RendererImplBM::render(const Options & options)
 {
     if (m_geometry.empty())
         return;
@@ -395,9 +393,11 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
     core::res::meshes->bind();
     core::res::lights->bind();
 
-    if (treeLevels != m_treeLevels) {
+    m_options = options;
 
-        m_treeLevels = treeLevels;
+    if (options.treeLevels != m_treeLevels) {
+
+        m_treeLevels = options.treeLevels;
         m_rebuildTree = true;
 
         auto totalNodes = calculateMaxNodes();
@@ -432,8 +432,8 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
         glDisable(GL_CULL_FACE);
         renderShadowmaps();
 
-        createVoxelList(debug_output);
-        buildVoxelTree(debug_output);
+        createVoxelList(options.debugOutput);
+        buildVoxelTree(options.debugOutput);
         m_rebuildTree = false;
         gl::printInfo();
     }
@@ -442,24 +442,25 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
     glEnable(GL_CULL_FACE);
     glDepthFunc(GL_LEQUAL);
 
-    if (m_coneTracing) {
+
+    if (options.renderConeTracing) {
         coneTracing();
-    } if (m_renderAO) {
+    } if (options.renderAO) {
         renderAmbientOcclusion();
-    } else if (m_renderIndirectDiffuse) {
+    } else if (options.renderIndirectDiffuse) {
         renderIndirectDiffuseLighting();
-    } else if (m_renderIndirectSpecular) {
+    } else if (options.renderIndirectSpecular) {
         renderIndirectSpecularLighting();
-    } else if (renderVoxColors) {
+    } else if (options.renderVoxelColors) {
         renderVoxelColors();
     } else {
         renderGeometry(m_vertexpulling_prog);
     }
 
-    if (renderBBoxes)
+    if (options.renderBBoxes)
         renderBoundingBoxes();
 
-    if (renderOctree)
+    if (options.renderVoxelBoxes)
         renderVoxelBoundingBoxes();
 
 
@@ -522,11 +523,11 @@ void RendererImplBM::renderAmbientOcclusion() const
     glUniform1ui(loc, m_treeLevels);
 
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_coneGridSize");
-    glUniform1ui(loc, m_ao_num_cones);
+    glUniform1ui(loc, m_options.aoConeGridSize);
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_numSteps");
-    glUniform1ui(loc, m_ao_max_samples);
+    glUniform1ui(loc, m_options.aoConeSteps);
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_weight");
-    glUniform1ui(loc, m_ao_weight);
+    glUniform1ui(loc, m_options.aoWeight);
 
 
     glBindVertexArray(m_vao_ssq);
