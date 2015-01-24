@@ -536,9 +536,9 @@ void RendererInterface::renderIndirectDiffuseLighting() const
     loc = glGetUniformLocation(m_indirectDiffuse_prog, "u_treeLevels");
     glUniform1ui(loc, m_treeLevels);
     loc = glGetUniformLocation(m_indirectDiffuse_prog, "u_coneGridSize");
-    glUniform1ui(loc, m_coneGridSize);
+    glUniform1ui(loc, m_options.diffuseConeGridSize);
     loc = glGetUniformLocation(m_indirectDiffuse_prog, "u_numSteps");
-    glUniform1ui(loc, m_coneSteps);
+    glUniform1ui(loc, m_options.diffuseConeSteps);
 
     glBindVertexArray(m_vao_ssq);
     glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -584,7 +584,7 @@ void RendererInterface::renderIndirectSpecularLighting() const
     loc = glGetUniformLocation(m_indirectSpecular_prog, "u_treeLevels");
     glUniform1ui(loc, m_treeLevels);
     loc = glGetUniformLocation(m_indirectSpecular_prog, "u_numSteps");
-    glUniform1ui(loc, m_coneSteps);
+    glUniform1ui(loc, m_options.specularConeSteps);
 
     glBindVertexArray(m_vao_ssq);
     glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -632,10 +632,12 @@ void RendererInterface::coneTracing() const
     glUniform1ui(loc, vars.screen_height);
     loc = glGetUniformLocation(m_coneTracing_prog, "u_treeLevels");
     glUniform1ui(loc, m_treeLevels);
-    loc = glGetUniformLocation(m_coneTracing_prog, "u_coneGridSize");
-    glUniform1ui(loc, m_coneGridSize);
-    loc = glGetUniformLocation(m_coneTracing_prog, "u_numSteps");
-    glUniform1ui(loc, m_coneSteps);
+    loc = glGetUniformLocation(m_coneTracing_prog, "u_diffuseConeGridSize");
+    glUniform1ui(loc, m_options.diffuseConeGridSize);
+    loc = glGetUniformLocation(m_coneTracing_prog, "u_diffuseConeSteps");
+    glUniform1ui(loc, m_options.diffuseConeSteps);
+    loc = glGetUniformLocation(m_coneTracing_prog, "u_specularConeSteps");
+    glUniform1ui(loc, m_options.specularConeSteps);
 
     glBindVertexArray(m_vao_ssq);
     glDrawArrays(GL_TRIANGLES, 0, 6);

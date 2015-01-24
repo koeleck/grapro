@@ -103,17 +103,21 @@ void RendererImplBM::initShaders()
 
     // shadows
     core::res::shaders->registerShader("shadow_vert", "basic/shadow.vert",
-    GL_VERTEX_SHADER);
+            GL_VERTEX_SHADER);
     core::res::shaders->registerShader("shadow_geom", "basic/shadow.geom",
-    GL_GEOMETRY_SHADER, "NUM_SHADOWMAPS " + std::to_string(std::max(1, core::res::lights->getNumShadowMapsUsed())));
+            GL_GEOMETRY_SHADER,
+            "NUM_SHADOWMAPS " + std::to_string(std::max(1, core::res::lights->getNumShadowMapsUsed())) +
+            ", BIAS " + std::to_string(vars.light_bias));
     core::res::shaders->registerShader("shadow_cube_geom", "basic/shadow_cube.geom",
-    GL_GEOMETRY_SHADER, "NUM_SHADOWCUBEMAPS " + std::to_string(std::max(1, core::res::lights->getNumShadowCubeMapsUsed())));
+            GL_GEOMETRY_SHADER,
+            "NUM_SHADOWCUBEMAPS " + std::to_string(std::max(1, core::res::lights->getNumShadowCubeMapsUsed())) +
+            ", BIAS " + std::to_string(vars.light_bias));
     core::res::shaders->registerShader("depth_only_frag", "basic/depth_only.frag",
-    GL_FRAGMENT_SHADER);
+            GL_FRAGMENT_SHADER);
     m_2d_shadow_prog = core::res::shaders->registerProgram("shadow2d_prog",
-    {"shadow_vert", "shadow_geom", "depth_only_frag"});
+            {"shadow_vert", "shadow_geom", "depth_only_frag"});
     m_cube_shadow_prog = core::res::shaders->registerProgram("shadow_cube_prog",
-    {"shadow_vert", "shadow_cube_geom", "depth_only_frag"});
+            {"shadow_vert", "shadow_cube_geom", "depth_only_frag"});
 }
 
 /****************************************************************************/
@@ -383,9 +387,7 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
 
 /****************************************************************************/
 
-void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBoxes,
-                            const bool renderOctree, const bool renderVoxColors,
-                            const bool debug_output)
+void RendererImplBM::render(const Options & options)
 {
     if (m_geometry.empty())
         return;
@@ -395,9 +397,11 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
     core::res::meshes->bind();
     core::res::lights->bind();
 
-    if (treeLevels != m_treeLevels) {
+    m_options = options;
 
-        m_treeLevels = treeLevels;
+    if (options.treeLevels != m_treeLevels) {
+
+        m_treeLevels = options.treeLevels;
         m_rebuildTree = true;
 
         auto totalNodes = calculateMaxNodes();
@@ -432,8 +436,8 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
         glDisable(GL_CULL_FACE);
         renderShadowmaps();
 
-        createVoxelList(debug_output);
-        buildVoxelTree(debug_output);
+        createVoxelList(options.debugOutput);
+        buildVoxelTree(options.debugOutput);
         m_rebuildTree = false;
         gl::printInfo();
     }
@@ -442,24 +446,25 @@ void RendererImplBM::render(const unsigned int treeLevels, const bool renderBBox
     glEnable(GL_CULL_FACE);
     glDepthFunc(GL_LEQUAL);
 
-    if (m_coneTracing) {
+
+    if (options.renderConeTracing) {
         coneTracing();
-    } if (m_renderAO) {
+    } if (options.renderAO) {
         renderAmbientOcclusion();
-    } else if (m_renderIndirectDiffuse) {
+    } else if (options.renderIndirectDiffuse) {
         renderIndirectDiffuseLighting();
-    } else if (m_renderIndirectSpecular) {
+    } else if (options.renderIndirectSpecular) {
         renderIndirectSpecularLighting();
-    } else if (renderVoxColors) {
+    } else if (options.renderVoxelColors) {
         renderVoxelColors();
     } else {
         renderGeometry(m_vertexpulling_prog);
     }
 
-    if (renderBBoxes)
+    if (options.renderBBoxes)
         renderBoundingBoxes();
 
-    if (renderOctree)
+    if (options.renderVoxelBoxes)
         renderVoxelBoundingBoxes();
 
 
@@ -522,11 +527,11 @@ void RendererImplBM::renderAmbientOcclusion() const
     glUniform1ui(loc, m_treeLevels);
 
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_coneGridSize");
-    glUniform1ui(loc, m_ao_num_cones);
+    glUniform1ui(loc, m_options.aoConeGridSize);
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_numSteps");
-    glUniform1ui(loc, m_ao_max_samples);
+    glUniform1ui(loc, m_options.aoConeSteps);
     loc = glGetUniformLocation(m_ssq_ao_prog, "u_weight");
-    glUniform1ui(loc, m_ao_weight);
+    glUniform1ui(loc, m_options.aoWeight);
 
 
     glBindVertexArray(m_vao_ssq);

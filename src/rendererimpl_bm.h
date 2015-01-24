@@ -11,8 +11,7 @@ public:
     explicit RendererImplBM(core::TimerArray&, unsigned int);
     ~RendererImplBM();
 
-    virtual void render(unsigned int, bool = false, bool = false,
-                        bool = false, bool = false);
+    virtual void render(const Options &);
 
 private:
 

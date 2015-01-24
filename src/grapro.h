@@ -26,25 +26,35 @@ public:
     virtual void resize(int width, int height) override;
 
 private:
-    core::Camera*                       m_cam;
-    bool                                m_showgui;
-    core::TimerArray                    m_timers;
-    core::GPUTimer*                     m_render_timer;
-    bool                                m_render_bboxes;
-    bool                                m_render_octree;
-    bool                                m_render_voxelColors;
-    bool                                m_render_ao;
-    int                                 m_ao_num_cones = 10;
-    int                                 m_ao_max_samples = 1;
-    int                                 m_ao_weight = 1;
-    bool                                m_render_indirectDiffuse;
-    bool                                m_render_indirectSpecular;
-    bool                                m_coneTracing;
-    bool                                m_debug_output;
-    int                                 m_tree_levels;
-    int                                 m_coneGridSize;
-    int                                 m_coneSteps;
 
+    // GUI
+    bool                                m_showgui;
+
+    int                                 m_treeLevels;
+
+    bool                                m_renderBBoxes;
+    bool                                m_renderVoxelBoxes;
+    bool                                m_renderVoxelColors;
+    bool                                m_renderAO;
+    bool                                m_renderIndirectDiffuse;
+    bool                                m_renderIndirectSpecular;
+    bool                                m_renderConeTracing;
+
+    int                                 m_aoConeGridSize;
+    int                                 m_aoConeSteps;
+    int                                 m_aoWeight;
+    int                                 m_diffuseConeGridSize;
+    int                                 m_diffuseConeSteps;
+    int                                 m_specularConeSteps;
+
+    bool                                m_debugOutput;
+
+    Options                             m_options;
+
+    // other
+    core::Camera*                       m_cam;
+    core::TimerArray                    m_timers;
+    core::GPUTimer*                     m_renderTimer;
     std::unique_ptr<RendererInterface>  m_renderer;
 
 };

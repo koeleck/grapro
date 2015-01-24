@@ -3,6 +3,27 @@
 
 /****************************************************************************/
 
+struct Options
+{
+    unsigned int treeLevels;
+    bool renderBBoxes;
+    bool renderVoxelBoxes;
+    bool renderVoxelColors;
+    bool renderAO;
+    bool renderIndirectDiffuse;
+    bool renderIndirectSpecular;
+    bool renderConeTracing;
+    unsigned int aoConeGridSize;
+    unsigned int aoConeSteps;
+    unsigned int aoWeight;
+    unsigned int diffuseConeGridSize;
+    unsigned int diffuseConeSteps;
+    unsigned int specularConeSteps;
+    bool debugOutput;
+};
+
+/****************************************************************************/
+
 #include <vector>
 #include <unordered_map>
 
@@ -26,24 +47,9 @@ public:
     explicit RendererInterface(core::TimerArray& timer_array, unsigned int treeLevels);
     virtual ~RendererInterface();
 
-    virtual void render(unsigned int treeLevels, bool renderBBoxes = false,
-                        bool renderOctree = false, bool renderVoxColors = false,
-                        bool debug_output = false) = 0;
+    virtual void render(const Options & options) = 0;
 
     void setGeometry(std::vector<const core::Instance*> geometry);
-    void markTreeInvalid() { m_rebuildTree = true; }
-
-    void setAO(bool renderAO, unsigned int num_cones, unsigned int max_samples, unsigned int weight) {
-        m_renderAO = renderAO;
-        m_ao_num_cones = num_cones;
-        m_ao_max_samples = max_samples;
-        m_ao_weight = weight;
-    }
-    void setIndirectDiffuse(bool renderIndirect) { m_renderIndirectDiffuse = renderIndirect; }
-    void setIndirectSpecular(bool renderIndirect) { m_renderIndirectSpecular = renderIndirect; }
-    void setConeTracing(bool b) { m_coneTracing = b; }
-    void setConeGridSize(unsigned int size) { m_coneGridSize = size; }
-    void setConeSteps(unsigned int steps) { m_coneSteps = steps; }
 
     const core::AABB& getSceneBBox() const { return this->m_scene_bbox; }
 protected:
@@ -122,10 +128,6 @@ protected:
     // indirect
     core::Program                       m_indirectDiffuse_prog;
     core::Program                       m_indirectSpecular_prog;
-    bool                                m_renderIndirectDiffuse;
-    bool                                m_renderIndirectSpecular;
-    unsigned int                        m_coneGridSize = 10;
-    unsigned int                        m_coneSteps = 1;
 
     // color boxes
     core::Program                       m_colorboxes_prog;
@@ -135,13 +137,7 @@ protected:
     // other
     gl::Buffer                          m_atomicCounterBuffer;
     core::Program                       m_coneTracing_prog;
-    bool                                m_coneTracing;
-
-    // AO
-    bool                                m_renderAO;
-    unsigned int                        m_ao_num_cones;
-    unsigned int                        m_ao_max_samples;
-    unsigned int                        m_ao_weight;
+    Options                             m_options;
 
 private:
 
