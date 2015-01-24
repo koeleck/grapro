@@ -59,4 +59,3 @@ private:
 } // namespace core
 
 #endif // CORE_CAMERA_MANAGER_H
-

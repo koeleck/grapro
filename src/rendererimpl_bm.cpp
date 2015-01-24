@@ -103,17 +103,21 @@ void RendererImplBM::initShaders()
 
     // shadows
     core::res::shaders->registerShader("shadow_vert", "basic/shadow.vert",
-    GL_VERTEX_SHADER);
+            GL_VERTEX_SHADER);
     core::res::shaders->registerShader("shadow_geom", "basic/shadow.geom",
-    GL_GEOMETRY_SHADER, "NUM_SHADOWMAPS " + std::to_string(std::max(1, core::res::lights->getNumShadowMapsUsed())));
+            GL_GEOMETRY_SHADER,
+            "NUM_SHADOWMAPS " + std::to_string(std::max(1, core::res::lights->getNumShadowMapsUsed())) +
+            ", BIAS " + std::to_string(vars.light_bias));
     core::res::shaders->registerShader("shadow_cube_geom", "basic/shadow_cube.geom",
-    GL_GEOMETRY_SHADER, "NUM_SHADOWCUBEMAPS " + std::to_string(std::max(1, core::res::lights->getNumShadowCubeMapsUsed())));
+            GL_GEOMETRY_SHADER,
+            "NUM_SHADOWCUBEMAPS " + std::to_string(std::max(1, core::res::lights->getNumShadowCubeMapsUsed())) +
+            ", BIAS " + std::to_string(vars.light_bias));
     core::res::shaders->registerShader("depth_only_frag", "basic/depth_only.frag",
-    GL_FRAGMENT_SHADER);
+            GL_FRAGMENT_SHADER);
     m_2d_shadow_prog = core::res::shaders->registerProgram("shadow2d_prog",
-    {"shadow_vert", "shadow_geom", "depth_only_frag"});
+            {"shadow_vert", "shadow_geom", "depth_only_frag"});
     m_cube_shadow_prog = core::res::shaders->registerProgram("shadow_cube_prog",
-    {"shadow_vert", "shadow_cube_geom", "depth_only_frag"});
+            {"shadow_vert", "shadow_cube_geom", "depth_only_frag"});
 }
 
 /****************************************************************************/

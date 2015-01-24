@@ -22,17 +22,17 @@ public:
         m_size{0}
     {
         static_assert((sizeof(T) % T::alignment()) == 0, "");
-
+LOG_INFO(__LINE__);
         auto buffer_size = m_capacity * sizeof(T);
-
+LOG_INFO("buffer_size: ", buffer_size);
         // first 4 bytes are for the counter
         m_freelist.emplace_back(first_offset(), buffer_size);
-
+LOG_INFO(__LINE__);
         glBindBuffer(target, m_buffer);
-
-        glBufferStorage(target, buffer_size, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
+LOG_INFO(__LINE__);
+        glBufferStorage(target, buffer_size, nullptr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);LOG_INFO(__LINE__);
         m_data = glMapBufferRange(target, 0, buffer_size,
-                GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+                GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);LOG_INFO(__LINE__);
     }
 
     GLintptr alloc()
