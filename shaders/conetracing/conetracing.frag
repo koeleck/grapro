@@ -237,6 +237,8 @@ vec3 calculateSpecularColor(const vec3 normal, const vec3 pos)
     return totalColor.xyz;
 }
 
+/******************************************************************************/
+
 float calculateAmbientOcclusion(const vec3 normal, const vec3 pos)
 {
     float occlusion = 0.f;
@@ -277,7 +279,6 @@ float calculateAmbientOcclusion(const vec3 normal, const vec3 pos)
 
                 // ambient occlusion
                 const vec3 wpos = pos + totalDist * cone.dir;
-                vec4 color = getColor(level, wpos);
                 if (isOccluded(level, wpos)) {
                     // we are occluded here
                     occlusion += 1.f * pow(d, float(u_aoWeight));
@@ -295,6 +296,86 @@ float calculateAmbientOcclusion(const vec3 normal, const vec3 pos)
 
 /******************************************************************************/
 
+vec3 calculateIndirectDiffuseAO(const vec3 normal, const vec3 pos)
+{
+    float occlusion = 0.f;
+    vec4 totalColor = vec4(0);
+
+    const float step = (1.f / float(u_diffuseConeGridSize));
+
+    for (uint y = 0; y < u_diffuseConeGridSize; ++y) {
+
+        const float uy = (0.5f + float(y)) * step;
+
+        for (uint x = 0; x < u_diffuseConeGridSize; ++x) {
+
+            const float ux = (0.5f + float(x)) * step;
+
+            // create the cone
+            ONB onb = toONB(normal);
+            vec3 v = uniformHemisphereSampling(ux, uy); //  do random here if you want
+            Cone cone;
+            cone.dir   = normalize(toWorld(onb, v));
+            cone.angle = 180.f / float(u_diffuseConeGridSize);
+
+            // calculate weight
+            float d = abs(dot(normalize(normal), cone.dir));
+
+            bool ao_done = false;
+            bool col_done = false;
+
+            // trace the cone for each sample
+            for (uint step = 1; step <= u_diffuseConeSteps; ++step) {
+
+                const float totalDist = step * voxelSize;
+                const float diameter = 2 * coneRadiusAtDistance(cone, totalDist);
+                if (diameter <= 0.f) continue; // some error (angle < 0 || angle > 90)
+
+                // calculate mipmap level
+                int level = int(u_treeLevels);
+                float voxel_size = voxelSize;
+                while (voxel_size < diameter && level > 0) {
+                    voxel_size *= 2;
+                    --level;
+                }
+
+                // ambient occlusion
+                const vec3 wpos = pos + totalDist * cone.dir;
+
+                if(!ao_done)
+                {
+                    if (isOccluded(level, wpos)) {
+                        // we are occluded here
+                        occlusion += 1.f * pow(d, float(u_aoWeight));
+                        ao_done = true;
+                    }
+                }
+
+                // diffuse color
+                if(!col_done)
+                {
+                    vec4 color = getColor(level, wpos);
+                    if (color.w > 0) {
+                        // color found -> stop walking!
+                        color.xyz *= d*d;
+                        color /= (step * step * voxelSize * voxelSize);
+                        totalColor += color;
+                        col_done = true;
+                    }
+                }
+            }
+
+        }
+
+    }
+
+    float ao = 1.f - clamp(occlusion / float(u_diffuseConeGridSize * u_diffuseConeGridSize), 0.f, 1.f);
+    return totalColor.xyz * ao;
+}
+
+/******************************************************************************/
+/******************************************************************************/
+
 void main()
 {
     const vec2 uv = gl_FragCoord.xy / vec2(u_screenwidth, u_screenheight);
@@ -303,14 +384,14 @@ void main()
     const vec3 pos = texture(u_pos, uv).xyz;
     const vec3 color = texture(u_color, uv).xyz;
 
-    vec3 diffuse = calculateDiffuseColor(normal, pos);
+    //vec3 diffuse = calculateDiffuseColor(normal, pos);
     //vec3 specular = calculateSpecularColor(normal, pos);
-    float occlusion = calculateAmbientOcclusion(normal, pos);
+    //float occlusion = calculateAmbientOcclusion(normal, pos);
+    vec3 diffuseAO = calculateIndirectDiffuseAO(normal, pos);
 
     //out_color = vec4(mix(mix(color, diffuse, 0.2), specular, 0.01), 1);
-    vec3 diffuseMix = mix(color, diffuse, 0.4);
-    out_color = vec4(max(diffuseMix, diffuse) * occlusion, 1);
-    //out_color = vec4(occlusion, 1);
+    vec3 diffuseMix = mix(color, diffuseAO, 0.4);
+    out_color = vec4(max(diffuseMix, diffuseAO), 1);
 }
 
 /******************************************************************************/
