@@ -663,6 +663,12 @@ void RendererInterface::coneTracing() const
     glUniform1ui(loc, m_options.diffuseConeSteps);
     loc = glGetUniformLocation(m_coneTracing_prog, "u_specularConeSteps");
     glUniform1ui(loc, m_options.specularConeSteps);
+    loc = glGetUniformLocation(m_coneTracing_prog, "u_aoConeGridSize");
+    glUniform1ui(loc, m_options.aoConeGridSize);
+    loc = glGetUniformLocation(m_coneTracing_prog, "u_aoConeSteps");
+    glUniform1ui(loc, m_options.aoConeSteps);
+    loc = glGetUniformLocation(m_coneTracing_prog, "u_aoWeight");
+    glUniform1ui(loc, m_options.aoWeight);
 
     glBindVertexArray(m_vao_ssq);
     glDrawArrays(GL_TRIANGLES, 0, 6);
