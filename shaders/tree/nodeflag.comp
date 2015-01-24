@@ -26,8 +26,7 @@ void main()
     uvec3 pos = unpackUInt3x10(voxelFragment[ID].position_xyz);
 
     // index of first child
-    uint childidx = 0u;
-    uint nodeptr = octree[childidx].id;
+    uint currentNode = 0;
 
     // iterate through all tree levels
     for (uint i = 0u; i < uMaxLevel; ++i) {
@@ -37,17 +36,17 @@ void main()
         uvec3 subnode = clamp((pos - umin) / voxel_dim, uvec3(0u), uvec3(1u));
 
         // get child pointer by ignoring the node's ptr MSB
-        childidx = uint(nodeptr & 0x7FFFFFFFu);
+        uint childidx = uint(octree[currentNode].id & 0x7FFFFFFFu);
         // determine index of subnode
         childidx += subnode.z * 4u + subnode.y * 2u + subnode.x;
 
         umin += voxel_dim * subnode;
 
-        nodeptr = octree[childidx].id;
+        currentNode = childidx;
     }
 
     // flag node
-    octree[childidx].id = 0x80000000u;
+    octree[currentNode].id = 0x80000000u;
 
     if (uMaxLevel + 1 == uTreeLevels) {
 
@@ -67,23 +66,23 @@ void main()
         emissive.b = tmp.x;
 
         // set worldspace position
-        octreeColor[childidx].position = uSceneBoundingBox[0] +
-            (vec3(pos) + 0.5) / float(uNumVoxelsPerDim) * (uSceneBoundingBox[1] - uSceneBoundingBox[0]);
+        //octreeInfo[currentNode].position = uSceneBoundingBox[0] +
+        //    (vec3(pos) + 0.5) / float(uNumVoxelsPerDim) * (uSceneBoundingBox[1] - uSceneBoundingBox[0]);
 
         // add
-        atomicAdd(octreeColor[childidx].count, 1);
+        atomicAdd(octreeInfo[currentNode].count, 1);
 
-        atomicAdd(octreeColor[childidx].diffuse.r, diffuse.r);
-        atomicAdd(octreeColor[childidx].diffuse.g, diffuse.g);
-        atomicAdd(octreeColor[childidx].diffuse.b, diffuse.b);
+        atomicAdd(octreeInfo[currentNode].diffuse.r, diffuse.r);
+        atomicAdd(octreeInfo[currentNode].diffuse.g, diffuse.g);
+        atomicAdd(octreeInfo[currentNode].diffuse.b, diffuse.b);
 
-        atomicAdd(octreeColor[childidx].emissive.r, emissive.r);
-        atomicAdd(octreeColor[childidx].emissive.g, emissive.g);
-        atomicAdd(octreeColor[childidx].emissive.b, emissive.b);
+        atomicAdd(octreeInfo[currentNode].emissive.r, emissive.r);
+        atomicAdd(octreeInfo[currentNode].emissive.g, emissive.g);
+        atomicAdd(octreeInfo[currentNode].emissive.b, emissive.b);
 
-        atomicAdd(octreeColor[childidx].normal.x, normal.x);
-        atomicAdd(octreeColor[childidx].normal.y, normal.y);
-        atomicAdd(octreeColor[childidx].normal.z, normal.z);
+        atomicAdd(octreeInfo[currentNode].normal.x, normal.x);
+        atomicAdd(octreeInfo[currentNode].normal.y, normal.y);
+        atomicAdd(octreeInfo[currentNode].normal.z, normal.z);
 
     }
 

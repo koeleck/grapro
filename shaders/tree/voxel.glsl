@@ -30,37 +30,20 @@ layout(std430, binding = OCTREE_BINDING) restrict buffer OctreeNodeBlock
 };
 
 
-// these two structs must have the same size, because we
-// store them in the same buffer
 struct NodeInfo
 {
     vec3 position;
-    uint x_neg_neighbor;
-    uint x_pos_neighbor;
-    uint y_neg_neighbor;
-    uint y_pos_neighbor;
-    uint z_neg_neighbor;
-    uint z_pos_neighbor;
-    uint padding[7];
-}; // 64 bytes
-
-struct LeafInfo
-{
-    vec3 position;
+    uint x_neighbors_y_neg_neighbor;
+    vec3 diffuse;
+    uint y_pos_neighbor_z_neighbors;
+    vec3 emissive;
     uint count;
-    vec4 diffuse;
-    vec4 emissive;
     vec4 normal;
-}; // 64 bytes
+};
 
 layout(std430, binding = OCTREE_INFO_BINDING) restrict buffer OctreeInfoBlock
 {
     NodeInfo octreeInfo[];
-};
-
-layout(std430, binding = OCTREE_COLOR_BINDING) restrict buffer OctreeColorBlock
-{
-    LeafInfo octreeColor[];
 };
 
 #if defined(NUM_BRICKS_X) && defined(NUM_BRICKS_Y)

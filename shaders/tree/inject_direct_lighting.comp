@@ -9,7 +9,6 @@ layout (local_size_x = LOCAL_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 layout(location = 0) uniform uint uCount;
 layout(location = 1) uniform uint uStartNode;
-layout(location = 2) uniform float uHalfVoxel;
 
 vec3 computeRadiance(in vec3 pos, in vec3 normal)
 {
@@ -113,23 +112,17 @@ void main()
         return;
 
     const uint idx = uStartNode + threadId;
-    const bool isEmptyLeaf = (octree[idx].id & 0x80000000u) == 0;
+    if ((octree[idx].id & 0x80000000u) == 0)
+        return;
 
-    const vec3 pos = octreeColor[idx].position.xyz;
-    const uint count = octreeColor[idx].count;
-    const vec3 normal = normalize(octreeColor[idx].normal.xyz);
-    const vec3 col = octreeColor[idx].diffuse.rgb / count;
-    const vec3 emi = octreeColor[idx].emissive.rgb / count;
+    const vec3 pos = octreeInfo[idx].position.xyz;
+    const uint count = octreeInfo[idx].count;
+    const vec3 normal = normalize(octreeInfo[idx].normal.xyz);
+    const vec3 col = octreeInfo[idx].diffuse.rgb / count;
+    const vec3 emi = octreeInfo[idx].emissive.rgb / count;
 
     ivec3 texcoord = getBrickCoord(idx);
-    for (int z = -1; z < 2; ++z) {
-        for (int y = -1; y < 2; ++y) {
-            for (int x = -1; x < 2; ++x) {
-                vec4 result = isEmptyLeaf ? vec4(0.0) :
-                    vec4(emi + col * computeRadiance(pos + vec3(x, y, z) * uHalfVoxel, normal), 1.0);
-                imageStore(octreeBrickTex, texcoord + ivec3(x, y, z), result);
-            }
-        }
-    }
+    vec4 result = vec4(emi + col * computeRadiance(pos, normal), 1.0);
+    imageStore(octreeBrickTex, texcoord, result);
 
 }

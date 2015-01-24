@@ -490,7 +490,6 @@ void Renderer::buildVoxelTree()
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::OCTREE, m_octreeNodeBuffer);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::VOXEL_FRAGMENTS, m_voxelBuffer);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::VOXEL_LEAF_INFO, m_octreeInfoBuffer);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::VOXEL_NODE_INFO, m_octreeInfoBuffer);
     glBindBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, m_atomicCounterBuffer, sizeof(GLuint), sizeof(GLuint));
 
@@ -540,19 +539,9 @@ void Renderer::buildVoxelTree()
                     GL_RGB, GL_FLOAT, glm::value_ptr(midpoint));
             // clear rest of info
             glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, 3 * sizeof(GLfloat),
-                    13 * sizeof(GLfloat), GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+                    sizeof(VoxelNodeInfo) - 3 * sizeof(GLfloat), GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
 
         } else {
-
-            if (i + 1 == vars.voxel_octree_levels) {
-                // leaf will be written in nodeflag.comp, so zero out the buffer
-                glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeInfoBuffer); // should already be bound
-                const GLuint zero = 0;
-                glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI,
-                        start_node * sizeof(VoxelNodeInfo),
-                        previously_allocated * sizeof(VoxelNodeInfo),
-                        GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
-            }
             glUseProgram(flag_prog);
 
             glProgramUniform1ui(flag_prog, 2, i);
@@ -560,10 +549,8 @@ void Renderer::buildVoxelTree()
             glDispatchCompute(flag_num_workgroups, 1, 1);
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
         }
-
-
         if (i + 1 == vars.voxel_octree_levels) {
-            // no more nodes required
+            // no need to allocate more nodes
             break;
         }
 
@@ -612,7 +599,6 @@ void Renderer::buildVoxelTree()
         glUseProgram(inject_prog);
         glUniform1ui(0, count);
         glUniform1ui(1, start);
-        glUniform1f(2, (m_scene_bbox.pmax.x - m_scene_bbox.pmin.x) / static_cast<float>(2 * num_voxels));
         glBindImageTexture(0, m_brick_texture, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA16F);
         const GLuint inject_workgroups = (count + INJECT_PROG_LOCAL_SIZE - 1) / INJECT_PROG_LOCAL_SIZE;
         glDispatchCompute(inject_workgroups, 1, 1);
