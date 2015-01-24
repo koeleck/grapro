@@ -257,8 +257,13 @@ void SpotLight::updateMatrix()
         projmat = glm::perspective<double>(getAngleOuterCone(), 1.f,
                 vars.light_nearplane, getMaxDistance());
     }
+    glm::dvec3 up(0.0, 1.0, 0.0);
+    glm::dvec3 dir = getDirection();
+    if (glm::abs(glm::dot(up, dir)) > 0.8) {
+        up = glm::dvec3(1.0, 0.0, 0.0);
+    }
     glm::dmat4 viewmat = glm::lookAt<double, glm::defaultp>(getPosition(),
-            getPosition() + getDirection(), glm::vec3(.0f, 1.f, .0f));
+            getPosition() + getDirection(), up);
 
     m_data->projViewMatrix = glm::mat4(projmat * viewmat);
 }
