@@ -114,15 +114,25 @@ void main()
             const vec3 diff = inData.wpos - lights[i].position;
             const float dist = length(diff);
             const vec3 dir = diff / dist;
+
             light_dir = -dir;
             attenuation = smoothstep(lights[i].angleOuterCone, lights[i].angleInnerCone,
                     dot(dir, lights[i].direction)) /
                     (lights[i].constantAttenuation + lights[i].linearAttenuation * dist +
                      lights[i].quadraticAttenuation * dist * dist);
             if (isShadowcasting) {
+                // normal offset
+                float normalOffsetScale = 1.0 - max(dot(light_dir, normal), 0.0);
+                vec3 normalOffset = normal * 50.0 * normalOffsetScale;
+
                 int layer = (type_texid & LIGHT_TEXID_BITS);
+
                 vec4 tmp = lights[i].ProjViewMatrix * vec4(inData.wpos, 1.0);
                 tmp.xyz = (tmp.xyz / tmp.w) * 0.5 + 0.5;
+
+                vec4 tmp2 = lights[i].ProjViewMatrix * vec4(inData.wpos + normalOffset, 1.0);
+                tmp.xy = (tmp2.xy / tmp2.w) * 0.5 + 0.5;
+
                 vec4 texcoord = vec4(tmp.xy, float(layer), tmp.z);
                 //attenuation *= texture(uShadowMapTex, texcoord);
                 // PCF:
