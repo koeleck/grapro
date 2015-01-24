@@ -139,15 +139,29 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
         LOG_ERROR("brick texture can't store all nodes!");
         abort();
     }
-    glBindTexture(GL_TEXTURE_3D, m_brick_texture);
     constexpr int BRICK_TEX_ELEMENT_SIZE = 2 * 4;
-    glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGBA16F, brick_num_x, brick_num_y, brick_num_z);
     m_brick_texture_size.x = brick_num_x * 3;
     m_brick_texture_size.y = brick_num_y * 3;
     m_brick_texture_size.z = brick_num_z * 3;
 
+    glBindTexture(GL_TEXTURE_3D, m_brick_texture);
+    glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGBA16F,
+            m_brick_texture_size.x,
+            m_brick_texture_size.y,
+            m_brick_texture_size.z);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-    int mem = max_num_nodes * (4 + static_cast<int>(sizeof(VoxelNodeInfo)) + BRICK_TEX_ELEMENT_SIZE) +
+    LOG_INFO("Brick texture: (", m_brick_texture_size.x, ", ",
+            m_brick_texture_size.y, ", ",
+            m_brick_texture_size.z, ")");
+
+
+    int mem = max_num_nodes * (4 + static_cast<int>(sizeof(VoxelNodeInfo))) +
+        (m_brick_texture_size.x * m_brick_texture_size.y * m_brick_texture_size.z * BRICK_TEX_ELEMENT_SIZE) +
         static_cast<int>(vars.max_voxel_fragments * sizeof(VoxelFragmentStruct));
     std::string unit = "B";
     if (mem > 1024) {
@@ -221,7 +235,9 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
     m_debug_tex_prog = core::res::shaders->registerProgram("ssq_prog", {"ssq_vert", "ssq_frag"});
 
     core::res::shaders->registerShader("octreeDebugBBox_vert", "tree/bbox.vert", GL_VERTEX_SHADER);
-    core::res::shaders->registerShader("octreeDebugBBox_frag", "tree/bbox.frag", GL_FRAGMENT_SHADER);
+    core::res::shaders->registerShader("octreeDebugBBox_frag", "tree/bbox.frag", GL_FRAGMENT_SHADER,
+            "NUM_BRICKS_X " + std::to_string(brick_num_x) + ", "
+            "NUM_BRICKS_Y " + std::to_string(brick_num_y));
     m_voxel_bbox_prog = core::res::shaders->registerProgram("octreeDebugBBox_prog",
             {"octreeDebugBBox_vert", "octreeDebugBBox_frag"});
 }
@@ -442,46 +458,6 @@ void Renderer::createVoxelList()
     if (m_numVoxelFrag > vars.max_voxel_fragments) {
         LOG_WARNING("TOO MANY VOXEL FRAGMENTS!");
     }
-
-    // debug
-    /*
-    std::vector<VoxelStruct> voxels(m_numVoxelFrag);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_voxelBuffer);
-    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, m_numVoxelFrag * sizeof(VoxelStruct), voxels.data());
-
-    m_voxel_bboxes.clear();
-    m_voxel_bboxes.reserve(m_numVoxelFrag);
-    const float dist = (m_scene_bbox.pmax.x - m_scene_bbox.pmin.x) / static_cast<float>(num_voxels);
-    for (const auto& el : voxels) {
-        if (glm::any(glm::greaterThan(glm::uvec3(el.position), glm::uvec3(static_cast<unsigned int>(num_voxels - 1))))) {
-            LOG_ERROR("out of range!");
-        }
-        core::AABB bbox;
-        bbox.pmin = m_scene_bbox.pmin + glm::vec3(el.position) * dist;
-        bbox.pmax = bbox.pmin + dist;
-        m_voxel_bboxes.emplace_back(bbox);
-    }
-    */
-
-    /* SLOW!!!
-    auto order = [] (const core::AABB& b0, const core::AABB& b1) -> bool
-            {
-                return glm::any(glm::lessThan(b0.pmin, b1.pmin)) ||
-                       glm::any(glm::lessThan(b0.pmax, b1.pmax));
-            };
-    auto compare = [] (const core::AABB& b0, const core::AABB& b1) -> bool
-            {
-                return glm::all(glm::equal(b0.pmin, b1.pmin)) &&
-                       glm::all(glm::equal(b0.pmax, b1.pmax));
-            };
-
-    LOG_INFO("sorting bboxes...");
-    std::sort(m_voxel_bboxes.begin(), m_voxel_bboxes.end(), order);
-    LOG_INFO("removing duplicate bboxes...");
-    m_voxel_bboxes.erase(std::unique(m_voxel_bboxes.begin(), m_voxel_bboxes.end(), compare),
-                m_voxel_bboxes.end());
-    LOG_INFO("done.");
-    */
 }
 
 /****************************************************************************/
@@ -628,45 +604,25 @@ void Renderer::buildVoxelTree()
     }
 
 
-    // DEBUG --- create bounding boxes
-    std::vector<GLuint> nodes(numAllocated);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
-    glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, numAllocated * sizeof(GLuint), nodes.data());
+    // inject direct lighting
+    {
+        const unsigned int start = static_cast<unsigned int>(m_tree_levels.back().first);
+        const unsigned int count = static_cast<unsigned int>(m_tree_levels.back().second);
+        const GLuint inject_prog = m_inject_lighting_prog;
+        glUseProgram(inject_prog);
+        glUniform1ui(0, count);
+        glUniform1ui(1, start);
+        glUniform1f(2, (m_scene_bbox.pmax.x - m_scene_bbox.pmin.x) / static_cast<float>(2 * num_voxels));
+        glBindImageTexture(0, m_brick_texture, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA16F);
+        const GLuint inject_workgroups = (count + INJECT_PROG_LOCAL_SIZE - 1) / INJECT_PROG_LOCAL_SIZE;
+        glDispatchCompute(inject_workgroups, 1, 1);
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-    m_voxel_bboxes.clear();
-    m_voxel_bboxes.reserve(numAllocated);
-    std::pair<GLuint, core::AABB> stack[128];
-    stack[0] = std::make_pair(0u, m_scene_bbox);
-    std::size_t top = 1;
-    do {
-        top--;
-        const auto idx = stack[top].first;
-        const auto bbox = stack[top].second;
+        //glBindTexture(GL_TEXTURE_3D, m_brick_texture);
+        //float clear_col = 1.f;
+        //glClearTexImage(GL_TEXTURE_3D, 0, GL_RED, GL_FLOAT, &clear_col);
+    }
 
-        const auto childidx = nodes[idx];
-        if (childidx == 0x80000000) {
-            m_voxel_bboxes.emplace_back(bbox);
-        } else if ((childidx & 0x80000000) != 0) {
-            const auto baseidx = uint(childidx & 0x7FFFFFFFu);
-            const auto c = bbox.center();
-            for (unsigned int i = 0; i < 8; ++i) {
-                int x = (i>>0) & 0x01;
-                int y = (i>>1) & 0x01;
-                int z = (i>>2) & 0x01;
-
-                core::AABB newBBox;
-                newBBox.pmin.x = (x == 0) ? bbox.pmin.x : c.x;
-                newBBox.pmin.y = (y == 0) ? bbox.pmin.y : c.y;
-                newBBox.pmin.z = (z == 0) ? bbox.pmin.z : c.z;
-
-                newBBox.pmax.x = (x == 0) ? c.x : bbox.pmax.x;
-                newBBox.pmax.y = (y == 0) ? c.y : bbox.pmax.y;
-                newBBox.pmax.z = (z == 0) ? c.z : bbox.pmax.z;
-
-                stack[top++] = std::make_pair(baseidx + i, newBBox);
-            }
-        }
-    } while (top != 0);
 }
 
 /****************************************************************************/
@@ -870,9 +826,6 @@ void Renderer::initBBoxStuff()
 
 void Renderer::debugRenderTree(const bool solid, const int level)
 {
-    if (m_voxel_bboxes.empty())
-        return;
-
     GLuint prog = m_voxel_bbox_prog;
     glUseProgram(prog);
     glBindVertexArray(m_bbox_vao);
@@ -883,6 +836,7 @@ void Renderer::debugRenderTree(const bool solid, const int level)
     const float halfSize = (m_scene_bbox.pmax.x - m_scene_bbox.pmin.x) /
         static_cast<float>(2 * num_voxels);
     glProgramUniform1f(prog, 0, halfSize);
+    glBindImageTexture(0, m_brick_texture, 0, GL_TRUE, 0, GL_READ_ONLY, GL_RGBA16F);
 
     const auto& level_info = m_tree_levels[static_cast<std::size_t>(level)];
 

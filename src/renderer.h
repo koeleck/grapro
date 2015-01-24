@@ -81,7 +81,6 @@ private:
     core::GPUTimer*                     m_voxelize_timer;
 
     // debug voxeltree
-    std::vector<core::AABB>             m_voxel_bboxes;
     core::Program                       m_voxel_bbox_prog;
 
     // debug
