@@ -403,6 +403,8 @@ bool ShaderManager::compile_shader(ShaderInfo& info) const
         }
         msg << "Info Log:\n" << shader.getInfoLog();
 
+        //msg << "\nSource:\n" << source.source();
+
         LOG_ERROR(logtag::OpenGL, msg.str());
 
         info.broken = true;

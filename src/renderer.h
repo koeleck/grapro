@@ -65,6 +65,7 @@ private:
     core::Program                       m_octreeNodeFlag_prog;
     core::Program                       m_octreeNodeAlloc_prog;
     core::Program                       m_octreeLeafStore_prog;
+    core::Program                       m_inject_lighting_prog;
     gl::Buffer                          m_atomicCounterBuffer;
     gl::Buffer                          m_voxelBuffer;
     gl::Buffer                          m_octreeNodeBuffer;

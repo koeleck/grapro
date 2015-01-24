@@ -26,6 +26,7 @@ namespace
 
 constexpr int FLAG_PROG_LOCAL_SIZE = 64;
 constexpr int ALLOC_PROG_LOCAL_SIZE = 256;
+constexpr int INJECT_PROG_LOCAL_SIZE = 256;
 
 typedef struct
 {
@@ -99,33 +100,6 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
     m_cube_shadow_prog = core::res::shaders->registerProgram("shadow_cube_prog",
             {"shadow_vert", "shadow_cube_geom", "depth_only_frag"});
 
-    // voxel creation
-    core::res::shaders->registerShader("voxelGeom", "tree/voxelize.geom", GL_GEOMETRY_SHADER);
-    core::res::shaders->registerShader("voxelFrag", "tree/voxelize.frag", GL_FRAGMENT_SHADER);
-    m_voxel_prog = core::res::shaders->registerProgram("voxel_prog",
-            {"vertexpulling_vert", "voxelGeom", "voxelFrag"});
-
-    // octree building
-    core::res::shaders->registerShader("octreeNodeFlagComp", "tree/nodeflag.comp", GL_COMPUTE_SHADER,
-            "LOCAL_SIZE " + std::to_string(FLAG_PROG_LOCAL_SIZE));
-    m_octreeNodeFlag_prog = core::res::shaders->registerProgram("octreeNodeFlag_prog", {"octreeNodeFlagComp"});
-
-    core::res::shaders->registerShader("octreeNodeAllocComp", "tree/nodealloc.comp", GL_COMPUTE_SHADER,
-            "LOCAL_SIZE " + std::to_string(ALLOC_PROG_LOCAL_SIZE));
-    m_octreeNodeAlloc_prog = core::res::shaders->registerProgram("octreeNodeAlloc_prog", {"octreeNodeAllocComp"});
-
-    core::res::shaders->registerShader("octreeLeafStoreComp", "tree/leafstore.comp", GL_COMPUTE_SHADER);
-    m_octreeLeafStore_prog = core::res::shaders->registerProgram("octreeLeafStore_prog", {"octreeLeafStoreComp"});
-
-    // debug render
-    core::res::shaders->registerShader("ssq_vert", "basic/ssq.vert", GL_VERTEX_SHADER);
-    core::res::shaders->registerShader("ssq_frag", "basic/ssq.frag", GL_FRAGMENT_SHADER);
-    m_debug_tex_prog = core::res::shaders->registerProgram("ssq_prog", {"ssq_vert", "ssq_frag"});
-
-    core::res::shaders->registerShader("octreeDebugBBox_vert", "tree/bbox.vert", GL_VERTEX_SHADER);
-    core::res::shaders->registerShader("octreeDebugBBox_frag", "tree/bbox.frag", GL_FRAGMENT_SHADER);
-    m_voxel_bbox_prog = core::res::shaders->registerProgram("octreeDebugBBox_prog",
-            {"octreeDebugBBox_vert", "octreeDebugBBox_frag"});
 
     m_voxelize_timer = m_timers.addGPUTimer("Voxelize");
     m_tree_timer = m_timers.addGPUTimer("Octree");
@@ -214,6 +188,42 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
         LOG_ERROR("Empty framebuffer is not complete (WTF?!?)");
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // shaders:
+    // voxel creation
+    core::res::shaders->registerShader("voxelGeom", "tree/voxelize.geom", GL_GEOMETRY_SHADER);
+    core::res::shaders->registerShader("voxelFrag", "tree/voxelize.frag", GL_FRAGMENT_SHADER);
+    m_voxel_prog = core::res::shaders->registerProgram("voxel_prog",
+            {"vertexpulling_vert", "voxelGeom", "voxelFrag"});
+
+    // octree building
+    core::res::shaders->registerShader("octreeNodeFlagComp", "tree/nodeflag.comp", GL_COMPUTE_SHADER,
+            "LOCAL_SIZE " + std::to_string(FLAG_PROG_LOCAL_SIZE));
+    m_octreeNodeFlag_prog = core::res::shaders->registerProgram("octreeNodeFlag_prog", {"octreeNodeFlagComp"});
+
+    core::res::shaders->registerShader("octreeNodeAllocComp", "tree/nodealloc.comp", GL_COMPUTE_SHADER,
+            "LOCAL_SIZE " + std::to_string(ALLOC_PROG_LOCAL_SIZE));
+    m_octreeNodeAlloc_prog = core::res::shaders->registerProgram("octreeNodeAlloc_prog", {"octreeNodeAllocComp"});
+
+    core::res::shaders->registerShader("octreeLeafStoreComp", "tree/leafstore.comp", GL_COMPUTE_SHADER);
+    m_octreeLeafStore_prog = core::res::shaders->registerProgram("octreeLeafStore_prog", {"octreeLeafStoreComp"});
+
+    core::res::shaders->registerShader("octreeInjectLightingComp", "tree/inject_direct_lighting.comp",
+            GL_COMPUTE_SHADER, "LOCAL_SIZE " + std::to_string(INJECT_PROG_LOCAL_SIZE) + ", "
+            "NUM_BRICKS_X " + std::to_string(brick_num_x) + ", "
+            "NUM_BRICKS_Y " + std::to_string(brick_num_y));
+    m_inject_lighting_prog = core::res::shaders->registerProgram("octreeInjectLighting",
+            {"octreeInjectLightingComp"});
+
+    // debug render
+    core::res::shaders->registerShader("ssq_vert", "basic/ssq.vert", GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("ssq_frag", "basic/ssq.frag", GL_FRAGMENT_SHADER);
+    m_debug_tex_prog = core::res::shaders->registerProgram("ssq_prog", {"ssq_vert", "ssq_frag"});
+
+    core::res::shaders->registerShader("octreeDebugBBox_vert", "tree/bbox.vert", GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("octreeDebugBBox_frag", "tree/bbox.frag", GL_FRAGMENT_SHADER);
+    m_voxel_bbox_prog = core::res::shaders->registerProgram("octreeDebugBBox_prog",
+            {"octreeDebugBBox_vert", "octreeDebugBBox_frag"});
 }
 
 /****************************************************************************/
