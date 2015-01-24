@@ -37,6 +37,25 @@ layout(std430, binding = OCTREE_COLOR_BINDING) restrict buffer octreeColorBlock
     octreeColorBuffer octreeColor[];
 };
 
+#if defined(NUM_BRICKS_X) && defined(NUM_BRICKS_Y)
+ivec3 getBrickCoord(in uint idx)
+{
+    const int iidx = int(idx);
+    ivec3 coord;
+    coord.y = iidx / NUM_BRICKS_X;
+    coord.x = iidx - coord.y * NUM_BRICKS_X;
+    coord.z = coord.y / NUM_BRICKS_Y;
+    coord.y -= coord.z * NUM_BRICKS_Y;
+
+    coord = 3 * coord  ivec3(1);
+    return coord;
+}
+
+layout(binding = 0, rgba16f) uniform restrict image3D octreeBrickTex;
+
+#endif // BRICK_TEX_SIZE
+
+
 /******************************************************************************/
 
 #define M_PI 3.1415926535897932384626433832795

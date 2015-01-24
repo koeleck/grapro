@@ -138,6 +138,7 @@ protected:
     // brick texture
     gl::Texture                         m_brick_texture;
     glm::ivec3                          m_brick_texture_size;
+    core::Program                       m_inject_lighting_prog;
 
     // other
     gl::Buffer                          m_atomicCounterBuffer;

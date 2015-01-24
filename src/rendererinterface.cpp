@@ -262,6 +262,13 @@ void RendererInterface::initBrickTexture()
     m_brick_texture_size.x = brick_num_x * 3;
     m_brick_texture_size.y = brick_num_y * 3;
     m_brick_texture_size.z = brick_num_z * 3;
+
+    core::res::shaders->registerShader("octreeInjectLightingComp", "tree/inject_direct_lighting.comp",
+            GL_COMPUTE_SHADER, "LOCAL_SIZE " + std::to_string(256) + ", "
+            "NUM_BRICKS_X " + std::to_string(brick_num_x) + ", "
+            "NUM_BRICKS_Y " + std::to_string(brick_num_y));
+    m_inject_lighting_prog = core::res::shaders->registerProgram("octreeInjectLighting",
+            {"octreeInjectLightingComp"});
 }
 
 void RendererInterface::recreateBuffer(gl::Buffer & buf, const size_t size) const
