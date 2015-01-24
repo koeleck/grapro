@@ -17,6 +17,9 @@ uniform uint u_treeLevels;
 uniform uint u_diffuseConeGridSize;
 uniform uint u_diffuseConeSteps;
 uniform uint u_specularConeSteps;
+uniform uint u_aoConeGridSize;
+uniform uint u_aoConeSteps;
+uniform uint u_aoWeight;
 
 uniform sampler2D u_pos;
 uniform sampler2D u_normal;
@@ -51,6 +54,36 @@ vec4 getColor(uint maxlevel, vec3 wpos)
     if (col.w == 0.f) return vec4(0);
     col /= col.w;
     return col;
+}
+
+/******************************************************************************/
+
+bool isOccluded(uint maxlevel, vec3 wpos)
+{
+
+    const ivec3 pos = ivec3((wpos - u_bboxMin) / voxelSize);
+    uint childIdx = 0;
+    uint nodePtr = octree[childIdx].id;
+    int voxelDim = int(u_voxelDim);
+    ivec3 umin = ivec3(0);
+
+    // iterate through all tree levels
+    for (uint i = 0; i < maxlevel - 1; ++i) {
+
+        // check occlusion
+        if((nodePtr & 0x80000000) == 0) {
+            // no flag set -> no child nodes
+            return false;
+        }
+
+        iterateTreeLevel(pos, nodePtr, voxelDim, childIdx, umin);
+
+    }
+
+    vec4 col = octreeColor[childIdx].color;
+    if (col.w == 0.f) return false;
+    return true;
+
 }
 
 /******************************************************************************/
@@ -204,6 +237,62 @@ vec3 calculateSpecularColor(const vec3 normal, const vec3 pos)
     return totalColor.xyz;
 }
 
+float calculateAmbientOcclusion(const vec3 normal, const vec3 pos)
+{
+    float occlusion = 0.f;
+    const float step = (1.f / float(u_aoConeGridSize));
+
+    for (uint y = 0; y < u_aoConeGridSize; ++y) {
+
+        const float uy = (0.5f + float(y)) * step;
+
+        for (uint x = 0; x < u_aoConeGridSize; ++x) {
+
+            const float ux = (0.5f + float(x)) * step;
+
+            // create the cone
+            ONB onb = toONB(normal);
+            vec3 v = uniformHemisphereSampling(ux, uy); //  do random here if you want
+            Cone cone;
+            cone.dir   = normalize(toWorld(onb, v));
+            cone.angle = 180.f / float(u_aoConeGridSize);
+
+            // calculate weight
+            float d = abs(dot(normalize(normal), cone.dir));
+
+            // trace the cone for each sample
+            for (uint step = 1; step <= u_aoConeSteps; ++step) {
+
+                const float totalDist = step * voxelSize;
+                const float diameter = 2 * coneRadiusAtDistance(cone, totalDist);
+                if (diameter <= 0.f) continue; // some error (angle < 0 || angle > 90)
+
+                // calculate mipmap level
+                int level = int(u_treeLevels);
+                float voxel_size = voxelSize;
+                while (voxel_size < diameter && level > 0) {
+                    voxel_size *= 2;
+                    --level;
+                }
+
+                // ambient occlusion
+                const vec3 wpos = pos + totalDist * cone.dir;
+                vec4 color = getColor(level, wpos);
+                if (isOccluded(level, wpos)) {
+                    // we are occluded here
+                    occlusion += 1.f * pow(d, float(u_aoWeight));
+                    break;
+                }
+
+            }
+
+        }
+
+    }
+
+    return 1.f - clamp(occlusion / float(u_aoConeGridSize * u_aoConeGridSize), 0.f, 1.f);;
+}
+
 /******************************************************************************/
 
 void main()
@@ -216,10 +305,12 @@ void main()
 
     vec3 diffuse = calculateDiffuseColor(normal, pos);
     //vec3 specular = calculateSpecularColor(normal, pos);
+    float occlusion = calculateAmbientOcclusion(normal, pos);
 
     //out_color = vec4(mix(mix(color, diffuse, 0.2), specular, 0.01), 1);
-    vec3 diffuseMix = mix(color, diffuse, 0.3);
-    out_color = vec4(max(diffuseMix, color), 1);
+    vec3 diffuseMix = mix(color, diffuse, 0.4);
+    out_color = vec4(max(diffuseMix, diffuse) * occlusion, 1);
+    //out_color = vec4(occlusion, 1);
 }
 
 /******************************************************************************/
