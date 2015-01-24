@@ -135,6 +135,10 @@ protected:
     gl::VertexArray                     m_colorboxes_vao;
     gl::Buffer                          m_colorboxes_vbo;
 
+    // brick texture
+    gl::Texture                         m_brick_texture;
+    glm::ivec3                          m_brick_texture_size;
+
     // other
     gl::Buffer                          m_atomicCounterBuffer;
     core::Program                       m_coneTracing_prog;
@@ -149,6 +153,7 @@ private:
     void initVoxelColors();
     void initGBuffer();
     void initConeTracingPass();
+    void initBrickTexture();
 
 };
 

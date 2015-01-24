@@ -51,6 +51,9 @@ constexpr int NUM_TEXT_UNITS      = 7; // <- keep up to date
 constexpr int DIR_LIGHT_TEX_UNIT  = 7;
 constexpr int OMNI_LIGHT_TEX_UNIT = 8;
 
+// Image units
+constexpr int BRICK_IMAGE_UNIT  = 0;
+
 } // namespace bindings
 
 namespace shader

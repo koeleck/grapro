@@ -31,6 +31,7 @@ RendererInterface::RendererInterface(core::TimerArray& timer_array, unsigned int
     initVoxelColors();
     initGBuffer();
     initConeTracingPass();
+    initBrickTexture();
 
 }
 
@@ -238,6 +239,30 @@ void RendererInterface::initGBuffer()
 }
 
 /****************************************************************************/
+
+void RendererInterface::initBrickTexture()
+{
+    GLint max_3d_tex_size;
+    glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &max_3d_tex_size);
+    //int remaining = static_cast<int>(vars.max_voxel_nodes);
+    int remaining = static_cast<int>(2097152);
+    int brick_num_x = std::min(remaining, max_3d_tex_size / 3);
+    remaining = (remaining + brick_num_x - 1) / brick_num_x;
+    int brick_num_y = std::min(remaining, max_3d_tex_size / 3);
+    remaining = (remaining + brick_num_y - 1) / brick_num_y;
+    int brick_num_z = std::min(remaining, max_3d_tex_size / 3);
+    //if ((brick_num_x * brick_num_y * brick_num_z) < static_cast<int>(vars.max_voxel_nodes)) {
+    if ((brick_num_x * brick_num_y * brick_num_z) < static_cast<int>(2097152)) {
+        LOG_ERROR("brick texture can't store all nodes!");
+        abort();
+    }
+    glBindTexture(GL_TEXTURE_3D, m_brick_texture);
+    //constexpr int BRICK_TEX_ELEMENT_SIZE = 2 * 4;
+    glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGBA16F, brick_num_x, brick_num_y, brick_num_z);
+    m_brick_texture_size.x = brick_num_x * 3;
+    m_brick_texture_size.y = brick_num_y * 3;
+    m_brick_texture_size.z = brick_num_z * 3;
+}
 
 void RendererInterface::recreateBuffer(gl::Buffer & buf, const size_t size) const
 {
