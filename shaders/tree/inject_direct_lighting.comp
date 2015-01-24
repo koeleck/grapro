@@ -3,7 +3,7 @@
 #include "common/extensions.glsl"
 #include "common/lights.glsl"
 #include "common/textures.glsl"
-#include "voxel.glsl"
+#include "common/voxel.glsl"
 
 layout (local_size_variable) in;
 
@@ -115,7 +115,7 @@ void main()
     const uint idx = uStartNode + threadId;
     const bool isEmptyLeaf = (octree[idx].id & 0x80000000u) == 0;
 
-    const vec3 pos = octreeColor[idx].position.xyz;
+    /*const vec3 pos = octreeColor[idx].position.xyz;
     const uint count = octreeColor[idx].count;
     const vec3 normal = normalize(octreeColor[idx].normal.xyz);
     const vec3 col = octreeColor[idx].diffuse.rgb / count;
@@ -130,6 +130,6 @@ void main()
                 imageStore(octreeBrickTex, texcoord + ivec3(x, y, z), result);
             }
         }
-    }
+    }*/
 
 }

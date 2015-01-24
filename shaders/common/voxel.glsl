@@ -47,7 +47,7 @@ ivec3 getBrickCoord(in uint idx)
     coord.z = coord.y / NUM_BRICKS_Y;
     coord.y -= coord.z * NUM_BRICKS_Y;
 
-    coord = 3 * coord  ivec3(1);
+    coord = 3 * coord + ivec3(1);
     return coord;
 }
 

@@ -336,6 +336,7 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
     m_tree_timer->stop();
 
     const auto totalNodesCreated = nodeOffset + maxNodesPerLevel.back();
+    const auto leafOffset = nodeOffset;
 
     if (debug_output) {
         LOG_INFO("");
@@ -380,6 +381,29 @@ void RendererImplBM::buildVoxelTree(const bool debug_output)
     }
 
     m_mipmap_timer->stop();
+
+    /*
+     *  inject direct lighting
+     */
+
+    {
+        const unsigned int start = static_cast<unsigned int>(leafOffset);
+        const unsigned int count = static_cast<unsigned int>(maxNodesPerLevel.back());
+        const GLuint inject_prog = m_inject_lighting_prog;
+        glUseProgram(inject_prog);
+        glUniform1ui(0, count);
+        glUniform1ui(1, start);
+        glUniform1f(2, (m_scene_bbox.pmax.x - m_scene_bbox.pmin.x) / static_cast<float>(2 * voxelDim));
+        glBindImageTexture(0, m_brick_texture, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA16F);
+        groupWidth = calculateDataWidth(count, 256);
+        glDispatchComputeGroupSizeARB(groupWidth, 1, 1,
+                                      256, 1, 1);
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+        //glBindTexture(GL_TEXTURE_3D, m_brick_texture);
+        //float clear_col = 1.f;
+        //glClearTexImage(GL_TEXTURE_3D, 0, GL_RED, GL_FLOAT, &clear_col);
+    }
 
     createVoxelBBoxes(totalNodesCreated);
 
