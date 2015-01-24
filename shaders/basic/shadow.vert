@@ -35,4 +35,3 @@ void main()
         outData.uv = value.xy;
     }
 }
-
