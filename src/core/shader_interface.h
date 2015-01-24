@@ -56,6 +56,9 @@ constexpr int GBUFFER_DEPTH_TEX                     = 0;
 constexpr int GBUFFER_DIFFUSE_NORMAL_TEX            = 1;
 constexpr int GBUFFER_SPECULAR_GLOSSY_EMISSIVE_TEX  = 2;
 
+// Image units
+constexpr int BRICK_IMAGE_UNIT  = 0;
+
 } // namespace bindings
 
 namespace shader

@@ -144,15 +144,37 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
     glBufferStorage(GL_SHADER_STORAGE_BUFFER, vars.max_voxel_fragments * sizeof(VoxelFragmentStruct), nullptr, GL_MAP_READ_BIT);
 
     // node buffer
-    unsigned int max_num_nodes = 1;
-    unsigned int tmp = 1;
+    int max_num_nodes = 1;
+    int tmp = 1;
     for (unsigned int i = 0; i < vars.voxel_octree_levels; ++i) {
         tmp *= 8;
         max_num_nodes += tmp;
     }
-    max_num_nodes = std::min(max_num_nodes, vars.max_voxel_nodes);
-    unsigned int mem = max_num_nodes * (4 + static_cast<unsigned int>(sizeof(VoxelNodeInfo))) +
-        static_cast<unsigned int>(vars.max_voxel_fragments * sizeof(VoxelFragmentStruct));
+    max_num_nodes = std::min(max_num_nodes, static_cast<int>(vars.max_voxel_nodes));
+
+    // brick texture
+    GLint max_3d_tex_size;
+    glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &max_3d_tex_size);
+    int remaining = static_cast<int>(vars.max_voxel_nodes);
+    int brick_num_x = std::min(remaining, max_3d_tex_size / 3);
+    remaining = (remaining + brick_num_x - 1) / brick_num_x;
+    int brick_num_y = std::min(remaining, max_3d_tex_size / 3);
+    remaining = (remaining + brick_num_y - 1) / brick_num_y;
+    int brick_num_z = std::min(remaining, max_3d_tex_size / 3);
+    if ((brick_num_x * brick_num_y * brick_num_z) < static_cast<int>(vars.max_voxel_nodes)) {
+        LOG_ERROR("brick texture can't store all nodes!");
+        abort();
+    }
+    glBindTexture(GL_TEXTURE_3D, m_brick_texture);
+    constexpr int BRICK_TEX_ELEMENT_SIZE = 2 * 4;
+    glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGBA16F, brick_num_x, brick_num_y, brick_num_z);
+    m_brick_texture_size.x = brick_num_x * 3;
+    m_brick_texture_size.y = brick_num_y * 3;
+    m_brick_texture_size.z = brick_num_z * 3;
+
+
+    int mem = max_num_nodes * (4 + static_cast<int>(sizeof(VoxelNodeInfo)) + BRICK_TEX_ELEMENT_SIZE) +
+        static_cast<int>(vars.max_voxel_fragments * sizeof(VoxelFragmentStruct));
     std::string unit = "B";
     if (mem > 1024) {
         unit = "kiB";
@@ -169,13 +191,13 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
     LOG_INFO("max nodes: ", max_num_nodes, ", max fragments: ", vars.max_voxel_fragments, " (", mem, unit, ")");
     // node buffer:
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
-    glBufferStorage(GL_SHADER_STORAGE_BUFFER, max_num_nodes * sizeof(GLuint), nullptr, GL_MAP_READ_BIT);
+    glBufferStorage(GL_SHADER_STORAGE_BUFFER,
+            static_cast<GLuint>(max_num_nodes) * sizeof(GLuint), nullptr, GL_MAP_READ_BIT);
 
     // node/leaf info buffer:
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeInfoBuffer);
-    glBufferStorage(GL_SHADER_STORAGE_BUFFER, max_num_nodes * sizeof(VoxelNodeInfo), nullptr, 0);
-
-    // TODO brick 3d texture
+    glBufferStorage(GL_SHADER_STORAGE_BUFFER,
+            static_cast<GLuint>(max_num_nodes) * sizeof(VoxelNodeInfo), nullptr, 0);
 
     // Atomic counter
     // The first GLuint is for voxel fragments

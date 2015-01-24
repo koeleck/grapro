@@ -69,6 +69,8 @@ private:
     gl::Buffer                          m_voxelBuffer;
     gl::Buffer                          m_octreeNodeBuffer;
     gl::Buffer                          m_octreeInfoBuffer;
+    gl::Texture                         m_brick_texture;
+    glm::ivec3                          m_brick_texture_size;
     gl::Framebuffer                     m_voxelizationFBO;
     unsigned int                        m_numVoxelFrag;
     std::vector<std::pair<int, int>>    m_tree_levels;
