@@ -6,11 +6,12 @@
 
 layout(location = 0) uniform float uHalfSize;
 
-flat out uint ID;
+flat out ivec3 vsBrickCoord;;
 
 void main()
 {
-    ID = gl_BaseInstanceARB + gl_InstanceID;
+    uint ID = gl_BaseInstanceARB + gl_InstanceID;
+    vsBrickCoord = getBrickCoord(ID);
     vec3 bbox[2];
     if ((octree[ID].id & 0x80000000u) == 0) {
         bbox[0] = vec3(-1000.0);

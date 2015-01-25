@@ -66,8 +66,8 @@ void main()
         emissive.b = tmp.x;
 
         // set worldspace position
-        //octreeInfo[currentNode].position = uSceneBoundingBox[0] +
-        //    (vec3(pos) + 0.5) / float(uNumVoxelsPerDim) * (uSceneBoundingBox[1] - uSceneBoundingBox[0]);
+        octreeInfo[currentNode].position = uSceneBoundingBox[0] +
+            (vec3(pos) + 0.5) / float(uNumVoxelsPerDim) * (uSceneBoundingBox[1] - uSceneBoundingBox[0]);
 
         // add
         atomicAdd(octreeInfo[currentNode].count, 1);

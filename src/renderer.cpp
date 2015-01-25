@@ -127,6 +127,7 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
         max_num_nodes += tmp;
     }
     max_num_nodes = std::min(max_num_nodes, static_cast<int>(vars.max_voxel_nodes));
+    vars.max_voxel_nodes = static_cast<unsigned int>(max_num_nodes);
 
     // brick texture
     GLint max_3d_tex_size;
@@ -179,15 +180,16 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
         mem /= 1024;
     }
     LOG_INFO("max nodes: ", max_num_nodes, ", max fragments: ", vars.max_voxel_fragments, " (", mem, unit, ")");
+
     // node buffer:
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeNodeBuffer);
     glBufferStorage(GL_SHADER_STORAGE_BUFFER,
-            static_cast<GLuint>(max_num_nodes) * sizeof(GLuint), nullptr, GL_MAP_READ_BIT);
+            static_cast<GLuint>(max_num_nodes) * sizeof(OctreeNodeStruct), nullptr, GL_MAP_READ_BIT);
 
     // node/leaf info buffer:
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeInfoBuffer);
     glBufferStorage(GL_SHADER_STORAGE_BUFFER,
-            static_cast<GLuint>(max_num_nodes) * sizeof(VoxelNodeInfo), nullptr, 0);
+            static_cast<GLuint>(max_num_nodes) * sizeof(VoxelNodeInfo), nullptr, GL_MAP_READ_BIT);
 
     // Atomic counter
     // The first GLuint is for voxel fragments
@@ -249,7 +251,8 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
     core::res::shaders->registerShader("ssq_frag", "basic/ssq.frag", GL_FRAGMENT_SHADER);
     m_debug_tex_prog = core::res::shaders->registerProgram("ssq_prog", {"ssq_vert", "ssq_frag"});
 
-    core::res::shaders->registerShader("octreeDebugBBox_vert", "tree/bbox.vert", GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("octreeDebugBBox_vert", "tree/bbox.vert", GL_VERTEX_SHADER,
+            bricks_def);
     core::res::shaders->registerShader("octreeDebugBBox_frag", "tree/bbox.frag", GL_FRAGMENT_SHADER,
             bricks_def);
     m_voxel_bbox_prog = core::res::shaders->registerProgram("octreeDebugBBox_prog",
@@ -455,6 +458,10 @@ void Renderer::createVoxelList()
     glDepthFunc(GL_ALWAYS);
 
     renderGeometry(voxel_prog, false, nullptr);
+    //glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    gl::printInfo();
+    //glFlush();
+    //glFinish();
 
     // TODO move to shader
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
@@ -471,7 +478,7 @@ void Renderer::createVoxelList()
     LOG_INFO("Number of Entries in Voxel Fragment List: ", m_numVoxelFrag, "/", vars.max_voxel_fragments);
 
     if (m_numVoxelFrag > vars.max_voxel_fragments) {
-        LOG_WARNING("TOO MANY VOXEL FRAGMENTS!");
+        LOG_ERROR("TOO MANY VOXEL FRAGMENTS!");
     }
 }
 
@@ -554,7 +561,7 @@ void Renderer::buildVoxelTree()
                     GL_RGB, GL_FLOAT, glm::value_ptr(midpoint));
             // clear rest of info
             glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, 3 * sizeof(GLfloat),
-                    sizeof(VoxelNodeInfo) - 3 * sizeof(GLfloat), GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+                    8 * sizeof(VoxelNodeInfo) - 3 * sizeof(GLfloat), GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
 
         } else {
             glUseProgram(flag_prog);
@@ -562,7 +569,9 @@ void Renderer::buildVoxelTree()
             glProgramUniform1ui(flag_prog, 2, i);
 
             glDispatchCompute(flag_num_workgroups, 1, 1);
-            glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+            glMemoryBarrier(GL_ALL_BARRIER_BITS);
+            glFlush();
+            glFinish();
         }
         if (i + 1 == vars.voxel_octree_levels) {
             // no need to allocate more nodes
@@ -580,7 +589,7 @@ void Renderer::buildVoxelTree()
 
         GLuint alloc_workgroups = (previously_allocated + ALLOC_PROG_LOCAL_SIZE - 1) / ALLOC_PROG_LOCAL_SIZE;
         glDispatchCompute(alloc_workgroups, 1, 1);
-        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_ATOMIC_COUNTER_BARRIER_BIT);
+        glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
         // start_node points to the first node that was allocated in this iteration
         start_node += previously_allocated;
@@ -599,17 +608,19 @@ void Renderer::buildVoxelTree()
     }
     m_tree_timer->stop();
 
-    LOG_INFO(":: Total Nodes created: ", numAllocated);
+    LOG_INFO(":: Total Nodes created: ", numAllocated, "/", vars.max_voxel_nodes);
     if (numAllocated > vars.max_voxel_nodes) {
         LOG_ERROR("More nodes allocated than allowed!!! (", numAllocated,
                 "/", vars.max_voxel_nodes, ")");
     }
 
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
     // inject direct lighting
     {
         const unsigned int start = static_cast<unsigned int>(m_tree_levels.back().first);
         const unsigned int count = static_cast<unsigned int>(m_tree_levels.back().second);
+        LOG_INFO("inject: ", start, " -> ", count);
         const GLuint inject_prog = m_inject_lighting_prog;
         glUseProgram(inject_prog);
         glUniform1ui(0, count);
@@ -617,7 +628,8 @@ void Renderer::buildVoxelTree()
         glBindImageTexture(0, m_brick_texture, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA16F);
         const GLuint inject_workgroups = (count + INJECT_PROG_LOCAL_SIZE - 1) / INJECT_PROG_LOCAL_SIZE;
         glDispatchCompute(inject_workgroups, 1, 1);
-        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        glMemoryBarrier(GL_ALL_BARRIER_BITS);
     }
 
     // mipmap
@@ -634,7 +646,8 @@ void Renderer::buildVoxelTree()
 
         const GLuint workgroups = (count + MIPMAP_PROG_LOCAL_SIZE - 1) / MIPMAP_PROG_LOCAL_SIZE;
         glDispatchCompute(workgroups, 1, 1);
-        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        glMemoryBarrier(GL_ALL_BARRIER_BITS);
     }
 
 }
@@ -697,7 +710,7 @@ void Renderer::render(const Options & options)
         debugRenderTree(true, options.debugLevel);
     }
 
-    if (!options.renderVoxelBoxes && !options.renderVoxelColors) {
+    if (!options.renderVoxelColors) {
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
         glDepthFunc(GL_LEQUAL);
@@ -965,39 +978,45 @@ void Renderer::distributeToNeighbors(const std::pair<int, int>& level)
     glUniform1i(3, 1);
     glUniform3i(4, 1, 2, 0);
     glDispatchCompute(workgroups, 1, 1);
-    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
     // x-
     glUniform1i(2, 0);
     glUniform1i(3, -1);
     glDispatchCompute(workgroups, 1, 1);
-    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
     // y+
     glUniform1i(2, 3);
     glUniform1i(3, 1);
     glUniform3i(4, 0, 2, 1);
     glDispatchCompute(workgroups, 1, 1);
-    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
     // y-
     glUniform1i(2, 2);
     glUniform1i(3, -1);
     glDispatchCompute(workgroups, 1, 1);
-    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
     // z+
     glUniform1i(2, 5);
     glUniform1i(3, 1);
     glUniform3i(4, 0, 1, 2);
     glDispatchCompute(workgroups, 1, 1);
-    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
     // z-
     glUniform1i(2, 4);
     glUniform1i(3, -1);
     glDispatchCompute(workgroups, 1, 1);
-    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
 }
 
 /****************************************************************************/

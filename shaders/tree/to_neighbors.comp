@@ -32,10 +32,10 @@ void main()
     ivec3 otherBrick = getBrickCoord(neighbor);
     if ((octree[neighbor].id & 0x80000000u) != 0) {
         if ((uSide == -1) && (uNeighborIdx == 0)) {
-            vec4 v0 = imageLoad(octreeBrickTex, thisBrick);
-            vec4 v1 = imageLoad(octreeBrickTex, otherBrick);
-            imageStore(octreeBrickTex, otherBrick, v0);
-            imageStore(octreeBrickTex, thisBrick, v1);
+            //vec4 v0 = imageLoad(octreeBrickTex, thisBrick);
+            //vec4 v1 = imageLoad(octreeBrickTex, otherBrick);
+            //imageStore(octreeBrickTex, otherBrick, v0);
+            //imageStore(octreeBrickTex, thisBrick, v1);
         }
     }
     return;
