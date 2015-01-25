@@ -394,11 +394,20 @@ vec3 calculateIndirectDiffuseAO(const vec3 normal, const vec3 pos)
                 if(!col_done)
                 {
                     vec4 color = getColor(level, wpos);
+                    vec4 emissive = getEmissive(level, wpos);
                     if (color.w > 0) {
                         // color found -> stop walking!
                         color.xyz *= d*d;
                         color /= (step * step * voxelSize * voxelSize);
                         totalColor += color;
+                        col_done = true;
+                    }
+
+                    if (emissive.w > 0) {
+                        // emissive found -> stop walking!
+                        emissive.xyz *= d*d;
+                        emissive /= (step * step * voxelSize * voxelSize);
+                        totalColor += emissive;
                         col_done = true;
                     }
                 }
@@ -431,9 +440,16 @@ void main()
     // float occlusion = calculateAmbientOcclusion(normal, pos);
     vec3 diffuse = calculateIndirectDiffuseAO(normal, pos);
 
+    // mix colors
     //out_color = vec4(mix(mix(color, diffuse, 0.2), specular, 0.01), 1);
-    vec3 diffuseMix = mix(color, diffuse, 0.4);
-    out_color = vec4(max(diffuseMix, diffuse), 1);
+    vec3 diffuseMix = mix(color, diffuse, 0.5);
+
+    // output with max func
+    //out_color = vec4(max(diffuseMix, diffuse), 1);
+
+    // output with gamma correction
+    float gamma = 1.3;
+    out_color = pow(vec4(diffuseMix, 1), vec4(1.0/gamma));
 }
 
 /******************************************************************************/

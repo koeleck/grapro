@@ -79,7 +79,7 @@
     <light id="scl_Point-light" name="Point">
       <technique_common>
         <point>
-          <color sid="color">0.3 0.3 0.3</color>
+          <color sid="color">3 3 3</color>
           <constant_attenuation>1</constant_attenuation>
           <linear_attenuation>0</linear_attenuation>
           <quadratic_attenuation>1.11111e-5</quadratic_attenuation>
@@ -147,7 +147,7 @@
     <light id="scl_Point_001-light" name="Point.001">
       <technique_common>
         <point>
-          <color sid="color">0.3 0.3 0.3</color>
+          <color sid="color">3 3 3</color>
           <constant_attenuation>1</constant_attenuation>
           <linear_attenuation>0</linear_attenuation>
           <quadratic_attenuation>1.11111e-5</quadratic_attenuation>
@@ -215,7 +215,7 @@
     <light id="scl_Point_002-light" name="Point.002">
       <technique_common>
         <point>
-          <color sid="color">0.3 0.3 0.3</color>
+          <color sid="color">3 3 3</color>
           <constant_attenuation>1</constant_attenuation>
           <linear_attenuation>0</linear_attenuation>
           <quadratic_attenuation>1.11111e-5</quadratic_attenuation>
@@ -283,7 +283,7 @@
     <light id="scl_Point_003-light" name="Point.003">
       <technique_common>
         <point>
-          <color sid="color">0.3 0.3 0.3</color>
+          <color sid="color">3 3 3</color>
           <constant_attenuation>1</constant_attenuation>
           <linear_attenuation>0</linear_attenuation>
           <quadratic_attenuation>1.11111e-5</quadratic_attenuation>
@@ -351,7 +351,7 @@
     <light id="scl_Point_004-light" name="Point.004">
       <technique_common>
         <point>
-          <color sid="color">0.3 0.3 0.3</color>
+          <color sid="color">3 3 3</color>
           <constant_attenuation>1</constant_attenuation>
           <linear_attenuation>0</linear_attenuation>
           <quadratic_attenuation>1.11111e-5</quadratic_attenuation>
@@ -419,7 +419,7 @@
     <light id="scl_Point_005-light" name="Point.005">
       <technique_common>
         <point>
-          <color sid="color">0.3 0.3 0.3</color>
+          <color sid="color">3 3 3</color>
           <constant_attenuation>1</constant_attenuation>
           <linear_attenuation>0</linear_attenuation>
           <quadratic_attenuation>1.11111e-5</quadratic_attenuation>
@@ -487,7 +487,7 @@
     <light id="scl_Point_006-light" name="Point.006">
       <technique_common>
         <point>
-          <color sid="color">0.3 0.3 0.3</color>
+          <color sid="color">3 3 3</color>
           <constant_attenuation>1</constant_attenuation>
           <linear_attenuation>0</linear_attenuation>
           <quadratic_attenuation>1.11111e-5</quadratic_attenuation>
@@ -555,7 +555,7 @@
     <light id="scl_Point_007-light" name="Point.007">
       <technique_common>
         <point>
-          <color sid="color">0.3 0.3 0.3</color>
+          <color sid="color">3 3 3</color>
           <constant_attenuation>1</constant_attenuation>
           <linear_attenuation>0</linear_attenuation>
           <quadratic_attenuation>1.11111e-5</quadratic_attenuation>
