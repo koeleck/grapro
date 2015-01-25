@@ -766,6 +766,9 @@ void Renderer::renderGeometry(const GLuint prog, const bool depthOnly,
             }
         }
 
+        // enable/disable shadow
+        glUniform1i(1, m_shadowsEnabled);
+
         glMultiDrawElementsIndirect(cmd.mode, cmd.type,
                 cmd.indirect, cmd.drawcount, cmd.stride);
     }

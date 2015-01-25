@@ -25,6 +25,7 @@ public:
     void resize(int width, int height);
 
     void markTreeInvalid();
+    void toggleShadows() { m_shadowsEnabled = !m_shadowsEnabled; }
 
     const core::AABB& getSceneBBox() const;
 
@@ -53,6 +54,7 @@ private:
     // lights
     core::Program                       m_2d_shadow_prog;
     core::Program                       m_cube_shadow_prog;
+    bool                                m_shadowsEnabled = true;
 
 
     gl::VertexArray                     m_bbox_vao;

@@ -7,6 +7,7 @@
 #include "common/lights.glsl"
 
 layout(location = 0) out vec4 out_Color;
+layout(location = 1) uniform bool u_shadowsEnabled;
 
 in VertexData
 {
@@ -87,7 +88,7 @@ void main()
         float attenuation;
         vec3 light_dir;
         const int type_texid = lights[i].type_texid;
-        const bool isShadowcasting = (type_texid & LIGHT_IS_SHADOWCASTING) != 0;
+        const bool isShadowcasting = (type_texid & LIGHT_IS_SHADOWCASTING) != 0 && u_shadowsEnabled;
 
         // TODO max dist
         if ((type_texid & LIGHT_TYPE_DIRECTIONAL) != 0) {
