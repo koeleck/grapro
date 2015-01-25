@@ -21,7 +21,7 @@ GraPro::GraPro(GLFWwindow* window)
 {
 
     m_options.treeLevels = static_cast<int>(vars.voxel_octree_levels);
-    m_options.debugLevel = static_cast<int>(vars.voxel_octree_levels);
+    m_options.debugLevel = static_cast<int>(vars.voxel_octree_levels - 1);
     m_options.renderBBoxes = false;
     m_options.renderVoxelBoxes = false;
     m_options.renderVoxelColors = false;
@@ -116,7 +116,7 @@ void GraPro::update_gui(const double delta_t)
             m_options.debugLevel = std::min(m_options.debugLevel, m_options.treeLevels - 1);
             m_renderer.markTreeInvalid();
         }
-        if (m_options.renderVoxelBoxes)
+        if (m_options.renderVoxelBoxes || m_options.renderVoxelColors)
             ImGui::SliderInt("Debug tree level", &m_options.debugLevel, 0, m_options.treeLevels - 1);
 
         // Timers: Just create your timer via m_timers and they will

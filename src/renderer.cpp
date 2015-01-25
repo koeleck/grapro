@@ -691,14 +691,6 @@ void Renderer::render(const Options & options)
         glDisable(GL_CULL_FACE);
         renderShadowmaps();
 
-        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        //glDisable(GL_DEPTH_TEST);
-        //glActiveTexture(GL_TEXTURE0);
-        //glBindTexture(GL_TEXTURE_2D_ARRAY, core::res::lights->getShadowMapTexture());
-        //glUseProgram(m_debug_tex_prog);
-        //glDrawArrays(GL_TRIANGLES, 0, 3);
-        //return;
-
         createVoxelList();
         buildVoxelTree();
         m_rebuildTree = false;
@@ -707,6 +699,9 @@ void Renderer::render(const Options & options)
     if (options.renderVoxelBoxes) {
         debugRenderTree(false, options.debugLevel);
     } else if (options.renderVoxelColors) {
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+        glDepthFunc(GL_LEQUAL);
         debugRenderTree(true, options.debugLevel);
     }
 
@@ -720,8 +715,8 @@ void Renderer::render(const Options & options)
 
     if (options.renderBBoxes)
         renderBoundingBoxes();
-    
-    if(options.debugGBuffer)
+
+    if (options.debugGBuffer)
     {
         m_gbuffer.bindTextures();
         m_gbuffer.bindReadFramebuffer();
