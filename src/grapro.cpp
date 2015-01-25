@@ -123,7 +123,7 @@ void GraPro::update_gui(const double delta_t)
             }
             m_renderer.markTreeInvalid();
         }
-        if (m_options.renderVoxelBoxes || m_options.renderVoxelColors)
+        if (m_options.renderVoxelBoxes || m_options.renderVoxelColors || m_options.renderVoxelBoxesColored)
             ImGui::SliderInt("Debug tree level", &m_options.debugLevel, 0, m_options.treeLevels - 1);
 
         // Timers: Just create your timer via m_timers and they will

@@ -562,6 +562,8 @@ void Renderer::buildVoxelTree()
             // clear rest of info
             glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, 3 * sizeof(GLfloat),
                     8 * sizeof(VoxelNodeInfo) - 3 * sizeof(GLfloat), GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+            glFlush();
+            glFinish();
 
         } else {
             glUseProgram(flag_prog);
@@ -616,36 +618,6 @@ void Renderer::buildVoxelTree()
 
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
-    /*
-    {
-        struct NodeInfo
-        {
-            glm::vec3 pos;
-            unsigned int x_y_neg;
-            glm::vec3 diff;
-            unsigned int y_pos_z;
-            glm::vec3 em;
-            unsigned int count;
-            glm::vec4 norm;
-        };
-        std::vector<NodeInfo> data(numAllocated);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_octreeInfoBuffer);
-        glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, numAllocated * sizeof(NodeInfo),
-                data.data());
-        for (unsigned int i = 0; i < numAllocated; ++i) {
-            const auto& node = data[i];
-            unsigned int xn = (node.x_y_neg >> 20) & 0x3ff;
-            unsigned int xp = (node.x_y_neg >> 10) & 0x3ff;
-            unsigned int yn = (node.x_y_neg >>  0) & 0x3ff;
-            unsigned int yp = (node.y_pos_z >> 20) & 0x3ff;
-            unsigned int zn = (node.y_pos_z >> 10) & 0x3ff;
-            unsigned int zp = (node.y_pos_z >>  0) & 0x3ff;
-            LOG_INFO(i, ": xn: ", xn, ", xp: ", xp,
-                    ", yn: ", yn, ", yp: ", yp,
-                    ", zn: ", zn, ", z:", zp);
-        }
-    }
-    */
 
     // inject direct lighting
     {
