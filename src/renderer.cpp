@@ -647,6 +647,8 @@ void Renderer::render(const Options & options)
         return;
     assert(options.treeLevels > 0);
 
+    m_options = options;
+
     core::res::materials->bind();
     core::res::instances->bind();
     core::res::meshes->bind();
