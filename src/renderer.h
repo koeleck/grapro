@@ -1,6 +1,29 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
+/****************************************************************************/
+
+struct Options
+{
+    unsigned int treeLevels;
+    bool renderBBoxes;
+    bool renderVoxelBoxes;
+    bool renderVoxelColors;
+    bool renderAO;
+    bool renderIndirectDiffuse;
+    bool renderIndirectSpecular;
+    bool renderConeTracing;
+    unsigned int aoConeGridSize;
+    unsigned int aoConeSteps;
+    unsigned int aoWeight;
+    unsigned int diffuseConeGridSize;
+    unsigned int diffuseConeSteps;
+    unsigned int specularConeSteps;
+    bool debugOutput;
+};
+
+/****************************************************************************/
+
 #include <vector>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/glm.hpp>
@@ -95,3 +118,4 @@ private:
 
 #endif // RENDERER_H
 
+/****************************************************************************/
