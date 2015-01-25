@@ -93,10 +93,11 @@ void GraPro::update_gui(const double delta_t)
                 1, max_levels);
         if (vars.voxel_octree_levels != static_cast<unsigned int>(next_levels)) {
             vars.voxel_octree_levels = static_cast<unsigned int>(next_levels);
+            m_octree_debug_level = std::min(m_octree_debug_level, next_levels - 1);
             m_renderer.markTreeInvalid();
         }
         if (m_render_octree)
-            ImGui::SliderInt("Debug tree level", &m_octree_debug_level, 0, max_levels - 1);
+            ImGui::SliderInt("Debug tree level", &m_octree_debug_level, 0, next_levels - 1);
 
         // Timers: Just create your timer via m_timers and they will
         // appear here

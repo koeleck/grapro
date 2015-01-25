@@ -24,9 +24,11 @@
 namespace
 {
 
-constexpr int FLAG_PROG_LOCAL_SIZE = 64;
+constexpr int FLAG_PROG_LOCAL_SIZE = 256;
 constexpr int ALLOC_PROG_LOCAL_SIZE = 256;
 constexpr int INJECT_PROG_LOCAL_SIZE = 256;
+constexpr int TO_NEIGHBORS_PROG_LOCAL_SIZE = 256;
+constexpr int MIPMAP_PROG_LOCAL_SIZE = 128;
 
 typedef struct
 {
@@ -204,6 +206,8 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // shaders:
+    const std::string bricks_def = "NUM_BRICKS_X " + std::to_string(brick_num_x) + ", "
+            "NUM_BRICKS_Y " + std::to_string(brick_num_y);
     // voxel creation
     core::res::shaders->registerShader("voxelGeom", "tree/voxelize.geom", GL_GEOMETRY_SHADER);
     core::res::shaders->registerShader("voxelFrag", "tree/voxelize.frag", GL_FRAGMENT_SHADER);
@@ -223,11 +227,22 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
     m_octreeLeafStore_prog = core::res::shaders->registerProgram("octreeLeafStore_prog", {"octreeLeafStoreComp"});
 
     core::res::shaders->registerShader("octreeInjectLightingComp", "tree/inject_direct_lighting.comp",
-            GL_COMPUTE_SHADER, "LOCAL_SIZE " + std::to_string(INJECT_PROG_LOCAL_SIZE) + ", "
-            "NUM_BRICKS_X " + std::to_string(brick_num_x) + ", "
-            "NUM_BRICKS_Y " + std::to_string(brick_num_y));
+            GL_COMPUTE_SHADER, "LOCAL_SIZE " + std::to_string(INJECT_PROG_LOCAL_SIZE) + ", " +
+            bricks_def);
     m_inject_lighting_prog = core::res::shaders->registerProgram("octreeInjectLighting",
             {"octreeInjectLightingComp"});
+
+    core::res::shaders->registerShader("to_neighbors_comp", "tree/to_neighbors.comp", GL_COMPUTE_SHADER,
+            "LOCAL_SIZE " + std::to_string(TO_NEIGHBORS_PROG_LOCAL_SIZE) + ", " +
+            bricks_def);
+    m_dist_to_neighbors_prog = core::res::shaders->registerProgram("to_neighbors_prog",
+            {"to_neighbors_comp"});
+
+    core::res::shaders->registerShader("mipmap_comp", "tree/mipmap.comp", GL_COMPUTE_SHADER,
+            "LOCAL_SIZE " + std::to_string(MIPMAP_PROG_LOCAL_SIZE) + ", " +
+            bricks_def);
+    m_mipmap_prog = core::res::shaders->registerProgram("mipmap_prog",
+            {"mipmap_comp"});
 
     // debug render
     core::res::shaders->registerShader("ssq_vert", "basic/ssq.vert", GL_VERTEX_SHADER);
@@ -236,10 +251,10 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
 
     core::res::shaders->registerShader("octreeDebugBBox_vert", "tree/bbox.vert", GL_VERTEX_SHADER);
     core::res::shaders->registerShader("octreeDebugBBox_frag", "tree/bbox.frag", GL_FRAGMENT_SHADER,
-            "NUM_BRICKS_X " + std::to_string(brick_num_x) + ", "
-            "NUM_BRICKS_Y " + std::to_string(brick_num_y));
+            bricks_def);
     m_voxel_bbox_prog = core::res::shaders->registerProgram("octreeDebugBBox_prog",
             {"octreeDebugBBox_vert", "octreeDebugBBox_frag"});
+
 }
 
 /****************************************************************************/
@@ -603,10 +618,23 @@ void Renderer::buildVoxelTree()
         const GLuint inject_workgroups = (count + INJECT_PROG_LOCAL_SIZE - 1) / INJECT_PROG_LOCAL_SIZE;
         glDispatchCompute(inject_workgroups, 1, 1);
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    }
 
-        //glBindTexture(GL_TEXTURE_3D, m_brick_texture);
-        //float clear_col = 1.f;
-        //glClearTexImage(GL_TEXTURE_3D, 0, GL_RED, GL_FLOAT, &clear_col);
+    // mipmap
+    glBindImageTexture(0, m_brick_texture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA16F);
+    for (int i = static_cast<int>(vars.voxel_octree_levels) - 2; i >= 0; i--) {
+        distributeToNeighbors(m_tree_levels[static_cast<size_t>(i + 1)]);
+
+        glUseProgram(m_mipmap_prog);
+        const unsigned int start = static_cast<unsigned int>(m_tree_levels[static_cast<size_t>(i)].first);
+        const unsigned int count = static_cast<unsigned int>(m_tree_levels[static_cast<size_t>(i)].second);
+        glUniform1ui(0, count);
+        glUniform1ui(1, start);
+        LOG_INFO("level: ", i, ", start: ", start, ", count: ", count);
+
+        const GLuint workgroups = (count + MIPMAP_PROG_LOCAL_SIZE - 1) / MIPMAP_PROG_LOCAL_SIZE;
+        glDispatchCompute(workgroups, 1, 1);
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     }
 
 }
@@ -877,6 +905,61 @@ void Renderer::renderShadowmaps()
 const core::AABB& Renderer::getSceneBBox() const
 {
     return m_scene_bbox;
+}
+
+/****************************************************************************/
+
+void Renderer::distributeToNeighbors(const std::pair<int, int>& level)
+{
+    // m_brick_texture needs to be bound to image unit 0 GL_READ_WRITE
+    const unsigned int start = static_cast<unsigned int>(level.first);
+    const unsigned int count = static_cast<unsigned int>(level.second);
+
+    const GLuint dist_prog = m_dist_to_neighbors_prog;
+    const GLuint workgroups = (count + TO_NEIGHBORS_PROG_LOCAL_SIZE - 1) / TO_NEIGHBORS_PROG_LOCAL_SIZE;
+    glUseProgram(dist_prog);
+
+    glUniform1ui(0, count);
+    glUniform1ui(1, start);
+
+    // x+
+    glUniform1i(2, 1);
+    glUniform1i(3, 1);
+    glUniform3i(4, 1, 2, 0);
+    glDispatchCompute(workgroups, 1, 1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+    // x-
+    glUniform1i(2, 0);
+    glUniform1i(3, -1);
+    glDispatchCompute(workgroups, 1, 1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+    // y+
+    glUniform1i(2, 3);
+    glUniform1i(3, 1);
+    glUniform3i(4, 0, 2, 1);
+    glDispatchCompute(workgroups, 1, 1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+    // y-
+    glUniform1i(2, 2);
+    glUniform1i(3, -1);
+    glDispatchCompute(workgroups, 1, 1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+    // z+
+    glUniform1i(2, 5);
+    glUniform1i(3, 1);
+    glUniform3i(4, 0, 1, 2);
+    glDispatchCompute(workgroups, 1, 1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+    // z-
+    glUniform1i(2, 4);
+    glUniform1i(3, -1);
+    glDispatchCompute(workgroups, 1, 1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
 
 /****************************************************************************/

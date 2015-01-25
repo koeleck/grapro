@@ -1,0 +1,65 @@
+#version 440 core
+
+#include "voxel.glsl"
+#include "common/compression.glsl"
+
+layout (local_size_x = LOCAL_SIZE, local_size_y = 1, local_size_z = 1) in;
+
+layout(location = 0) uniform uint uCount;
+layout(location = 1) uniform uint uStartNode;
+layout(location = 2) uniform int uNeighborIdx; // [0...5] (x-, x+, y-, y+, z-, z+)
+layout(location = 3) uniform int uSide; // -1 or 1
+layout(location = 4) uniform ivec3 uSwizzle;
+
+void main()
+{
+    const uint threadId = gl_GlobalInvocationID.x;
+    if (threadId >= uCount)
+        return;
+
+    const uint idx = uStartNode + threadId;
+    if ((octree[idx].id & 0x80000000u) == 0)
+        return;
+
+    uvec3 tmp0 = unpackUInt3x10(octreeInfo[idx].x_neighbors_y_neg_neighbor);
+    uvec3 tmp1 = unpackUInt3x10(octreeInfo[idx].y_pos_neighbor_z_neighbors);
+
+    uint neighbor = (uNeighborIdx < 3) ? tmp0[uNeighborIdx] : tmp1[uNeighborIdx - 3];
+    if (neighbor == 0)
+        return;
+
+    ivec3 thisBrick = getBrickCoord(idx);
+    ivec3 otherBrick = getBrickCoord(neighbor);
+    if ((octree[neighbor].id & 0x80000000u) != 0) {
+        if ((uSide == -1) && (uNeighborIdx == 0)) {
+            vec4 v0 = imageLoad(octreeBrickTex, thisBrick);
+            vec4 v1 = imageLoad(octreeBrickTex, otherBrick);
+            imageStore(octreeBrickTex, otherBrick, v0);
+            imageStore(octreeBrickTex, thisBrick, v1);
+        }
+    }
+    return;
+
+    bool isEmpty = (octree[idx].id & 0x80000000u) == 0;
+    bool readZero = isEmpty && (uSide > 0);
+    for (int i = -1; i < 2; ++i) {
+        for (int j = -1; j < 2; ++j) {
+            ivec3 c0;
+            c0[uSwizzle.x] = i;
+            c0[uSwizzle.y] = j;
+            c0[uSwizzle.z] = uSide;
+
+            ivec3 c1 = c0;
+            c1[uSwizzle.z] = -uSide;
+
+            vec4 val = readZero ? vec4(0.0) : imageLoad(octreeBrickTex, thisBrick + c0);
+            if (uSide < 0) {
+                val *= 0.5;
+                imageStore(octreeBrickTex, thisBrick + c0, val);
+            } else {
+                val += imageLoad(octreeBrickTex, otherBrick + c1);
+            }
+            imageStore(octreeBrickTex, otherBrick + c1, val);
+        }
+    }
+}

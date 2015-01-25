@@ -38,6 +38,8 @@ private:
     void debugRenderTree(bool solid, int level);
     void renderBoundingBoxes();
     void renderShadowmaps();
+    void distributeToNeighbors(const std::pair<int, int>& level);
+
 
     void createVoxelList();
     void buildVoxelTree();
@@ -66,6 +68,8 @@ private:
     core::Program                       m_octreeNodeAlloc_prog;
     core::Program                       m_octreeLeafStore_prog;
     core::Program                       m_inject_lighting_prog;
+    core::Program                       m_dist_to_neighbors_prog;
+    core::Program                       m_mipmap_prog;
     gl::Buffer                          m_atomicCounterBuffer;
     gl::Buffer                          m_voxelBuffer;
     gl::Buffer                          m_octreeNodeBuffer;

@@ -121,8 +121,14 @@ void main()
     const vec3 col = octreeInfo[idx].diffuse.rgb / count;
     const vec3 emi = octreeInfo[idx].emissive.rgb / count;
 
-    ivec3 texcoord = getBrickCoord(idx);
     vec4 result = vec4(emi + col * computeRadiance(pos, normal), 1.0);
-    imageStore(octreeBrickTex, texcoord, result);
+    ivec3 texcoord = getBrickCoord(idx);
+    for (int z = -1; z < 2; ++z) {
+        for (int y = -1; y < 2; ++y) {
+            for (int x = -1; x < 2; ++x) {
+                imageStore(octreeBrickTex, texcoord + ivec3(x, y, z), result);
+            }
+        }
+    }
 
 }
