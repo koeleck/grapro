@@ -692,6 +692,11 @@ void Renderer::render(const bool renderBBoxes, const bool renderOctree, int octr
     }
 
     if (renderOctree) {
+        if (solid) {
+            glEnable(GL_DEPTH_TEST);
+            glEnable(GL_CULL_FACE);
+            glDepthFunc(GL_LEQUAL);
+        }
         debugRenderTree(solid, octree_level);
     }
 
