@@ -10,6 +10,9 @@ public:
     void bindTextures() const;
     int getWidth() const;
     int getHeight() const;
+    GLuint getDiffuseNormalTex() const;
+    GLuint getSpecGlossEmissiveTex() const;
+    GLuint getDepthTex() const;
 
 private:
     int                 m_width;

@@ -4,9 +4,10 @@
 #include "common/materials.glsl"
 #include "common/textures.glsl"
 #include "common/instances.glsl"
-#include "common/lights.glsl"
+#include "common/compression.glsl"
 
-layout(location = 0) out vec4 out_Color;
+layout(location = 0) out vec4 out_DiffuseNormal;
+layout(location = 1) out vec4 out_SpecGlossEmissive;
 
 in VertexData
 {
@@ -81,103 +82,17 @@ void main()
         normal = inData.normal;
     }
 
-    //vec3 result = vec3(0.15 * ambient_color);
-    vec3 result = vec3(0.0);
-    for (int i = 0; i < numLights; ++i) {
-        float attenuation;
-        vec3 light_dir;
-        const int type_texid = lights[i].type_texid;
-        const bool isShadowcasting = (type_texid & LIGHT_IS_SHADOWCASTING) != 0;
+    vec3 diff_YCoCg = RGB2YCoCg(diffuse_color);
+    vec3 em_YCoCg = RGB2YCoCg(ambient_color + emissive_color);
+    float spec = RGB2YCoCg(specular_color).x;
 
-        // TODO max dist
-        if ((type_texid & LIGHT_TYPE_DIRECTIONAL) != 0) {
-            light_dir = -lights[i].direction;
-            attenuation = 1.0;
-            if (isShadowcasting) {
-                int layer = (type_texid & LIGHT_TEXID_BITS);
-                vec4 tmp = lights[i].ProjViewMatrix * vec4(inData.wpos, 1.0);
-                tmp.xyz = (tmp.xyz / tmp.w) * 0.5 + 0.5;
-                vec4 texcoord = vec4(tmp.xy, float(layer), tmp.z);
-                //attenuation *= texture(uShadowMapTex, texcoord);
-                // PCF:
-                attenuation *= (textureOffset(uShadowMapTex, texcoord, ivec2(-2, -2)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 0, -2)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 2, -2)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2(-2,  0)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 0,  0)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 2,  0)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2(-2,  2)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 0,  2)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 2,  2))) / 9.0;
-            }
-        } else if ((type_texid & LIGHT_TYPE_SPOT) != 0) {
-            const vec3 diff = inData.wpos - lights[i].position;
-            const float dist = length(diff);
-            const vec3 dir = diff / dist;
+    ivec2 crd = ivec2(gl_FragCoord.xy);
+    bool isBlack = ((crd.x & 1) == (crd.y & 1));
 
-            light_dir = -dir;
-            attenuation = smoothstep(lights[i].angleOuterCone, lights[i].angleInnerCone,
-                    dot(dir, lights[i].direction)) /
-                    (lights[i].constantAttenuation + lights[i].linearAttenuation * dist +
-                     lights[i].quadraticAttenuation * dist * dist);
-            if (isShadowcasting) {
-                // normal offset
-                float normalOffsetScale = 1.0 - max(dot(light_dir, normal), 0.0);
-                vec3 normalOffset = normal * 50.0 * normalOffsetScale;
-
-                int layer = (type_texid & LIGHT_TEXID_BITS);
-
-                vec4 tmp = lights[i].ProjViewMatrix * vec4(inData.wpos, 1.0);
-                tmp.xyz = (tmp.xyz / tmp.w) * 0.5 + 0.5;
-
-                vec4 tmp2 = lights[i].ProjViewMatrix * vec4(inData.wpos + normalOffset, 1.0);
-                tmp.xy = (tmp2.xy / tmp2.w) * 0.5 + 0.5;
-
-                vec4 texcoord = vec4(tmp.xy, float(layer), tmp.z);
-                //attenuation *= texture(uShadowMapTex, texcoord);
-                // PCF:
-                attenuation *= (textureOffset(uShadowMapTex, texcoord, ivec2(-2, -2)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 0, -2)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 2, -2)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2(-2,  0)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 0,  0)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 2,  0)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2(-2,  2)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 0,  2)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 2,  2))) / 9.0;
-            }
-        } else { // POINT
-            const vec3 diff = inData.wpos - lights[i].position;
-            const float dist = length(diff);
-            const vec3 dir = diff / dist;
-            light_dir = -dir;
-            attenuation = 1.0 /
-                    (lights[i].constantAttenuation + lights[i].linearAttenuation * dist +
-                     lights[i].quadraticAttenuation * dist * dist);
-            if (isShadowcasting) {
-                int layer = (type_texid & LIGHT_TEXID_BITS);
-                vec3 absDiff = abs(diff);
-                const float abs_z = max(absDiff.x, max(absDiff.y, absDiff.z));
-                const float f = 2000.0; const float n = 1.0;
-                // see src/core/light.cpp:
-                const float depth = lights[i].direction.x + lights[i].direction.y / abs_z;
-
-                vec4 texcoord = vec4(dir, layer);
-                attenuation *= texture(uShadowCubeMapTex, texcoord, depth);
-            }
-        }
-
-        const float n_dot_l = max(dot(light_dir, normal), 0.0);
-        float spec = 0;
-        if (n_dot_l > 0.0) {
-            vec3 halfvec = normalize(light_dir + inData.viewdir);
-            spec = pow(max(dot(normal, halfvec), 0.0), glossiness);
-        }
-
-        result += attenuation * lights[i].intensity * (diffuse_color * n_dot_l + specular_color * spec);
-    }
-    result += emissive_color;
-
-    out_Color = vec4(result , 1.0);
+    out_DiffuseNormal.xy = (isBlack) ? diff_YCoCg.rg : diff_YCoCg.rb;
+    out_DiffuseNormal.zw = compressNormal(normal);
+    out_SpecGlossEmissive.x = spec;
+    out_SpecGlossEmissive.y = glossiness;
+    out_SpecGlossEmissive.zw = (isBlack) ? em_YCoCg.rg : em_YCoCg.rb;
 }
 

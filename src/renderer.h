@@ -84,6 +84,9 @@ private:
     core::GPUTimer*                     m_tree_timer;
     core::GPUTimer*                     m_voxelize_timer;
 
+    // deferred
+    core::Program                       m_direct_lighting_prog;
+
     // debug voxeltree
     core::Program                       m_voxel_bbox_prog;
 
