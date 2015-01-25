@@ -33,12 +33,21 @@ layout(std430, binding = OCTREE_BINDING) restrict buffer OctreeNodeBlock
 struct NodeInfo
 {
     vec3 position;
-    uint x_neighbors_y_neg_neighbor;
+    uint x_negative;
+
     vec3 diffuse;
-    uint y_pos_neighbor_z_neighbors;
+    uint x_positive;
+
     vec3 emissive;
+    uint y_negative;
+
+    vec3 normal;
+    uint y_positive;
+
+    uint z_negative;
+    uint z_positive;
     uint count;
-    vec4 normal;
+    uint padding;
 };
 
 layout(std430, binding = OCTREE_INFO_BINDING) restrict buffer OctreeInfoBlock
