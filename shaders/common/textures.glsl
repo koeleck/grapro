@@ -19,6 +19,9 @@
 #define SHADOWMAP_TEX_UNIT      7
 #define SHADOWCUBEMAP_TEX_UNIT  8
 
+#define GBUFFER_DEPTH_TEX                     0
+#define GBUFFER_DIFFUSE_NORMAL_TEX            1
+#define GBUFFER_SPECULAR_GLOSSY_EMISSIVE_TEX  2
 
 layout(binding = DIFFUSE_TEX_UNIT) uniform sampler2D uDiffuseTex;
 layout(binding = SPECULAR_TEX_UNIT) uniform sampler2D uSpecularTex;

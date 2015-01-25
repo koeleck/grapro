@@ -641,6 +641,22 @@ void Renderer::buildVoxelTree()
 
 /****************************************************************************/
 
+void Renderer::populateGBuffer()
+{
+    m_gbuffer.bindTextures();
+    m_gbuffer.bindFramebuffer();
+
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    renderGeometry(m_gbuffer.getProg(), false, core::res::cameras->getDefaultCam());
+
+    m_gbuffer.unbindFramebuffer();
+}
+
+/****************************************************************************/
+
 void Renderer::render(const bool renderBBoxes, const bool renderOctree, int octree_level,
         const bool solid)
 {
@@ -654,6 +670,8 @@ void Renderer::render(const bool renderBBoxes, const bool renderOctree, int octr
     core::res::instances->bind();
     core::res::meshes->bind();
     core::res::lights->bind();
+
+    populateGBuffer();
 
     if (m_rebuildTree) {
         // only render shadowmaps once
@@ -688,6 +706,17 @@ void Renderer::render(const bool renderBBoxes, const bool renderOctree, int octr
 
     if (renderBBoxes)
         renderBoundingBoxes();
+    
+    /*m_gbuffer.bindTextures();
+    m_gbuffer.bindReadFramebuffer();
+    glReadBuffer(GL_COLOR_ATTACHMENT0);
+    glBlitFramebuffer(0, 0, vars.screen_width, vars.screen_height,
+        0, 0, vars.screen_width/2, vars.screen_height/2,
+        GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    glReadBuffer(GL_COLOR_ATTACHMENT1);
+    glBlitFramebuffer(0, 0, vars.screen_width, vars.screen_height,
+        0, vars.screen_height/2, vars.screen_width/2, vars.screen_height,
+        GL_COLOR_BUFFER_BIT, GL_LINEAR);*/
 }
 
 /****************************************************************************/
@@ -767,7 +796,9 @@ void Renderer::renderGeometry(const GLuint prog, const bool depthOnly,
         }
 
         // enable/disable shadow
-        glUniform1i(1, m_shadowsEnabled);
+        auto loc = glGetUniformLocation(prog, "u_shadowsEnabled");
+        if(loc >= 0)
+            glUniform1i(loc, m_shadowsEnabled);
 
         glMultiDrawElementsIndirect(cmd.mode, cmd.type,
                 cmd.indirect, cmd.drawcount, cmd.stride);

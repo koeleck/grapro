@@ -39,6 +39,7 @@ private:
     void debugRenderTree(bool solid, int level);
     void renderBoundingBoxes();
     void renderShadowmaps();
+    void populateGBuffer();
     void distributeToNeighbors(const std::pair<int, int>& level);
 
 

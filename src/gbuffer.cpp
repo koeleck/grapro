@@ -1,4 +1,5 @@
 #include "log/log.h"
+#include "core/shader_manager.h"
 #include "core/shader_interface.h"
 #include "gbuffer.h"
 
@@ -42,6 +43,11 @@ GBuffer::GBuffer(const int width, const int height)
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(prev_fbo));
     glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(prev_tex));
+
+    // shader
+    core::res::shaders->registerShader("vertexpulling_vert", "basic/vertexpulling.vert", GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("gbuffer_frag", "conetracing/gbuffer.frag", GL_FRAGMENT_SHADER);
+    m_gbuffer_prog = core::res::shaders->registerProgram("gbuffer_prog", {"vertexpulling_vert", "gbuffer_frag"});
 }
 
 /****************************************************************************/
@@ -69,6 +75,13 @@ void GBuffer::bindFramebuffer(const bool saveState)
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo);
     glViewport(0, 0, m_width, m_height);
+}
+
+/****************************************************************************/
+
+void GBuffer::bindReadFramebuffer()
+{
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, m_fbo);
 }
 
 /****************************************************************************/

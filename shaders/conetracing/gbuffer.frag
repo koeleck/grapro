@@ -6,7 +6,9 @@
 #include "common/instances.glsl"
 #include "common/lights.glsl"
 
-layout(location = 0) out vec4 out_Color;
+layout(location = GBUFFER_DEPTH_TEX)                    out float out_Depth;
+layout(location = GBUFFER_DIFFUSE_NORMAL_TEX)           out vec4 out_Normal;
+layout(location = GBUFFER_SPECULAR_GLOSSY_EMISSIVE_TEX) out vec4 out_Color;
 uniform bool u_shadowsEnabled;
 
 in VertexData
@@ -179,6 +181,8 @@ void main()
     }
     result += emissive_color;
 
-    out_Color = vec4(result , 1.0);
+    out_Depth = gl_FragCoord.z;
+    out_Normal= vec4(normal, 1.0);
+    out_Color = vec4(result, 1.0);
 }
 
