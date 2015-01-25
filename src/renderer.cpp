@@ -729,12 +729,14 @@ void Renderer::render(const Options & options)
     }
 
     if (options.renderVoxelBoxes) {
-        debugRenderTree(false, options.debugLevel);
+        debugRenderTree(false, options.debugLevel, false);
+    } else if (options.renderVoxelBoxesColored) {
+        debugRenderTree(false, options.debugLevel, true);
     } else if (options.renderVoxelColors) {
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
         glDepthFunc(GL_LEQUAL);
-        debugRenderTree(true, options.debugLevel);
+        debugRenderTree(true, options.debugLevel, true);
     }
 
     if (!options.renderVoxelColors) {
@@ -916,7 +918,7 @@ void Renderer::initBBoxStuff()
 
 /****************************************************************************/
 
-void Renderer::debugRenderTree(const bool solid, const int level)
+void Renderer::debugRenderTree(const bool solid, const int level, const bool colored)
 {
     GLuint prog = m_voxel_bbox_prog;
     glUseProgram(prog);
@@ -928,6 +930,7 @@ void Renderer::debugRenderTree(const bool solid, const int level)
     const float halfSize = (m_scene_bbox.pmax.x - m_scene_bbox.pmin.x) /
         static_cast<float>(2 * num_voxels);
     glProgramUniform1f(prog, 0, halfSize);
+    glProgramUniform1ui(prog, 1, colored);
     glBindImageTexture(0, m_brick_texture, 0, GL_TRUE, 0, GL_READ_ONLY, GL_RGBA16F);
 
     const auto& level_info = m_tree_levels[static_cast<std::size_t>(level)];

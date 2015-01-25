@@ -24,6 +24,7 @@ GraPro::GraPro(GLFWwindow* window)
     m_options.debugLevel = static_cast<int>(vars.voxel_octree_levels - 1);
     m_options.renderBBoxes = false;
     m_options.renderVoxelBoxes = false;
+    m_options.renderVoxelBoxesColored = false;
     m_options.renderVoxelColors = false;
     m_options.renderAO = false;
     m_options.renderIndirectDiffuse = false;
@@ -106,7 +107,8 @@ void GraPro::update_gui(const double delta_t)
         ImGui::Spacing();
 
         ImGui::Checkbox("bounding boxes", &m_options.renderBBoxes);
-        ImGui::Checkbox("show voxel boxes", &m_options.renderVoxelBoxes);
+        ImGui::Checkbox("show white voxel boxes", &m_options.renderVoxelBoxes);
+        ImGui::Checkbox("show colored voxel boxes", &m_options.renderVoxelBoxesColored);
         ImGui::Checkbox("show voxel colors", &m_options.renderVoxelColors);
 
         static const int max_levels = static_cast<int>(vars.voxel_octree_levels);

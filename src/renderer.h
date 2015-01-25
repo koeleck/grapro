@@ -9,6 +9,7 @@ struct Options
     int debugLevel;
     bool renderBBoxes;
     bool renderVoxelBoxes;
+    bool renderVoxelBoxesColored;
     bool renderVoxelColors;
     bool renderAO;
     bool renderIndirectDiffuse;
@@ -60,7 +61,7 @@ private:
 
     void renderGeometry(GLuint prog, bool depthOnly,
             const core::Camera* cam);
-    void debugRenderTree(bool solid, int level);
+    void debugRenderTree(bool solid, int level, bool colored);
     void renderBoundingBoxes();
     void renderShadowmaps();
     void populateGBuffer();
