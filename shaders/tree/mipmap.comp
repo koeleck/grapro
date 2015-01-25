@@ -32,7 +32,6 @@ void main()
     const uint childidx = (octree[idx].id & 0x7fffffffu);
 
     ivec3 brick[8];
-    vec4 result = vec4(0.0);
 
     /*
      * gaussian weights for cube:
@@ -42,41 +41,46 @@ void main()
      *   - center:          1/8   (1 point)
      */
 
+    vec4 result = vec4(0.0);
+    float count = 0.0;
     for (int i = 0; i < 8; ++i) {
         bool isEmpty = ((octree[childidx + i].id & 0x80000000u) == 0);
         brick[i] = getBrickCoord(childidx + i);
 
         // read value at child center
-        if (!isEmpty)
+        if (!isEmpty) {
+            count += 1.0;
             result += imageLoad(octreeBrickTex, brick[i]);
+        }
     }
-    result /= 64.0; // gaussian weight for cube corners
+    result.rgb /= (count * 8.0);
+    result.a /= 8.0;
 
 
     // edges
-    result += (imageLoad(octreeBrickTex, brick[0] + ivec3(1, 0, 0)) +
-               imageLoad(octreeBrickTex, brick[0] + ivec3(0, 1, 0)) +
-               imageLoad(octreeBrickTex, brick[0] + ivec3(0, 0, 1)) +
-               imageLoad(octreeBrickTex, brick[1] + ivec3(0, 1, 0)) +
-               imageLoad(octreeBrickTex, brick[1] + ivec3(0, 0, 1)) +
-               imageLoad(octreeBrickTex, brick[2] + ivec3(1, 0, 0)) +
-               imageLoad(octreeBrickTex, brick[2] + ivec3(0, 0, 1)) +
-               imageLoad(octreeBrickTex, brick[3] + ivec3(0, 0, 1)) +
-               imageLoad(octreeBrickTex, brick[4] + ivec3(1, 0, 0)) +
-               imageLoad(octreeBrickTex, brick[4] + ivec3(0, 0, 1)) +
-               imageLoad(octreeBrickTex, brick[5] + ivec3(0, 1, 0)) +
-               imageLoad(octreeBrickTex, brick[6] + ivec3(1, 0, 0))) / 32.0;
+    result.rgb += (imageLoad(octreeBrickTex, brick[0] + ivec3(1, 0, 0)).rgb +
+                   imageLoad(octreeBrickTex, brick[0] + ivec3(0, 1, 0)).rgb +
+                   imageLoad(octreeBrickTex, brick[0] + ivec3(0, 0, 1)).rgb +
+                   imageLoad(octreeBrickTex, brick[1] + ivec3(0, 1, 0)).rgb +
+                   imageLoad(octreeBrickTex, brick[1] + ivec3(0, 0, 1)).rgb +
+                   imageLoad(octreeBrickTex, brick[2] + ivec3(1, 0, 0)).rgb +
+                   imageLoad(octreeBrickTex, brick[2] + ivec3(0, 0, 1)).rgb +
+                   imageLoad(octreeBrickTex, brick[3] + ivec3(0, 0, 1)).rgb +
+                   imageLoad(octreeBrickTex, brick[4] + ivec3(1, 0, 0)).rgb +
+                   imageLoad(octreeBrickTex, brick[4] + ivec3(0, 0, 1)).rgb +
+                   imageLoad(octreeBrickTex, brick[5] + ivec3(0, 1, 0)).rgb +
+                   imageLoad(octreeBrickTex, brick[6] + ivec3(1, 0, 0)).rgb) / 16.0; // 32.0;
 
     // side midpoints
-    result += (imageLoad(octreeBrickTex, brick[0] + ivec3(1, 1, 0)) +
-               imageLoad(octreeBrickTex, brick[0] + ivec3(0, 1, 1)) +
-               imageLoad(octreeBrickTex, brick[0] + ivec3(1, 0, 1)) +
-               imageLoad(octreeBrickTex, brick[7] + ivec3(-1, 0, -1)) +
-               imageLoad(octreeBrickTex, brick[7] + ivec3(-1, -1, 0)) +
-               imageLoad(octreeBrickTex, brick[7] + ivec3(0, -1, -1))) / 16.0;
+    result.rgb += (imageLoad(octreeBrickTex, brick[0] + ivec3( 1,  1,  0)).rgb +
+                   imageLoad(octreeBrickTex, brick[0] + ivec3( 0,  1,  1)).rgb +
+                   imageLoad(octreeBrickTex, brick[0] + ivec3( 1,  0,  1)).rgb +
+                   imageLoad(octreeBrickTex, brick[7] + ivec3(-1,  0, -1)).rgb +
+                   imageLoad(octreeBrickTex, brick[7] + ivec3(-1, -1,  0)).rgb +
+                   imageLoad(octreeBrickTex, brick[7] + ivec3( 0, -1, -1)).rgb) / 8.0; // 16.0;
 
     // center:
-    result += imageLoad(octreeBrickTex, brick[0] + ivec3(1)) / 8.0;
+    result.rgb += imageLoad(octreeBrickTex, brick[0] + ivec3(1)).rgb / 4.0; // 8.0;
 
     ivec3 thisBrick = getBrickCoord(idx);
     for (int z = -1; z < 2; ++z) {
