@@ -111,9 +111,8 @@ void GraPro::update_gui(const double delta_t)
         ImGui::Checkbox("show colored voxel boxes", &m_options.renderVoxelBoxesColored);
         ImGui::Checkbox("show voxel colors", &m_options.renderVoxelColors);
 
-        static const int max_levels = static_cast<int>(vars.voxel_octree_levels);
         bool debugAtMax = (m_options.debugLevel == m_options.treeLevels - 1);
-        ImGui::SliderInt("Tree levels", &m_options.treeLevels, 1, max_levels);
+        ImGui::SliderInt("Tree levels", &m_options.treeLevels, 1, 8);
         if (vars.voxel_octree_levels != static_cast<unsigned int>(m_options.treeLevels)) {
             vars.voxel_octree_levels = static_cast<unsigned int>(m_options.treeLevels);
             if (debugAtMax) {
