@@ -21,24 +21,20 @@ void main()
     if ((octree[idx].id & 0x80000000u) == 0)
         return;
 
-    uvec3 tmp0 = unpackUInt3x10(octreeInfo[idx].x_neighbors_y_neg_neighbor);
-    uvec3 tmp1 = unpackUInt3x10(octreeInfo[idx].y_pos_neighbor_z_neighbors);
+    uint neighbors[6] = uint[6](
+            octreeInfo[idx].x_negative,
+            octreeInfo[idx].x_positive,
+            octreeInfo[idx].y_negative,
+            octreeInfo[idx].y_positive,
+            octreeInfo[idx].z_negative,
+            octreeInfo[idx].z_positive);
 
-    uint neighbor = (uNeighborIdx < 3) ? tmp0[uNeighborIdx] : tmp1[uNeighborIdx - 3];
+    uint neighbor = neighbors[uNeighborIdx];
     if (neighbor == 0)
         return;
 
     ivec3 thisBrick = getBrickCoord(idx);
     ivec3 otherBrick = getBrickCoord(neighbor);
-    if ((octree[neighbor].id & 0x80000000u) != 0) {
-        if ((uSide == -1) && (uNeighborIdx == 0)) {
-            //vec4 v0 = imageLoad(octreeBrickTex, thisBrick);
-            //vec4 v1 = imageLoad(octreeBrickTex, otherBrick);
-            //imageStore(octreeBrickTex, otherBrick, v0);
-            //imageStore(octreeBrickTex, thisBrick, v1);
-        }
-    }
-    return;
 
     bool isEmpty = (octree[idx].id & 0x80000000u) == 0;
     bool readZero = isEmpty && (uSide > 0);

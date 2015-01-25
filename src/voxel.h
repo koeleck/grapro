@@ -16,7 +16,7 @@ struct OctreeNodeStruct
 
 struct VoxelNodeInfo
 {
-    std::uint32_t data[16];
+    std::uint32_t data[20];
 };
 
 #endif // VOXEL_H
