@@ -32,7 +32,7 @@ GBuffer::GBuffer(const int width, const int height)
     glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F,
             m_width, m_height);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,
-            GL_TEXTURE_2D, m_diffuse_normal, 0);
+            GL_TEXTURE_2D, m_specular_gloss_emissive, 0);
 
     if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         LOG_ERROR("Framebuffer not complete");
