@@ -641,14 +641,11 @@ void Renderer::buildVoxelTree()
 
 /****************************************************************************/
 
-void Renderer::render(const bool renderBBoxes, const bool renderOctree, int octree_level,
-        const bool solid)
+void Renderer::render(const Options & options)
 {
     if (m_geometry.empty())
         return;
-
-    if (octree_level < 0)
-        octree_level = static_cast<int>(vars.voxel_octree_levels);
+    assert(options.treeLevels > 0);
 
     core::res::materials->bind();
     core::res::instances->bind();
@@ -674,11 +671,13 @@ void Renderer::render(const bool renderBBoxes, const bool renderOctree, int octr
         m_rebuildTree = false;
     }
 
-    if (renderOctree) {
-        debugRenderTree(solid, octree_level);
+    if (options.renderVoxelBoxes) {
+        debugRenderTree(false, options.debugLevel);
+    } else if (options.renderVoxelColors) {
+        debugRenderTree(true, options.debugLevel);
     }
 
-    if (!renderOctree || !solid) {
+    if (!options.renderVoxelBoxes && !options.renderVoxelColors) {
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
         glDepthFunc(GL_LEQUAL);
@@ -686,7 +685,7 @@ void Renderer::render(const bool renderBBoxes, const bool renderOctree, int octr
         renderGeometry(m_vertexpulling_prog, false, core::res::cameras->getDefaultCam());
     }
 
-    if (renderBBoxes)
+    if (options.renderBBoxes)
         renderBoundingBoxes();
 }
 
@@ -767,7 +766,12 @@ void Renderer::renderGeometry(const GLuint prog, const bool depthOnly,
         }
 
         // enable/disable shadow
-        glUniform1i(1, m_shadowsEnabled);
+        if (m_shadowsEnabled) {
+            glUniform1ui(1, 1);
+        } else {
+            glUniform1ui(1, 0);
+        }
+
 
         glMultiDrawElementsIndirect(cmd.mode, cmd.type,
                 cmd.indirect, cmd.drawcount, cmd.stride);

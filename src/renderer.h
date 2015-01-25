@@ -5,7 +5,8 @@
 
 struct Options
 {
-    unsigned int treeLevels;
+    int treeLevels;
+    int debugLevel;
     bool renderBBoxes;
     bool renderVoxelBoxes;
     bool renderVoxelColors;
@@ -13,12 +14,12 @@ struct Options
     bool renderIndirectDiffuse;
     bool renderIndirectSpecular;
     bool renderConeTracing;
-    unsigned int aoConeGridSize;
-    unsigned int aoConeSteps;
-    unsigned int aoWeight;
-    unsigned int diffuseConeGridSize;
-    unsigned int diffuseConeSteps;
-    unsigned int specularConeSteps;
+    int aoConeGridSize;
+    int aoConeSteps;
+    int aoWeight;
+    int diffuseConeGridSize;
+    int diffuseConeSteps;
+    int specularConeSteps;
     bool debugOutput;
 };
 
@@ -42,8 +43,7 @@ public:
     ~Renderer();
 
     void setGeometry(std::vector<const core::Instance*> geometry);
-    void render(bool renderBBoxes = false, bool render_octree = false, int octree_level = -1,
-            bool solid = false);
+    void render(const Options &);
 
     void resize(int width, int height);
 
@@ -108,6 +108,9 @@ private:
     core::TimerArray&                   m_timers;
     core::GPUTimer*                     m_tree_timer;
     core::GPUTimer*                     m_voxelize_timer;
+
+    // options
+    Options                             m_options;
 
     // debug voxeltree
     core::Program                       m_voxel_bbox_prog;
