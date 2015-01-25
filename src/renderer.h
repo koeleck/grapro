@@ -1,6 +1,31 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
+/****************************************************************************/
+
+struct Options
+{
+    int treeLevels;
+    int debugLevel;
+    bool renderBBoxes;
+    bool renderVoxelBoxes;
+    bool renderVoxelColors;
+    bool renderAO;
+    bool renderIndirectDiffuse;
+    bool renderIndirectSpecular;
+    bool renderConeTracing;
+    bool debugGBuffer;
+    int aoConeGridSize;
+    int aoConeSteps;
+    int aoWeight;
+    int diffuseConeGridSize;
+    int diffuseConeSteps;
+    int specularConeSteps;
+    bool debugOutput;
+};
+
+/****************************************************************************/
+
 #include <vector>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/glm.hpp>
@@ -19,8 +44,7 @@ public:
     ~Renderer();
 
     void setGeometry(std::vector<const core::Instance*> geometry);
-    void render(bool renderBBoxes = false, bool render_octree = false, int octree_level = -1,
-            bool solid = false);
+    void render(const Options &);
 
     void resize(int width, int height);
 
@@ -87,6 +111,9 @@ private:
     core::GPUTimer*                     m_tree_timer;
     core::GPUTimer*                     m_voxelize_timer;
 
+    // options
+    Options                             m_options;
+
     // debug voxeltree
     core::Program                       m_voxel_bbox_prog;
 
@@ -96,3 +123,4 @@ private:
 
 #endif // RENDERER_H
 
+/****************************************************************************/

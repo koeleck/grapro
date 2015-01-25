@@ -17,12 +17,27 @@ GraPro::GraPro(GLFWwindow* window)
   : framework::MainWindow(window),
     m_cam(core::res::cameras->getDefaultCam()),
     m_showgui{true},
-    m_render_bboxes{false},
-    m_render_octree{false},
-    m_renderer{getWidth(), getHeight(), m_timers},
-    m_octree_debug_level{static_cast<int>(vars.voxel_octree_levels) - 1},
-    m_octree_debug_solid{true}
+    m_renderer{getWidth(), getHeight(), m_timers}
 {
+
+    m_options.treeLevels = static_cast<int>(vars.voxel_octree_levels);
+    m_options.debugLevel = static_cast<int>(vars.voxel_octree_levels);
+    m_options.renderBBoxes = false;
+    m_options.renderVoxelBoxes = false;
+    m_options.renderVoxelColors = false;
+    m_options.renderAO = false;
+    m_options.renderIndirectDiffuse = false;
+    m_options.renderIndirectSpecular = false;
+    m_options.renderConeTracing = false;
+    m_options.aoConeGridSize = 10;
+    m_options.aoConeSteps = 2;
+    m_options.aoWeight = 1;
+    m_options.diffuseConeGridSize = 10;
+    m_options.diffuseConeSteps = 2;
+    m_options.specularConeSteps = 4;
+    m_options.debugOutput = false;
+    m_options.debugGBuffer = false;
+
     const auto* instances = core::res::instances;
     m_renderer.setGeometry(instances->getInstances());
 
@@ -60,8 +75,7 @@ void GraPro::render_scene()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     m_render_timer->start();
-    m_renderer.render(m_render_bboxes, m_render_octree, m_octree_debug_level,
-            m_octree_debug_solid);
+    m_renderer.render(m_options);
     m_render_timer->stop();
 }
 
@@ -84,25 +98,26 @@ void GraPro::update_gui(const double delta_t)
             LOG_INFO("shadows toggled");
         }
 
+        if (ImGui::Button("show gbuffer")) {
+            m_options.debugGBuffer = !m_options.debugGBuffer;
+            LOG_INFO("displaying gbuffer");
+        }
+
         ImGui::Spacing();
 
-        ImGui::Checkbox("bounding boxes", &m_render_bboxes);
-        ImGui::Checkbox("debug octree", &m_render_octree);
-        if (m_render_octree) {
-            ImGui::Checkbox("solid", &m_octree_debug_solid);
-        }
+        ImGui::Checkbox("bounding boxes", &m_options.renderBBoxes);
+        ImGui::Checkbox("show voxel boxes", &m_options.renderVoxelBoxes);
+        ImGui::Checkbox("show voxel colors", &m_options.renderVoxelColors);
 
         static const int max_levels = static_cast<int>(vars.voxel_octree_levels);
-        int next_levels = static_cast<int>(vars.voxel_octree_levels);
-        ImGui::SliderInt("Tree levels", &next_levels,
-                1, max_levels);
-        if (vars.voxel_octree_levels != static_cast<unsigned int>(next_levels)) {
-            vars.voxel_octree_levels = static_cast<unsigned int>(next_levels);
-            m_octree_debug_level = std::min(m_octree_debug_level, next_levels - 1);
+        ImGui::SliderInt("Tree levels", &m_options.treeLevels, 1, max_levels);
+        if (vars.voxel_octree_levels != static_cast<unsigned int>(m_options.treeLevels)) {
+            vars.voxel_octree_levels = static_cast<unsigned int>(m_options.treeLevels);
+            m_options.debugLevel = std::min(m_options.debugLevel, m_options.treeLevels - 1);
             m_renderer.markTreeInvalid();
         }
-        if (m_render_octree)
-            ImGui::SliderInt("Debug tree level", &m_octree_debug_level, 0, next_levels - 1);
+        if (m_options.renderVoxelBoxes)
+            ImGui::SliderInt("Debug tree level", &m_options.debugLevel, 0, m_options.treeLevels - 1);
 
         // Timers: Just create your timer via m_timers and they will
         // appear here

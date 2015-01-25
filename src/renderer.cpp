@@ -657,14 +657,13 @@ void Renderer::populateGBuffer()
 
 /****************************************************************************/
 
-void Renderer::render(const bool renderBBoxes, const bool renderOctree, int octree_level,
-        const bool solid)
+void Renderer::render(const Options & options)
 {
     if (m_geometry.empty())
         return;
+    assert(options.treeLevels > 0);
 
-    if (octree_level < 0)
-        octree_level = static_cast<int>(vars.voxel_octree_levels);
+    m_options = options;
 
     core::res::materials->bind();
     core::res::instances->bind();
@@ -692,11 +691,13 @@ void Renderer::render(const bool renderBBoxes, const bool renderOctree, int octr
         m_rebuildTree = false;
     }
 
-    if (renderOctree) {
-        debugRenderTree(solid, octree_level);
+    if (options.renderVoxelBoxes) {
+        debugRenderTree(false, options.debugLevel);
+    } else if (options.renderVoxelColors) {
+        debugRenderTree(true, options.debugLevel);
     }
 
-    if (!renderOctree || !solid) {
+    if (!options.renderVoxelBoxes && !options.renderVoxelColors) {
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
         glDepthFunc(GL_LEQUAL);
@@ -704,19 +705,22 @@ void Renderer::render(const bool renderBBoxes, const bool renderOctree, int octr
         renderGeometry(m_vertexpulling_prog, false, core::res::cameras->getDefaultCam());
     }
 
-    if (renderBBoxes)
+    if (options.renderBBoxes)
         renderBoundingBoxes();
     
-    /*m_gbuffer.bindTextures();
-    m_gbuffer.bindReadFramebuffer();
-    glReadBuffer(GL_COLOR_ATTACHMENT0);
-    glBlitFramebuffer(0, 0, vars.screen_width, vars.screen_height,
-        0, 0, vars.screen_width/2, vars.screen_height/2,
-        GL_COLOR_BUFFER_BIT, GL_LINEAR);
-    glReadBuffer(GL_COLOR_ATTACHMENT1);
-    glBlitFramebuffer(0, 0, vars.screen_width, vars.screen_height,
-        0, vars.screen_height/2, vars.screen_width/2, vars.screen_height,
-        GL_COLOR_BUFFER_BIT, GL_LINEAR);*/
+    if(options.debugGBuffer)
+    {
+        m_gbuffer.bindTextures();
+        m_gbuffer.bindReadFramebuffer();
+        glReadBuffer(GL_COLOR_ATTACHMENT0);
+        glBlitFramebuffer(0, 0, vars.screen_width, vars.screen_height,
+            0, 0, vars.screen_width/2, vars.screen_height/2,
+            GL_COLOR_BUFFER_BIT, GL_LINEAR);
+        glReadBuffer(GL_COLOR_ATTACHMENT1);
+        glBlitFramebuffer(0, 0, vars.screen_width, vars.screen_height,
+            0, vars.screen_height/2, vars.screen_width/2, vars.screen_height,
+            GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    }
 }
 
 /****************************************************************************/
