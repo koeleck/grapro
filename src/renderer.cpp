@@ -435,6 +435,8 @@ void Renderer::createVoxelList()
     int num_voxels = static_cast<int>(std::pow(2.0, vars.voxel_octree_levels - 1));
 
     glBindFramebuffer(GL_FRAMEBUFFER, m_voxelizationFBO);
+    glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, num_voxels);
+    glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, num_voxels);
     glViewport(0, 0, num_voxels, num_voxels);
 
 
