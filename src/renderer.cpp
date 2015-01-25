@@ -679,7 +679,7 @@ void Renderer::render(const Options & options)
         debugRenderTree(true, options.debugLevel);
     }
 
-    if (!options.renderVoxelBoxes && !options.renderVoxelColors) {
+    if (!options.renderVoxelColors) {
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
         glDepthFunc(GL_LEQUAL);
