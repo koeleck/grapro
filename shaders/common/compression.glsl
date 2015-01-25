@@ -37,4 +37,44 @@ uvec3 unpackUInt3x10(in uint value)
     return uvec3((value >> 20u) & 0x000003FF, (value >> 10u) & 0x000003FF, value & 0x000003FF);
 }
 
+vec3 RGB2YCoCg(in vec3 color)
+{
+    /* GPU Pro 4 "Pracical Framebuffer Compression"
+        [Y ]   [1/4   1/2   1/4] [R]
+        [Co] = [1/2    0   -1/2] [G]
+        [Cg]   [-1/4  1/2  -1/4] [B]
+    */
+    return vec3(dot(vec3(0.25, 0.5,  0.25), color),
+                dot(vec3(0.5,   0 , -0.5), color),
+                dot(vec3(-0.25, 0.5, -0.25), color));
+}
+
+vec3 YCoCg2RGB(in vec3 color)
+{
+    /* GPU Pro 4 "Pracical Framebuffer Compression"
+       R = Y + Co - Cg
+       G = Y + Cg
+       B = Y - Co - Cg
+    */
+    return vec3(color.x + color.y - color.z,
+                color.x +           color.z,
+                color.x - color.y - color.z);
+}
+
+vec2 compressNormal(in vec3 normal)
+{
+    // http://en.wikipedia.org/wiki/Stereographic_projection
+    float tmp = 1.0 - normal.z;
+    return vec2(normal.x / tmp, normal.y / tmp);
+}
+
+vec3 decompressNormal(in vec2 normal)
+{
+    float tmp = 1.0 + normal.x*normal.x + normal.y*normal.y;
+    return vec3(2.0 * normal.x / tmp,
+                2.0 * normal.y / tmp,
+                1.0 - 2.0 / tmp);
+}
+
+
 #endif // SHADERS_COMMON_COMPRESSION_GLSL

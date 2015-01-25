@@ -435,6 +435,8 @@ void Renderer::createVoxelList()
     int num_voxels = static_cast<int>(std::pow(2.0, vars.voxel_octree_levels - 1));
 
     glBindFramebuffer(GL_FRAMEBUFFER, m_voxelizationFBO);
+    glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH, num_voxels);
+    glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, num_voxels);
     glViewport(0, 0, num_voxels, num_voxels);
 
 
@@ -628,6 +630,11 @@ void Renderer::buildVoxelTree()
         glUseProgram(inject_prog);
         glUniform1ui(0, count);
         glUniform1ui(1, start);
+        if (m_shadowsEnabled) {
+            glUniform1ui(2, 1);
+        } else {
+            glUniform1ui(2, 0);
+        }
         glBindImageTexture(0, m_brick_texture, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA16F);
         const GLuint inject_workgroups = (count + INJECT_PROG_LOCAL_SIZE - 1) / INJECT_PROG_LOCAL_SIZE;
         glDispatchCompute(inject_workgroups, 1, 1);

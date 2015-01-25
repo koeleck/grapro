@@ -96,6 +96,7 @@ void GraPro::update_gui(const double delta_t)
 
         if (ImGui::Button("toggle shadows")) {
             m_renderer.toggleShadows();
+            m_renderer.markTreeInvalid();
             LOG_INFO("shadows toggled");
         }
 
@@ -112,7 +113,7 @@ void GraPro::update_gui(const double delta_t)
         ImGui::Checkbox("show voxel colors", &m_options.renderVoxelColors);
 
         bool debugAtMax = (m_options.debugLevel == m_options.treeLevels - 1);
-        ImGui::SliderInt("Tree levels", &m_options.treeLevels, 1, 8);
+        ImGui::SliderInt("Tree levels", &m_options.treeLevels, 1, 9);
         if (vars.voxel_octree_levels != static_cast<unsigned int>(m_options.treeLevels)) {
             vars.voxel_octree_levels = static_cast<unsigned int>(m_options.treeLevels);
             if (debugAtMax) {
