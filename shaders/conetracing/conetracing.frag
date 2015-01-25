@@ -162,10 +162,10 @@ vec3 calculateDiffuseColor(const vec3 normal, const vec3 pos)
 
                 // get indirect color
                 const vec3 wpos = pos + totalDist * cone.dir;
-                const vec3 normal = getNormal(level, wpos).xyz;
-                if (dot(normal, cone.dir) > 0.f) {
+                // const vec3 normal = getNormal(level, wpos).xyz;
+                // if (dot(normal, cone.dir) > 0.f) {
                     //continue;
-                }
+                // }
                 vec4 color = getColor(level, wpos);
                 if (color.w > 0) {
                     // color found -> stop walking!
@@ -325,7 +325,7 @@ vec3 calculateIndirectDiffuseAO(const vec3 normal, const vec3 pos)
             bool col_done = false;
 
             // trace the cone for each sample
-            for (uint step = 1; step <= u_diffuseConeSteps; ++step) {
+            for (uint step = 1; step <= u_diffuseConeSteps && !ao_done && !col_done; ++step) {
 
                 const float totalDist = step * voxelSize;
                 const float diameter = 2 * coneRadiusAtDistance(cone, totalDist);
@@ -369,6 +369,10 @@ vec3 calculateIndirectDiffuseAO(const vec3 normal, const vec3 pos)
 
     }
 
+    if (totalColor.w > 0) {
+        totalColor /= totalColor.w;
+    }
+
     float ao = 1.f - clamp(occlusion / float(u_diffuseConeGridSize * u_diffuseConeGridSize), 0.f, 1.f);
     return totalColor.xyz * ao;
 }
@@ -384,14 +388,14 @@ void main()
     const vec3 pos = texture(u_pos, uv).xyz;
     const vec3 color = texture(u_color, uv).xyz;
 
-    //vec3 diffuse = calculateDiffuseColor(normal, pos);
-    //vec3 specular = calculateSpecularColor(normal, pos);
-    //float occlusion = calculateAmbientOcclusion(normal, pos);
-    vec3 diffuseAO = calculateIndirectDiffuseAO(normal, pos);
+    // vec3 diffuse = calculateDiffuseColor(normal, pos);
+    // vec3 specular = calculateSpecularColor(normal, pos);
+    // float occlusion = calculateAmbientOcclusion(normal, pos);
+    vec3 diffuse = calculateIndirectDiffuseAO(normal, pos);
 
     //out_color = vec4(mix(mix(color, diffuse, 0.2), specular, 0.01), 1);
-    vec3 diffuseMix = mix(color, diffuseAO, 0.4);
-    out_color = vec4(max(diffuseMix, diffuseAO), 1);
+    vec3 diffuseMix = mix(color, diffuse, 0.4);
+    out_color = vec4(max(diffuseMix, diffuse), 1);
 }
 
 /******************************************************************************/
