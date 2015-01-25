@@ -14,7 +14,7 @@
     <light id="scl_Spot-light" name="Spot">
       <technique_common>
         <directional>
-          <color sid="color">0.3 0.3 0.2561538</color>
+          <color sid="color">0.7137 0.4941 0.3569</color>
         </directional>
       </technique_common>
       <extra>
