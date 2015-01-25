@@ -36,6 +36,7 @@ void main()
     if (u_isLeaf == 1) {
         const vec3 col = convertColor(voxel[threadID].color);
         const vec3 normal = unpackUnorm4x8(voxel[threadID].normal).xyz;
+        const vec3 emissive = convertColor(voxel[threadID].emissive);
         atomicAdd(octreeColor[childIdx].color.r, col.r);
         atomicAdd(octreeColor[childIdx].color.g, col.g);
         atomicAdd(octreeColor[childIdx].color.b, col.b);
@@ -44,6 +45,10 @@ void main()
         atomicAdd(octreeColor[childIdx].normal.y, normal.y);
         atomicAdd(octreeColor[childIdx].normal.z, normal.z);
         atomicAdd(octreeColor[childIdx].normal.w, 1.f);
+        atomicAdd(octreeColor[childIdx].emissive.r, emissive.r);
+        atomicAdd(octreeColor[childIdx].emissive.g, emissive.g);
+        atomicAdd(octreeColor[childIdx].emissive.b, emissive.b);
+        atomicAdd(octreeColor[childIdx].emissive.a, 1.f);
     }
 
 }

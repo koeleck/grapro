@@ -58,6 +58,33 @@ vec4 getColor(uint maxlevel, vec3 wpos)
 
 /******************************************************************************/
 
+vec4 getEmissive(uint maxlevel, vec3 wpos)
+{
+    const ivec3 pos = ivec3((wpos - u_bboxMin) / voxelSize);
+    uint childIdx = 0;
+    uint nodePtr = octree[childIdx].id;
+    int voxelDim = int(u_voxelDim);
+    ivec3 umin = ivec3(0);
+
+    for (uint i = 0; i < maxlevel - 1; ++i) {
+
+        if ((nodePtr & 0x80000000) == 0) {
+            // no flag set -> no child nodes
+            return vec4(0);
+        }
+
+        iterateTreeLevel(pos, nodePtr, voxelDim, childIdx, umin);
+
+    }
+
+    vec4 emissive = octreeColor[childIdx].emissive;
+    if (emissive.w == 0.f) return vec4(0);
+    emissive /= emissive.w;
+    return emissive;
+}
+
+/******************************************************************************/
+
 bool isOccluded(uint maxlevel, vec3 wpos)
 {
 
@@ -167,11 +194,23 @@ vec3 calculateDiffuseColor(const vec3 normal, const vec3 pos)
                     //continue;
                 // }
                 vec4 color = getColor(level, wpos);
+                vec4 emissive = getEmissive(level, wpos);
+                bool foundSomething = false;
                 if (color.w > 0) {
                     // color found -> stop walking!
                     color.xyz *= d*d;
                     color /= (step * step * voxelSize * voxelSize);
                     totalColor += color;
+                    foundSomething = true;
+                }
+                if (emissive.w > 0) {
+                    // emissive found -> stop walking!
+                    emissive.xyz *= d*d;
+                    emissive /= (step * step * voxelSize * voxelSize);
+                    totalColor += emissive;
+                    foundSomething = true;
+                }
+                if (foundSomething) {
                     break;
                 }
 
@@ -377,7 +416,6 @@ vec3 calculateIndirectDiffuseAO(const vec3 normal, const vec3 pos)
     return totalColor.xyz * ao;
 }
 
-/******************************************************************************/
 /******************************************************************************/
 
 void main()

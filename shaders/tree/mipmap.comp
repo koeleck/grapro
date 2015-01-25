@@ -20,12 +20,14 @@ void main()
     uint child = octree[parent].id & 0x7FFFFFFF;
     vec4 colorSum = vec4(0.0);
     vec4 normalSum = vec4(0.0);
+    vec4 emissiveSum = vec4(0.0);
 
     // check each child
     for (uint i = 0; i < 8; ++i) {
 
         vec4 col = octreeColor[child + i].color;
         vec4 normal = octreeColor[child + i].normal;
+        vec4 emissive = octreeColor[child + i].emissive;
         if (col.a > 1.0) {
             // normalize
             col /= col.a;
@@ -34,6 +36,10 @@ void main()
             // normalize
             normal /= normal.w;
         }
+        if (emissive.w > 1.0) {
+            // normalize
+            emissive /= emissive.w;
+        }
         if (col.a > 0.0) {
             // has color
             colorSum += col;
@@ -41,6 +47,10 @@ void main()
         if (normal.w > 0.0) {
             // has normal
             normalSum += normal;
+        }
+        if (emissive.w > 0.0) {
+            // has emissive
+            emissiveSum += emissive;
         }
 
     }
@@ -58,6 +68,11 @@ void main()
         atomicAdd(octreeColor[parent].normal.y, normalSum.y);
         atomicAdd(octreeColor[parent].normal.z, normalSum.z);
         atomicAdd(octreeColor[parent].normal.w, normalSum.w);
+        emissiveSum /= emissiveSum.w;
+        atomicAdd(octreeColor[parent].emissive.x, emissiveSum.x);
+        atomicAdd(octreeColor[parent].emissive.y, emissiveSum.y);
+        atomicAdd(octreeColor[parent].emissive.z, emissiveSum.z);
+        atomicAdd(octreeColor[parent].emissive.w, emissiveSum.w);
 
     }
 

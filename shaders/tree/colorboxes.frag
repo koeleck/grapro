@@ -30,5 +30,6 @@ void main()
     }
 
     const vec4 col = octreeColor[childIdx].color;
-    out_Color = vec4(col.xyz / col.w, 1.0);
+    const vec4 emissive = octreeColor[childIdx].emissive;
+    out_Color = vec4(col.xyz / col.w, 1.0) + vec4(emissive.xyz / emissive.w, 1.0);
 }

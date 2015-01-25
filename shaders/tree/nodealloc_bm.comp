@@ -35,6 +35,7 @@ void main()
             octree[off + i].id = 0u;
             octreeColor[off + i].color = vec4(0);
             octreeColor[off + i].normal = vec4(0);
+            octreeColor[off + i].emissive = vec4(0);
         }
 	}
 }

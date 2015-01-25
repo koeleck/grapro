@@ -52,6 +52,33 @@ vec4 getColor(uint maxlevel, vec3 wpos)
 
 /******************************************************************************/
 
+vec4 getEmissive(uint maxlevel, vec3 wpos)
+{
+    const ivec3 pos = ivec3((wpos - u_bboxMin) / voxelSize);
+    uint childIdx = 0;
+    uint nodePtr = octree[childIdx].id;
+    int voxelDim = int(u_voxelDim);
+    ivec3 umin = ivec3(0);
+
+    for (uint i = 0; i < maxlevel - 1; ++i) {
+
+        if ((nodePtr & 0x80000000) == 0) {
+            // no flag set -> no child nodes
+            return vec4(0);
+        }
+
+        iterateTreeLevel(pos, nodePtr, voxelDim, childIdx, umin);
+
+    }
+
+    vec4 emissive = octreeColor[childIdx].emissive;
+    if (emissive.w == 0.f) return vec4(0);
+    emissive /= emissive.w;
+    return emissive;
+}
+
+/******************************************************************************/
+
 vec4 getNormal(uint maxlevel, vec3 wpos)
 {
     const ivec3 pos = ivec3((wpos - u_bboxMin) / voxelSize);
@@ -117,11 +144,22 @@ void main()
         if (dot(normal, cone.dir) > 0.f) {
             continue;
         }
+        bool foundSomething = false;
         const vec4 color = getColor(level, wpos);
+        vec4 emissive = getEmissive(level, wpos);
         if (color.w > 0) {
             // color found -> stop walking!;
             totalColor = color / color.w;
             totalColor /= (step);
+            foundSomething = true;
+        }
+        if (emissive.w > 0) {
+            // emissive found -> stop walking!
+            emissive /= emissive.w;
+            totalColor += emissive;
+            foundSomething = true;
+        }
+        if (foundSomething) {
             break;
         }
 
@@ -129,11 +167,6 @@ void main()
 
     out_color = totalColor;
 
-    //const vec3 voxelNormal = getNormal(int(u_treeLevels), pos).xyz;
-    //out_color = vec4(dot(voxelNormal, cone.dir));
-
-    //out_color = getNormal(int(u_treeLevels), pos);
-    //out_color = vec4(normal, 0);
 }
 
 /******************************************************************************/

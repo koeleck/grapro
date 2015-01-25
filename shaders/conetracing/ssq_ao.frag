@@ -50,7 +50,8 @@ bool isOccluded(uint maxlevel, vec3 wpos)
     }
 
     vec4 col = octreeColor[childIdx].color;
-    if (col.w == 0.f) return false;
+    vec4 emissive = octreeColor[childIdx].emissive;
+    if (col.w == 0.f && emissive.w == 0.f) return false;
     return true;
 
 }
@@ -147,8 +148,6 @@ void main()
     // AO
     const float occlusion = clamp(occ / float(u_coneGridSize * u_coneGridSize), 0.f, 1.f);
     out_color = vec4(1.f - occlusion);
-
-    out_color = getNormal(u_treeLevels, pos);
 
 }
 
