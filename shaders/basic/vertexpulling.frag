@@ -95,5 +95,6 @@ void main()
     out_SpecGlossEmissive.x = spec;
     out_SpecGlossEmissive.y = glossiness;
     out_SpecGlossEmissive.zw = (isBlack) ? em_YCoCg.rg : em_YCoCg.rb;
+
 }
 
