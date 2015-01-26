@@ -699,7 +699,7 @@ void Renderer::render(const Options & options)
     core::res::meshes->bind();
     core::res::lights->bind();
 
-    populateGBuffer();
+    //populateGBuffer();
 
     if (m_rebuildTree) {
         // only render shadowmaps once
