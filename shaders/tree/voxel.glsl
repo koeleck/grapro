@@ -55,7 +55,8 @@ layout(std430, binding = OCTREE_INFO_BINDING) restrict buffer OctreeInfoBlock
     NodeInfo octreeInfo[];
 };
 
-#if defined(NUM_BRICKS_X) && defined(NUM_BRICKS_Y)
+#if defined(NUM_BRICKS_X) && defined(NUM_BRICKS_Y) && defined(NUM_BRICKS_Z)
+
 ivec3 getBrickCoord(in uint idx)
 {
     const int iidx = int(idx);
@@ -69,8 +70,16 @@ ivec3 getBrickCoord(in uint idx)
     return coord;
 }
 
+vec3 getBrickTexCoord(in uint idx, vec3 posInVoxel)
+{
+    vec3 off = posInVoxel * 2.0 - 0.5;
+    return (vec3(getBrickCoord(idx)) + off) / (3.0 * vec3(NUM_BRICKS_X, NUM_BRICKS_Y, NUM_BRICKS_Z));
+}
+
 layout(binding = 0, rgba16f) uniform restrict image3D octreeBrickTex;
 
-#endif // BRICK_TEX_SIZE
+layout(binding = 3) uniform sampler3D uOctree3DTex;
+
+#endif // NUM_BRICKS_*
 
 #endif // SHADERS_TREE_VOXEL_GLSL

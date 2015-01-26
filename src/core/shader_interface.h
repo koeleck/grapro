@@ -54,6 +54,7 @@ constexpr int OMNI_LIGHT_TEX_UNIT = 8;
 constexpr int GBUFFER_DEPTH_TEX                     = 0;
 constexpr int GBUFFER_DIFFUSE_NORMAL_TEX            = 1;
 constexpr int GBUFFER_SPECULAR_GLOSSY_EMISSIVE_TEX  = 2;
+constexpr int BRICK_TEX                             = 3;
 
 // Image units
 constexpr int BRICK_IMAGE_UNIT  = 0;

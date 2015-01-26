@@ -56,6 +56,9 @@ void main()
                 } else {
                     val += imageLoad(octreeBrickTex, otherBrick + c1);
                 }
+            } else {
+                val.a *= 0.5;
+                imageStore(octreeBrickTex, thisBrick + c0, val);
             }
             imageStore(octreeBrickTex, otherBrick + c1, val);
         }

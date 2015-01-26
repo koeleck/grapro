@@ -214,7 +214,8 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
 
     // shaders:
     const std::string bricks_def = "NUM_BRICKS_X " + std::to_string(brick_num_x) + ", "
-            "NUM_BRICKS_Y " + std::to_string(brick_num_y);
+            "NUM_BRICKS_Y " + std::to_string(brick_num_y) + ", "
+            "NUM_BRICKS_Z " + std::to_string(brick_num_z);
     // voxel creation
     core::res::shaders->registerShader("voxelGeom", "tree/voxelize.geom", GL_GEOMETRY_SHADER);
     core::res::shaders->registerShader("voxelFrag", "tree/voxelize.frag", GL_FRAGMENT_SHADER);
@@ -789,19 +790,23 @@ void Renderer::render(const Options & options)
             glEnable(GL_BLEND);
             glBlendFunc(GL_ONE, GL_ONE);
 
+            glActiveTexture(GL_TEXTURE0 + core::bindings::BRICK_TEX);
+            glBindTexture(GL_TEXTURE_3D, m_brick_texture);
             glUseProgram(m_conetracing_prog);
 
             const auto voxelDim = static_cast<unsigned int>(std::pow(2, vars.voxel_octree_levels - 1));
             glUniform1ui(1, voxelDim);
             glUniform3f(2, m_scene_bbox.pmin.x, m_scene_bbox.pmin.y, m_scene_bbox.pmin.z);
             glUniform3f(3, m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z);
-            glUniform1ui(4, vars.screen_width);
-            glUniform1ui(5, vars.screen_height);
+            glUniform1ui(4, static_cast<unsigned int>(vars.screen_width));
+            glUniform1ui(5, static_cast<unsigned int>(vars.screen_height));
             glUniform1ui(6, vars.voxel_octree_levels);
-            glUniform1ui(7, m_options.diffuseConeGridSize);
-            glUniform1ui(8, m_options.diffuseConeSteps);
+            glUniform1ui(7, static_cast<unsigned int>(m_options.diffuseConeGridSize));
+            glUniform1ui(8, static_cast<unsigned int>(m_options.diffuseConeSteps));
 
             glDrawArrays(GL_TRIANGLES, 0, 3);
+
+            glDisable(GL_BLEND);
         }
     }
 

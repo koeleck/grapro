@@ -135,7 +135,9 @@ vec4 getColor(uint maxLevel, vec3 wpos)
     if ((octree[currentNode].id & 0x80000000u) == 0)
         return vec4(0.0);
 
-    return imageLoad(octreeBrickTex, getBrickCoord(currentNode));
+    vec3 coord = getBrickTexCoord(currentNode, vpos - floor(vpos));
+    return texture(uOctree3DTex, coord);
+    //return imageLoad(octreeBrickTex, getBrickCoord(currentNode));
 }
 
 /******************************************************************************/
@@ -184,7 +186,7 @@ vec3 calculateDiffuseColorAO(const vec3 normal, const vec3 pos)
                 vec4 color = getColor(level, wpos);
 
                 // maybe we are occluded
-                if(color.w == 0.0)
+                if(color.w == 1.0)
                 {
                     occlusion += 1.f * d;
                     break;
@@ -226,27 +228,31 @@ vec3 traceCone(in vec3 origin, in vec3 direction, in float angle, in int steps)
 
     vec3 result = vec3(0.0);
     float alpha = 1.0;
-    float diameter = voxelSize;
-    float dist = 0.0;
+    float dist = 1.2 * voxelSize;
     for (int i = 0; i < steps; ++i) {
-        dist += diameter;
-        diameter = 2.0 * (tan_a * dist);
-        vec3 pos = origin + dist * direction;
+        const vec3 pos = origin + dist * direction;
+        const float diameter = 2.0 * (tan_a * dist);
 
         // calculate mipmap level
-        uint level = min(uint(log2(diameter / voxelSize)), u_treeLevels - 1);
+        //const uint level = clamp(uint(log2(diameter / float(voxelSize))) - 1, 0, u_treeLevels - 1);
+        //const vec4 color = getColor(level, pos);
 
-        // get indirect color
-        vec4 color = getColor(level, pos);
+        // quadrilinear
+        float level = clamp(log2(diameter / voxelSize) - 1.0, 0.0, float(u_treeLevels - 1));
+        vec4 color0 = getColor(uint(floor(level)), pos);
+        vec4 color1 = getColor(uint(ceil(level)), pos);
+        float fac = level - floor(level);
+        vec4 color = fac * color0 + (1.0 - fac) * color1;
 
 
         result += alpha * color.a * color.rgb;
 
-        if(color.a == 0.0) {
+        if(color.a == 1.0) {
             break;
         }
 
         alpha *= (1.0 - color.a);
+        dist += diameter;
     }
 
     return result;
@@ -311,10 +317,12 @@ void main()
     vec3 refl = reflect(incident, normal);
 
 
-    float angle = degreesToRadians(20.0) * glossy;
+    float angle = degreesToRadians(max(60.0, 180.0 * (1.0 - glossy)));
     vec3 spec = specular * traceCone(wpos.xyz, refl, angle, int(u_numSteps));
+    outFragColor = vec4(spec, 1.0);
 
-    outFragColor = vec4(spec + 2.5 * calculateDiffuseColorAO(normal, wpos.xyz), 1.0);
+    //outFragColor = vec4(2.5 * calculateDiffuseColorAO(normal, wpos.xyz), 1.0);
+    //outFragColor = vec4(spec + 2.5 * calculateDiffuseColorAO(normal, wpos.xyz), 1.0);
 }
 
 /******************************************************************************/
