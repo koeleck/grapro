@@ -275,7 +275,7 @@ void main()
     readIn(diffuse, normal, specular, glossy, emissive);    
     vec4 wpos = resconstructWorldPos(vsTexCoord);
     
-    outFragColor = vec4(calculateDiffuseColorAO(normal, wpos.xyz), 1);
+    outFragColor = vec4(calculateDiffuseColorAO(normal, wpos.xyz), 1) * 3;
 }
 
 /******************************************************************************/
