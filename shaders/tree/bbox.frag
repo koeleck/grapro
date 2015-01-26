@@ -11,10 +11,10 @@ layout(location = 1) uniform uint uColored;
 void main()
 {
     if (uColored != 0) {
-    	vec4 res = imageLoad(octreeBrickTex, vsBrickCoord);
-    	out_FragColor = vec4(res.rgb, 1.0);
+        vec4 res = imageLoad(octreeBrickTex, vsBrickCoord);
+        out_FragColor = res;
     } else {
-    	out_FragColor = vec4(1.0);
+        out_FragColor = vec4(1.0);
     }
 }
 

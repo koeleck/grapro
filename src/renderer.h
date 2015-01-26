@@ -16,6 +16,7 @@ struct Options
     bool renderIndirectSpecular;
     bool renderConeTracing;
     bool debugGBuffer;
+    bool renderDirectLighting;
     int aoConeGridSize;
     int aoConeSteps;
     int aoWeight;
@@ -65,7 +66,7 @@ private:
     void renderBoundingBoxes();
     void renderShadowmaps();
     void populateGBuffer();
-    void distributeToNeighbors(const std::pair<int, int>& level);
+    void distributeToNeighbors(const std::pair<int, int>& level, bool average);
 
 
     void createVoxelList();
@@ -98,6 +99,9 @@ private:
     core::Program                       m_inject_lighting_prog;
     core::Program                       m_dist_to_neighbors_prog;
     core::Program                       m_mipmap_prog;
+    core::Program                       m_mipmap2_prog;
+    core::Program                       m_mipmap3_prog;
+    core::Program                       m_mipmap4_prog;
     gl::Buffer                          m_atomicCounterBuffer;
     gl::Buffer                          m_voxelBuffer;
     gl::Buffer                          m_octreeNodeBuffer;

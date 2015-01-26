@@ -29,7 +29,7 @@ GraPro::GraPro(GLFWwindow* window)
     m_options.renderAO = false;
     m_options.renderIndirectDiffuse = false;
     m_options.renderIndirectSpecular = false;
-    m_options.renderConeTracing = false;
+    m_options.renderConeTracing = true;
     m_options.aoConeGridSize = 10;
     m_options.aoConeSteps = 2;
     m_options.aoWeight = 1;
@@ -38,6 +38,7 @@ GraPro::GraPro(GLFWwindow* window)
     m_options.specularConeSteps = 4;
     m_options.debugOutput = false;
     m_options.debugGBuffer = false;
+    m_options.renderDirectLighting = true;
 
     const auto* instances = core::res::instances;
     m_renderer.setGeometry(instances->getInstances());
@@ -52,7 +53,7 @@ GraPro::GraPro(GLFWwindow* window)
     const auto maxExtend = bbox.maxExtend();
     const auto maxDist = bbox.pmax[maxExtend] - bbox.pmin[maxExtend];
     for (auto& light : core::res::lights->getLights()) {
-        light->setMaxDistance(2500.f);
+        light->setMaxDistance(maxDist);
         if (light->getType() != core::LightType::DIRECTIONAL ||
             light->isShadowcasting() == false)
         {
@@ -126,6 +127,7 @@ void GraPro::update_gui(const double delta_t)
         if (m_options.renderVoxelBoxes || m_options.renderVoxelColors || m_options.renderVoxelBoxesColored)
             ImGui::SliderInt("Debug tree level", &m_options.debugLevel, 0, m_options.treeLevels - 1);
 
+        ImGui::Checkbox("direct lighting", &m_options.renderDirectLighting);
         ImGui::Checkbox("toggle conetracing", &m_options.renderConeTracing);
         if(m_options.renderConeTracing)
         {

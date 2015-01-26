@@ -27,5 +27,9 @@ void main()
                     bbox[(gl_VertexID>>2) & 0x01].z,
                     1.0);
 
+    vsBrickCoord += ivec3(-1 + 2 * ((gl_VertexID>>0) & 0x01),
+                          -1 + 2 * ((gl_VertexID>>1) & 0x01),
+                          -1 + 2 * ((gl_VertexID>>2) & 0x01));
+
     gl_Position = cam.ProjViewMatrix * pos;
 }

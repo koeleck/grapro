@@ -41,34 +41,34 @@ struct ONB
 
 /******************************************************************************/
 
-float degreesToRadians(float deg)
+float degreesToRadians(in float deg)
 {
-    return deg * M_PI / 180.f;
+    return deg * M_PI / 180.0;
 }
 
 /******************************************************************************/
 
-float radiansToDegrees(float rad)
+float radiansToDegrees(in float rad)
 {
-    return rad * 180.f / M_PI;
+    return rad * 180.0 / M_PI;
 }
 
 /******************************************************************************/
 
-float coneRadiusAtDistance(Cone cone, float distance)
+float coneRadiusAtDistance(in Cone cone, in float distance)
 {
-    const float angle  = cone.angle * 0.5f;
+    const float angle  = cone.angle * 0.5;
     return distance * tan(degreesToRadians(angle));
 }
 
 /******************************************************************************/
 
-vec3 uniformHemisphereSampling(float ux, float uy)
+vec3 uniformHemisphereSampling(in float ux, in float uy)
 {
-    clamp(ux, 0.f, 1.f);
-    clamp(uy, 0.f, 1.f);
-    const float r = sqrt(1.f - ux * ux);
-    const float phi = 2 * M_PI * uy;
+    clamp(ux, 0.0, 1.0);
+    clamp(uy, 0.0, 1.0);
+    const float r = sqrt(1.0 - ux * ux);
+    const float phi = 2.0 * M_PI * uy;
     return vec3(cos(phi) * r, sin(phi) * r, ux);
 }
 
@@ -81,9 +81,9 @@ ONB toONB(vec3 normal)
     if(abs(normal.x) > abs(normal.z)) {
         onb.S.x = -normal.y;
         onb.S.y = normal.x;
-        onb.S.z = 0;
+        onb.S.z = 0.0;
     } else {
-        onb.S.x = 0;
+        onb.S.x = 0.0;
         onb.S.y = -normal.z;
         onb.S.z = normal.y;
     }
@@ -135,101 +135,23 @@ vec4 getColor(uint maxLevel, vec3 wpos)
     if ((octree[currentNode].id & 0x80000000u) == 0)
         return vec4(0.0);
 
-    vec3 coord = getBrickTexCoord(currentNode, vpos - floor(vpos));
-    return texture(uOctree3DTex, coord);
-    //return imageLoad(octreeBrickTex, getBrickCoord(currentNode));
+    //vec3 coord = getBrickTexCoord(currentNode, vpos - floor(vpos));
+    //return texture(uOctree3DTex, coord);
+    return imageLoad(octreeBrickTex, getBrickCoord(currentNode));
 }
 
 /******************************************************************************/
 
-vec3 calculateDiffuseColorAO(const vec3 normal, const vec3 pos)
-{
-    vec4 totalColor = vec4(0);
-    const float step = (1.f / float(u_coneGridSize));
-    float occlusion = 0.0f;
-
-    for (uint y = 0; y < u_coneGridSize; ++y) {
-
-        const float uy = (0.5f + float(y)) * step;
-
-        for (uint x = 0; x < u_coneGridSize; ++x) {
-
-            const float ux = (0.5f + float(x)) * step;
-
-            // create the cone
-            ONB onb = toONB(normal);
-            vec3 v = uniformHemisphereSampling(ux, uy); //  do random here if you want
-            Cone cone;
-            cone.dir   = normalize(toWorld(onb, v));
-            cone.angle = 180.f / float(u_coneGridSize);
-
-            // calculate weight
-            float d = abs(dot(normalize(normal), cone.dir));
-
-            // trace the cone for each sample
-            for (uint step = 1; step <= u_numSteps; ++step) {
-
-                const float totalDist = step * voxelSize;
-                const float diameter = 2 * coneRadiusAtDistance(cone, totalDist);
-                if (diameter <= 0.f) continue; // some error (angle < 0 || angle > 90)
-
-                // calculate mipmap level
-                int level = int(u_treeLevels);
-                float voxel_size = voxelSize;
-                while (voxel_size < diameter && level > 0) {
-                    voxel_size *= 2;
-                    --level;
-                }
-
-                // get indirect color
-                const vec3 wpos = pos + totalDist * cone.dir;
-                vec4 color = getColor(level, wpos);
-
-                // maybe we are occluded
-                if(color.w == 1.0)
-                {
-                    occlusion += 1.f * d;
-                    break;
-                }
-                else
-                {
-                    // amplify the color
-                    color.xyz *= d*d;
-                    color /= (step * step * voxelSize * voxelSize);
-                    totalColor += color;
-                }
-
-                // if the color is "filled up", break
-                if (totalColor.w >= 1.0) {
-                    break;
-                }
-
-            }
-
-        }
-
-    }
-
-    if (totalColor.w > 0) {
-        totalColor /= totalColor.w;
-    }
-
-    // ambient occlusion - correct? incorrect? -1? no -1?
-    occlusion = 1.f - clamp(occlusion / float(u_coneGridSize * u_coneGridSize), 0.f, 1.f);
-
-    return totalColor.xyz * occlusion;
-}
-
-/******************************************************************************/
-
-vec3 traceCone(in vec3 origin, in vec3 direction, in float angle, in int steps)
+vec3 traceCone(in vec3 origin, in vec3 direction, in float angle, in uint steps)
 {
     const float tan_a = tan(angle / 2.0);
 
+    float stepSize = (u_bboxMax.x - u_bboxMin.x) / float(steps);
+
     vec3 result = vec3(0.0);
     float alpha = 1.0;
-    float dist = 1.2 * voxelSize;
-    for (int i = 0; i < steps; ++i) {
+    float dist = stepSize;
+    for (uint i = 0; i < steps; ++i) {
         const vec3 pos = origin + dist * direction;
         const float diameter = 2.0 * (tan_a * dist);
 
@@ -238,24 +160,53 @@ vec3 traceCone(in vec3 origin, in vec3 direction, in float angle, in int steps)
         //const vec4 color = getColor(level, pos);
 
         // quadrilinear
-        float level = clamp(log2(diameter / voxelSize) - 1.0, 0.0, float(u_treeLevels - 1));
+        float level = clamp(log2(diameter / voxelSize), 0.0, float(u_treeLevels - 1));
         vec4 color0 = getColor(uint(floor(level)), pos);
-        vec4 color1 = getColor(uint(ceil(level)), pos);
+        vec4 color1 = getColor(uint(floor(level + 1.1)), pos);
         float fac = level - floor(level);
         vec4 color = fac * color0 + (1.0 - fac) * color1;
 
 
         result += alpha * color.a * color.rgb;
 
-        if(color.a == 1.0) {
+        if(color.a >= 0.99) {
             break;
         }
 
         alpha *= (1.0 - color.a);
-        dist += diameter;
+        dist += stepSize;
     }
 
     return result;
+}
+
+/******************************************************************************/
+
+
+vec3 calculateDiffuseColor(const vec3 normal, const vec3 pos)
+{
+    vec3 totalColor = vec3(0.0);
+    const float step = (1.0 / float(u_coneGridSize));
+
+    ONB onb = toONB(normal);
+    const float angle = degreesToRadians(179.0 / float(u_coneGridSize));
+
+    for (uint y = 0; y < u_coneGridSize; ++y) {
+        const float uy = (0.5 + float(y)) * step;
+        for (uint x = 0; x < u_coneGridSize; ++x) {
+            const float ux = (0.5 + float(x)) * step;
+
+            // create the cone
+            vec3 v = uniformHemisphereSampling(ux, uy); //  do random here if you want
+            vec3 dir = normalize(toWorld(onb, v));
+
+            float d = abs(dot(normal, dir));
+
+            totalColor += d * traceCone(pos, dir, angle, u_numSteps);
+        }
+
+    }
+    return 0.8 * totalColor / float(u_coneGridSize * u_coneGridSize);
 }
 
 /******************************************************************************/
@@ -264,6 +215,10 @@ void readIn(out vec3 diffuse, out vec3 normal, out float spec,
         out float gloss, out vec3 emissive)
 {
     ivec2 crd = ivec2(gl_FragCoord.xy);
+
+    if (texelFetch(uDepthTex, crd, 0).r == 1.0)
+        discard;
+
     bool isBlack = ((crd.x & 1) == (crd.y & 1));
 
     // read in data
@@ -317,11 +272,11 @@ void main()
     vec3 refl = reflect(incident, normal);
 
 
-    float angle = degreesToRadians(max(60.0, 180.0 * (1.0 - glossy)));
-    vec3 spec = specular * traceCone(wpos.xyz, refl, angle, int(u_numSteps));
+    float angle = degreesToRadians(10.0);
+    vec3 spec = specular * traceCone(wpos.xyz, refl, angle, u_numSteps);
     outFragColor = vec4(spec, 1.0);
 
-    //outFragColor = vec4(2.5 * calculateDiffuseColorAO(normal, wpos.xyz), 1.0);
+    //outFragColor = vec4(calculateDiffuseColor(normal, wpos.xyz), 1.0);
     //outFragColor = vec4(spec + 2.5 * calculateDiffuseColorAO(normal, wpos.xyz), 1.0);
 }
 

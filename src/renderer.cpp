@@ -228,7 +228,8 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
     m_octreeNodeFlag_prog = core::res::shaders->registerProgram("octreeNodeFlag_prog", {"octreeNodeFlagComp"});
 
     core::res::shaders->registerShader("octreeNodeAllocComp", "tree/nodealloc.comp", GL_COMPUTE_SHADER,
-            "LOCAL_SIZE " + std::to_string(ALLOC_PROG_LOCAL_SIZE));
+            "LOCAL_SIZE " + std::to_string(ALLOC_PROG_LOCAL_SIZE) + ", " +
+            bricks_def);
     m_octreeNodeAlloc_prog = core::res::shaders->registerProgram("octreeNodeAlloc_prog", {"octreeNodeAllocComp"});
 
     core::res::shaders->registerShader("octreeLeafStoreComp", "tree/leafstore.comp", GL_COMPUTE_SHADER);
@@ -249,8 +250,23 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
     core::res::shaders->registerShader("mipmap_comp", "tree/mipmap.comp", GL_COMPUTE_SHADER,
             "LOCAL_SIZE " + std::to_string(MIPMAP_PROG_LOCAL_SIZE) + ", " +
             bricks_def);
+    core::res::shaders->registerShader("mipmap2_comp", "tree/mipmap2.comp", GL_COMPUTE_SHADER,
+            "LOCAL_SIZE " + std::to_string(MIPMAP_PROG_LOCAL_SIZE) + ", " +
+            bricks_def);
+    core::res::shaders->registerShader("mipmap3_comp", "tree/mipmap3.comp", GL_COMPUTE_SHADER,
+            "LOCAL_SIZE " + std::to_string(MIPMAP_PROG_LOCAL_SIZE) + ", " +
+            bricks_def);
+    core::res::shaders->registerShader("mipmap4_comp", "tree/mipmap4.comp", GL_COMPUTE_SHADER,
+            "LOCAL_SIZE " + std::to_string(MIPMAP_PROG_LOCAL_SIZE) + ", " +
+            bricks_def);
     m_mipmap_prog = core::res::shaders->registerProgram("mipmap_prog",
             {"mipmap_comp"});
+    m_mipmap2_prog = core::res::shaders->registerProgram("mipmap2_prog",
+            {"mipmap2_comp"});
+    m_mipmap3_prog = core::res::shaders->registerProgram("mipmap3_prog",
+            {"mipmap3_comp"});
+    m_mipmap4_prog = core::res::shaders->registerProgram("mipmap4_prog",
+            {"mipmap4_comp"});
 
     core::res::shaders->registerShader("conetracing_frag", "conetracing/conetracing.frag",
             GL_FRAGMENT_SHADER, bricks_def);
@@ -655,19 +671,38 @@ void Renderer::buildVoxelTree()
     // mipmap
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
     glBindImageTexture(0, m_brick_texture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA16F);
-    for (int i = static_cast<int>(vars.voxel_octree_levels) - 2; i >= 0; i--) {
-        distributeToNeighbors(m_tree_levels[static_cast<size_t>(i + 1)]);
+    distributeToNeighbors(m_tree_levels.back(), false);
 
-        glUseProgram(m_mipmap_prog);
+    for (int i = static_cast<int>(vars.voxel_octree_levels) - 2; i >= 0; i--) {
         const unsigned int start = static_cast<unsigned int>(m_tree_levels[static_cast<size_t>(i)].first);
         const unsigned int count = static_cast<unsigned int>(m_tree_levels[static_cast<size_t>(i)].second);
+        const GLuint workgroups = (count + MIPMAP_PROG_LOCAL_SIZE - 1) / MIPMAP_PROG_LOCAL_SIZE;
+
+        glUseProgram(m_mipmap_prog);
         glUniform1ui(0, count);
         glUniform1ui(1, start);
-        LOG_INFO("level: ", i, ", start: ", start, ", count: ", count);
-
-        const GLuint workgroups = (count + MIPMAP_PROG_LOCAL_SIZE - 1) / MIPMAP_PROG_LOCAL_SIZE;
         glDispatchCompute(workgroups, 1, 1);
-        //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+        glUseProgram(m_mipmap2_prog);
+        glUniform1ui(0, count);
+        glUniform1ui(1, start);
+        glDispatchCompute(workgroups, 1, 1);
+        glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+        glUseProgram(m_mipmap3_prog);
+        glUniform1ui(0, count);
+        glUniform1ui(1, start);
+        glDispatchCompute(workgroups, 1, 1);
+        glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+        distributeToNeighbors(m_tree_levels[static_cast<size_t>(i + 1)], false);
+        glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+        glUseProgram(m_mipmap4_prog);
+        glUniform1ui(0, count);
+        glUniform1ui(1, start);
+        glDispatchCompute(workgroups, 1, 1);
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
     }
 
@@ -717,42 +752,15 @@ void Renderer::render(const Options & options)
         m_rebuildTree = false;
     }
 
-    if (options.renderVoxelBoxes) {
-        debugRenderTree(false, options.debugLevel, false);
 
+    if (options.renderVoxelColors) {
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
-        glDepthFunc(GL_LEQUAL);
-
-        renderGeometry(m_vertexpulling_prog, false, core::res::cameras->getDefaultCam());
-    } else if (options.renderVoxelBoxesColored) {
-        debugRenderTree(false, options.debugLevel, true);
-
-        glEnable(GL_DEPTH_TEST);
-        glEnable(GL_CULL_FACE);
-        glDepthFunc(GL_LEQUAL);
-
-        renderGeometry(m_vertexpulling_prog, false, core::res::cameras->getDefaultCam());
-    } else if (options.renderVoxelColors) {
-        glEnable(GL_DEPTH_TEST);
-        glEnable(GL_CULL_FACE);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glDepthFunc(GL_LEQUAL);
         debugRenderTree(true, options.debugLevel, true);
-    //} else if (options.renderConeTracing) {
-    //     glEnable(GL_DEPTH_TEST);
-    //     glEnable(GL_CULL_FACE);
-    //     glDepthFunc(GL_LEQUAL);
-
-    //     m_gbuffer.bindFramebuffer(true);
-    //     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    //     renderGeometry(m_vertexpulling_prog, false, core::res::cameras->getDefaultCam());
-
-    //     m_gbuffer.unbindFramebuffer();
-
-    //     glDisable(GL_DEPTH_TEST);
-    //     m_gbuffer.bindTextures();
-        
+        glDisable(GL_BLEND);
     } else {
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
@@ -778,17 +786,20 @@ void Renderer::render(const Options & options)
 
         glDisable(GL_DEPTH_TEST);
         m_gbuffer.bindTextures();
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE);
+
         // direct lighting
-        glUseProgram(m_direct_lighting_prog);
-        auto loc = glGetUniformLocation(m_direct_lighting_prog, "u_shadowsEnabled");
-        if(loc >= 0)
-            glUniform1ui(loc, m_shadowsEnabled);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        if (options.renderDirectLighting) {
+            glUseProgram(m_direct_lighting_prog);
+            glUniform1i(0, m_shadowsEnabled);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+        }
+
 
         // indirect lighting
         if (options.renderConeTracing) {
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_ONE, GL_ONE);
 
             glActiveTexture(GL_TEXTURE0 + core::bindings::BRICK_TEX);
             glBindTexture(GL_TEXTURE_3D, m_brick_texture);
@@ -806,8 +817,17 @@ void Renderer::render(const Options & options)
 
             glDrawArrays(GL_TRIANGLES, 0, 3);
 
-            glDisable(GL_BLEND);
         }
+
+        glDisable(GL_BLEND);
+
+        glEnable(GL_DEPTH_TEST);
+        if (options.renderVoxelBoxesColored) {
+            debugRenderTree(false, options.debugLevel, true);
+        } else if (options.renderVoxelBoxes) {
+            debugRenderTree(false, options.debugLevel, false);
+        }
+
     }
 
     if (options.renderBBoxes)
@@ -954,18 +974,18 @@ void Renderer::initBBoxStuff()
                          6, 7, // 24 indices
 
                         // solid bounding box
-                         0, 1, 3,
-                         0, 3, 2,
-                         5, 4, 6,
-                         5, 6, 7,
-                         4, 0, 2,
-                         4, 2, 6,
-                         1, 5, 7,
-                         1, 7, 3,
-                         6, 2, 3,
-                         6, 3, 7,
-                         0, 4, 5,
-                         0, 5, 1 // 36 indices
+                         3, 1, 0,
+                         2, 3, 0,
+                         6, 4, 5,
+                         7, 6, 5,
+                         2, 0, 4,
+                         6, 2, 4,
+                         7, 5, 1,
+                         3, 7, 1,
+                         3, 2, 6,
+                         7, 3, 6,
+                         5, 4, 0,
+                         1, 5, 0 // 36 indices
     };
 
     glBindVertexArray(m_bbox_vao);
@@ -1053,7 +1073,7 @@ const core::AABB& Renderer::getSceneBBox() const
 
 /****************************************************************************/
 
-void Renderer::distributeToNeighbors(const std::pair<int, int>& level)
+void Renderer::distributeToNeighbors(const std::pair<int, int>& level, const bool average)
 {
     // m_brick_texture needs to be bound to image unit 0 GL_READ_WRITE
     const unsigned int start = static_cast<unsigned int>(level.first);
@@ -1065,6 +1085,7 @@ void Renderer::distributeToNeighbors(const std::pair<int, int>& level)
 
     glUniform1ui(0, count);
     glUniform1ui(1, start);
+    glUniform1i(5, static_cast<int>(average));
 
     // x+
     glUniform1i(2, 1);

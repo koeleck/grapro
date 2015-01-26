@@ -81,6 +81,7 @@ newmtl 16___Default
 	Ke 0.0000 0.0000 0.0000
 	map_Ka textures/gi_flag.tga
 	map_Kd textures/gi_flag.tga
+	map_Ks textures/sponza_fabric_spec.tga
 
 newmtl bricks
 	Ns 10.0000
@@ -297,6 +298,7 @@ newmtl fabric_g
 	Ke 0.0000 0.0000 0.0000
 	map_Ka textures/sponza_curtain_blue_diff.tga
 	map_Kd textures/sponza_curtain_blue_diff.tga
+	map_Ks textures/sponza_fabric_spec.tga
 
 newmtl fabric_c
 	Ns 10.0000
@@ -311,6 +313,7 @@ newmtl fabric_c
 	Ke 0.0000 0.0000 0.0000
 	map_Ka textures/sponza_curtain_diff.tga
 	map_Kd textures/sponza_curtain_diff.tga
+	map_Ks textures/sponza_fabric_spec.tga
 
 newmtl fabric_f
 	Ns 10.0000
@@ -325,6 +328,7 @@ newmtl fabric_f
 	Ke 0.0000 0.0000 0.0000
 	map_Ka textures/sponza_curtain_green_diff.tga
 	map_Kd textures/sponza_curtain_green_diff.tga
+	map_Ks textures/sponza_fabric_spec.tga
 
 newmtl chain
 	Ns 10.0000

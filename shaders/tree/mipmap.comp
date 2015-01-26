@@ -72,11 +72,12 @@ void main()
     result.rgb += imageLoad(octreeBrickTex, brick[0] + ivec3(1)).rgb / 4.0; // 8.0;
 
     ivec3 thisBrick = getBrickCoord(idx);
-    for (int z = -1; z < 2; ++z) {
-        for (int y = -1; y < 2; ++y) {
-            for (int x = -1; x < 2; ++x) {
-                imageStore(octreeBrickTex, thisBrick + ivec3(x, y, z), result);
-            }
-        }
-    }
+    imageStore(octreeBrickTex, thisBrick, result);
+    //for (int z = -1; z < 2; ++z) {
+    //    for (int y = -1; y < 2; ++y) {
+    //        for (int x = -1; x < 2; ++x) {
+    //            imageStore(octreeBrickTex, thisBrick + ivec3(x, y, z), result);
+    //        }
+    //    }
+    //}
 }
