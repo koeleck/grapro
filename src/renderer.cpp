@@ -108,7 +108,6 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
     m_direct_lighting_prog = core::res::shaders->registerProgram("direct_lighting_prog",
             {"ssq_vert", "direct_lighting_frag"});
 
-
     m_voxelize_timer = m_timers.addGPUTimer("Voxelize");
     m_tree_timer = m_timers.addGPUTimer("Octree");
 
@@ -251,6 +250,11 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
             bricks_def);
     m_mipmap_prog = core::res::shaders->registerProgram("mipmap_prog",
             {"mipmap_comp"});
+
+    core::res::shaders->registerShader("conetracing_frag", "conetracing/conetracing.frag",
+            GL_FRAGMENT_SHADER, bricks_def);
+    m_conetracing_prog = core::res::shaders->registerProgram("conetracing_prog",
+            {"ssq_vert", "conetracing_frag"});
 
     // debug render
     core::res::shaders->registerShader("ssq_frag", "basic/ssq.frag", GL_FRAGMENT_SHADER);
@@ -733,6 +737,21 @@ void Renderer::render(const Options & options)
         glEnable(GL_CULL_FACE);
         glDepthFunc(GL_LEQUAL);
         debugRenderTree(true, options.debugLevel, true);
+    //} else if (options.renderConeTracing) {
+    //     glEnable(GL_DEPTH_TEST);
+    //     glEnable(GL_CULL_FACE);
+    //     glDepthFunc(GL_LEQUAL);
+
+    //     m_gbuffer.bindFramebuffer(true);
+    //     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    //     renderGeometry(m_vertexpulling_prog, false, core::res::cameras->getDefaultCam());
+
+    //     m_gbuffer.unbindFramebuffer();
+
+    //     glDisable(GL_DEPTH_TEST);
+    //     m_gbuffer.bindTextures();
+        
     } else {
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
@@ -764,6 +783,26 @@ void Renderer::render(const Options & options)
         if(loc >= 0)
             glUniform1ui(loc, m_shadowsEnabled);
         glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        // indirect lighting
+        if (options.renderConeTracing) {
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ONE, GL_ONE);
+
+            glUseProgram(m_conetracing_prog);
+
+            const auto voxelDim = static_cast<unsigned int>(std::pow(2, vars.voxel_octree_levels - 1));
+            glUniform1ui(1, voxelDim);
+            glUniform3f(2, m_scene_bbox.pmin.x, m_scene_bbox.pmin.y, m_scene_bbox.pmin.z);
+            glUniform3f(3, m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z);
+            glUniform1ui(4, vars.screen_width);
+            glUniform1ui(5, vars.screen_height);
+            glUniform1ui(6, vars.voxel_octree_levels);
+            glUniform1ui(7, m_options.diffuseConeGridSize);
+            glUniform1ui(8, m_options.diffuseConeSteps);
+
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+        }
     }
 
     if (options.renderBBoxes)
@@ -1069,4 +1108,3 @@ void Renderer::distributeToNeighbors(const std::pair<int, int>& level)
 }
 
 /****************************************************************************/
-

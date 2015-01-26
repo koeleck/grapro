@@ -33,8 +33,8 @@ GraPro::GraPro(GLFWwindow* window)
     m_options.aoConeGridSize = 10;
     m_options.aoConeSteps = 2;
     m_options.aoWeight = 1;
-    m_options.diffuseConeGridSize = 10;
-    m_options.diffuseConeSteps = 2;
+    m_options.diffuseConeGridSize = 5;
+    m_options.diffuseConeSteps = 4;
     m_options.specularConeSteps = 4;
     m_options.debugOutput = false;
     m_options.debugGBuffer = false;
@@ -125,6 +125,13 @@ void GraPro::update_gui(const double delta_t)
         }
         if (m_options.renderVoxelBoxes || m_options.renderVoxelColors || m_options.renderVoxelBoxesColored)
             ImGui::SliderInt("Debug tree level", &m_options.debugLevel, 0, m_options.treeLevels - 1);
+
+        ImGui::Checkbox("toggle conetracing", &m_options.renderConeTracing);
+        if(m_options.renderConeTracing)
+        {
+            ImGui::SliderInt("diffuse cone grid size", &m_options.diffuseConeGridSize, 1, 10);
+            ImGui::SliderInt("diffuse cone steps", &m_options.diffuseConeSteps, 1, 20);
+        }
 
         // Timers: Just create your timer via m_timers and they will
         // appear here

@@ -118,6 +118,9 @@ private:
     // deferred
     core::Program                       m_direct_lighting_prog;
 
+    // cone tracing
+    core::Program                       m_conetracing_prog;
+
     // debug voxeltree
     core::Program                       m_voxel_bbox_prog;
 
