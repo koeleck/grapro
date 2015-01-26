@@ -268,6 +268,7 @@ void Camera::update() const
     data.ViewMatrix = glm::mat4(m_viewmat);
     data.ProjMatrix = glm::mat4(m_projmat);
     data.ProjViewMatrix = glm::mat4(m_projviewmat);
+    data.InvProjViewMatrix = glm::mat4(glm::inverse(m_projviewmat));
     data.CameraPosition = glm::vec4(m_position, 1.f);
 
     std::memcpy(m_data, &data, sizeof(shader::CameraStruct));

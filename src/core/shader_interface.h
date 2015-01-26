@@ -70,10 +70,11 @@ struct CameraStruct
     glm::mat4                       ViewMatrix;
     glm::mat4                       ProjMatrix;
     glm::mat4                       ProjViewMatrix;
+    glm::mat4                       InvProjViewMatrix;
     glm::vec4                       CameraPosition;
     glm::vec4                       padding[3];
 };
-static_assert(sizeof(CameraStruct) == 256 &&
+static_assert(sizeof(CameraStruct) == 320 &&
         sizeof(CameraStruct) % CameraStruct::alignment() == 0, "");
 
 

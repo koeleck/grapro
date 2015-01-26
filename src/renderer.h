@@ -115,6 +115,9 @@ private:
     // options
     Options                             m_options;
 
+    // deferred
+    core::Program                       m_direct_lighting_prog;
+
     // debug voxeltree
     core::Program                       m_voxel_bbox_prog;
 

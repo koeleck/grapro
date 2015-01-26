@@ -102,6 +102,12 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
     m_cube_shadow_prog = core::res::shaders->registerProgram("shadow_cube_prog",
             {"shadow_vert", "shadow_cube_geom", "depth_only_frag"});
 
+    core::res::shaders->registerShader("ssq_vert", "basic/ssq.vert", GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("direct_lighting_frag", "basic/direct_lighting.frag",
+            GL_FRAGMENT_SHADER);
+    m_direct_lighting_prog = core::res::shaders->registerProgram("direct_lighting_prog",
+            {"ssq_vert", "direct_lighting_frag"});
+
 
     m_voxelize_timer = m_timers.addGPUTimer("Voxelize");
     m_tree_timer = m_timers.addGPUTimer("Octree");
@@ -247,7 +253,6 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
             {"mipmap_comp"});
 
     // debug render
-    core::res::shaders->registerShader("ssq_vert", "basic/ssq.vert", GL_VERTEX_SHADER);
     core::res::shaders->registerShader("ssq_frag", "basic/ssq.frag", GL_FRAGMENT_SHADER);
     m_debug_tex_prog = core::res::shaders->registerProgram("ssq_prog", {"ssq_vert", "ssq_frag"});
 
@@ -723,7 +728,32 @@ void Renderer::render(const Options & options)
         glEnable(GL_CULL_FACE);
         glDepthFunc(GL_LEQUAL);
 
+        m_gbuffer.bindFramebuffer(true);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
         renderGeometry(m_vertexpulling_prog, false, core::res::cameras->getDefaultCam());
+
+        m_gbuffer.unbindFramebuffer();
+
+        // debug
+        /*
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glDisable(GL_DEPTH_TEST);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, m_gbuffer.getDepthTex());
+        glUseProgram(m_debug_tex_prog);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        return;
+        */
+
+        glDisable(GL_DEPTH_TEST);
+        m_gbuffer.bindTextures();
+        // direct lighting
+        glUseProgram(m_direct_lighting_prog);
+        auto loc = glGetUniformLocation(m_direct_lighting_prog, "u_shadowsEnabled");
+        if(loc >= 0)
+            glUniform1ui(loc, m_shadowsEnabled);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
     }
 
     if (options.renderBBoxes)

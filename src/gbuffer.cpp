@@ -19,27 +19,41 @@ GBuffer::GBuffer(const int width, const int height)
     glBindTexture(GL_TEXTURE_2D, m_depth_tex);
     glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT32F,
             m_width, m_height);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
             GL_TEXTURE_2D, m_depth_tex, 0);
 
     glBindTexture(GL_TEXTURE_2D, m_diffuse_normal);
     glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F,
             m_width, m_height);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
             GL_TEXTURE_2D, m_diffuse_normal, 0);
 
     glBindTexture(GL_TEXTURE_2D, m_specular_gloss_emissive);
     glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F,
             m_width, m_height);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,
             GL_TEXTURE_2D, m_specular_gloss_emissive, 0);
+
+    GLenum drawBuffers[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+    glDrawBuffers(2, drawBuffers);
 
     if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         LOG_ERROR("Framebuffer not complete");
     }
 
-    GLenum drawBuffers[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-    glDrawBuffers(2, drawBuffers);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(prev_fbo));
     glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(prev_tex));
@@ -106,3 +120,25 @@ void GBuffer::bindTextures() const
 }
 
 /****************************************************************************/
+
+GLuint GBuffer::getDiffuseNormalTex() const
+{
+    return m_diffuse_normal;
+}
+
+/****************************************************************************/
+
+GLuint GBuffer::getSpecGlossEmissiveTex() const
+{
+    return m_specular_gloss_emissive;
+}
+
+/****************************************************************************/
+
+GLuint GBuffer::getDepthTex() const
+{
+    return m_depth_tex;
+}
+
+/****************************************************************************/
+
