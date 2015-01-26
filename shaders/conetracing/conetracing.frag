@@ -102,43 +102,40 @@ vec3 toWorld(ONB onb, vec3 v)
 
 /******************************************************************************/
 
-void iterateTreeLevel(const ivec3 pos, inout uint nodePtr, inout int voxelDim,
-    inout uint childIdx, inout ivec3 umin)
+vec4 getColor(uint maxLevel, vec3 wpos)
 {
-    // go to next dimension
-    voxelDim /= 2;
+    vec3 vpos = float(u_voxelDim) * (wpos - u_bboxMin) / (u_bboxMax - u_bboxMin);
+    uvec3 pos = min(uvec3(vpos), uvec3(u_voxelDim - 1));
 
-    // mask out flag bit to get child idx
-    childIdx = int(nodePtr & 0x7FFFFFFF);
+    uint voxel_dim = u_voxelDim;;
+    uvec3 umin = uvec3(0u);
 
-    // create subnodes
-    const ivec3 subnode = clamp(1 + pos - umin - voxelDim, 0, 1);
-    umin += voxelDim * subnode;
+    uint currentNode = 0;
 
-    // calculate new child node
-    childIdx += subnode.x + 2 * subnode.y + 4 * subnode.z;
-    nodePtr = octree[childIdx].id;
-}
+    // iterate through all tree levels
+    for (uint i = 0u; i <= maxLevel; ++i) {
+        uint nodeptr = octree[currentNode].id;
+        if ((nodeptr & 0x80000000u) == 0)
+            break;
 
-/******************************************************************************/
+        voxel_dim /= 2u;
 
-vec4 getColor(uint maxlevel, vec3 wpos)
-{
-    const ivec3 pos = ivec3((wpos - u_bboxMin) / voxelSize);
-    uint childIdx = 0;
-    uint nodePtr = octree[childIdx].id;
-    int voxelDim = int(u_voxelDim);
-    ivec3 umin = ivec3(0);
+        // find subnode
+        uvec3 subnode = clamp((pos - umin) / voxel_dim, uvec3(0u), uvec3(1u));
 
-    for (uint i = 0; i < maxlevel - 1; ++i) {
-        if ((nodePtr & 0x80000000) == 0) {
-           // no flag set -> no child nodes
-            return vec4(0);
-        }
-        iterateTreeLevel(pos, nodePtr, voxelDim, childIdx, umin);
+        // get child pointer by ignoring the node's ptr MSB
+        uint childidx = uint(nodeptr & 0x7FFFFFFFu);
+        // determine index of subnode
+        childidx += subnode.z * 4u + subnode.y * 2u + subnode.x;
+
+        umin += voxel_dim * subnode;
+
+        currentNode = childidx;
     }
+    if ((octree[currentNode].id & 0x80000000u) == 0)
+        return vec4(0.0);
 
-    return imageLoad(octreeBrickTex, getBrickCoord(childIdx));
+    return imageLoad(octreeBrickTex, getBrickCoord(currentNode));
 }
 
 /******************************************************************************/
@@ -223,6 +220,40 @@ vec3 calculateDiffuseColorAO(const vec3 normal, const vec3 pos)
 
 /******************************************************************************/
 
+vec3 traceCone(in vec3 origin, in vec3 direction, in float angle, in int steps)
+{
+    const float tan_a = tan(angle / 2.0);
+
+    vec3 result = vec3(0.0);
+    float alpha = 1.0;
+    float diameter = voxelSize;
+    float dist = 0.0;
+    for (int i = 0; i < steps; ++i) {
+        dist += diameter;
+        diameter = 2.0 * (tan_a * dist);
+        vec3 pos = origin + dist * direction;
+
+        // calculate mipmap level
+        uint level = min(uint(log2(diameter / voxelSize)), u_treeLevels - 1);
+
+        // get indirect color
+        vec4 color = getColor(level, pos);
+
+
+        result += alpha * color.a * color.rgb;
+
+        if(color.a == 0.0) {
+            break;
+        }
+
+        alpha *= (1.0 - color.a);
+    }
+
+    return result;
+}
+
+/******************************************************************************/
+
 void readIn(out vec3 diffuse, out vec3 normal, out float spec,
         out float gloss, out vec3 emissive)
 {
@@ -272,10 +303,18 @@ void main()
     float specular;
     float glossy;
 
-    readIn(diffuse, normal, specular, glossy, emissive);    
+    readIn(diffuse, normal, specular, glossy, emissive);
     vec4 wpos = resconstructWorldPos(vsTexCoord);
-    
-    outFragColor = vec4(calculateDiffuseColorAO(normal, wpos.xyz), 1);
+
+    // specular
+    vec3 incident = normalize(wpos.xyz - cam.Position.xyz);
+    vec3 refl = reflect(incident, normal);
+
+
+    float angle = degreesToRadians(20.0) * glossy;
+    vec3 spec = specular * traceCone(wpos.xyz, refl, angle, int(u_numSteps));
+
+    outFragColor = vec4(spec + calculateDiffuseColorAO(normal, wpos.xyz), 1.0);
 }
 
 /******************************************************************************/
