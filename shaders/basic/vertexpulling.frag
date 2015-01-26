@@ -82,7 +82,7 @@ void main()
         normal = inData.normal;
     }
 
-    const float AMBIENT_FAC = 0.05;
+    const float AMBIENT_FAC = 0.02;
     vec3 diff_YCoCg = RGB2YCoCg(diffuse_color);
     vec3 em_YCoCg = RGB2YCoCg(AMBIENT_FAC * ambient_color + emissive_color);
     float spec = RGB2YCoCg(specular_color).x;

@@ -20,4 +20,10 @@ show: $(PDF)
 	evince $(PDF)
 
 clean:
-	rm $(BASE).{aux,dvi,log,nav,out,pdf,snm,toc}
+	rm -rf $(BASE).aux 
+	rm -rf $(BASE).log 
+	rm -rf $(BASE).nav 
+	rm -rf $(BASE).out
+	rm -rf $(BASE).toc
+	rm -rf $(BASE).snm 
+	rm -rf *.log	

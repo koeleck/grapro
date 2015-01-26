@@ -314,7 +314,7 @@ void main()
     float angle = degreesToRadians(20.0) * glossy;
     vec3 spec = specular * traceCone(wpos.xyz, refl, angle, int(u_numSteps));
 
-    outFragColor = vec4(spec + calculateDiffuseColorAO(normal, wpos.xyz), 1.0);
+    outFragColor = vec4(spec + 2.5 * calculateDiffuseColorAO(normal, wpos.xyz), 1.0);
 }
 
 /******************************************************************************/
