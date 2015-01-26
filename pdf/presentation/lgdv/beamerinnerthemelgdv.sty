@@ -1,0 +1,44 @@
+% Copyright 2007 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/licenses/LICENSE for more details.
+
+\ProvidesPackageRCS $Header: /cvsroot/latex-beamer/latex-beamer/themes/inner/beamerinnerthemerounded.sty,v 1.5 2007/01/28 20:48:30 tantau Exp $
+
+
+\DeclareOptionBeamer{shadow}[false]{\def\beamer@themerounded@shadow{#1}}
+\ExecuteOptionsBeamer{shadow=false}
+\ProcessOptionsBeamer
+
+\mode<presentation>
+
+\setbeamertemplate{blocks}[rounded][shadow=\beamer@themerounded@shadow]
+\setbeamertemplate{items}[circle]
+\setbeamertemplate{sections/subsections in toc}[default]
+\setbeamertemplate{title page}[default][colsep=-4bp,rounded=true,shadow=\beamer@themerounded@shadow]
+\setbeamertemplate{part page}[default][colsep=-4bp,rounded=true,shadow=\beamer@themerounded@shadow]
+
+
+% printing logos extreme ;)
+% \usepackage[absolute,overlay]{textpos}
+% \usepackage{calc}
+% \setlength{\TPHorizModule}{1cm}
+% \setlength{\TPVertModule}{1cm}
+% \newcommand\printlogos{
+% 	\begin{textblock}{2}(0.2,.5)
+% 		\includegraphics[scale=.16]{logo_esf.png}
+% 	\end{textblock}
+% 	\begin{textblock}{2}(11.3,.5)
+% 		\includegraphics[scale=.16]{logo_esf.png}
+% 	\end{textblock}
+% }
+% 
+% \let \beamerframetitlecmd \frametitle
+% \renewcommand{\frametitle}[1]{\beamerframetitlecmd{\hskip1.5cm #1} \printlogos }
+  
+\mode<all>
+
