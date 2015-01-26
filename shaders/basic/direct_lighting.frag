@@ -156,7 +156,7 @@ void main()
 
         result += attenuation * lights[i].intensity * (diffuse * n_dot_l + vec3(specular) * spec);
     }
-    //result += emissive;
+    result += emissive;
 
     outFragColor = vec4(result, 1.0);
 }
