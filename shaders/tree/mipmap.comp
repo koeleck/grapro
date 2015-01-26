@@ -17,18 +17,6 @@ void main()
     if ((octree[idx].id & 0x80000000u) == 0)
         return;
 
-    /*
-    ivec3 thisBrick = getBrickCoord(idx);
-    for (int z = -1; z < 2; ++z) {
-        for (int y = -1; y < 2; ++y) {
-            for (int x = -1; x < 2; ++x) {
-                imageStore(octreeBrickTex, thisBrick + ivec3(x, y, z), vec4(1.0));
-            }
-        }
-    }
-    return;
-    */
-
     const uint childidx = (octree[idx].id & 0x7fffffffu);
 
     ivec3 brick[8];
@@ -53,7 +41,8 @@ void main()
             result += imageLoad(octreeBrickTex, brick[i]);
         }
     }
-    result.rgb /= (count * 8.0);
+    //result.rgb /= (count * 8.0);
+    result.rgb /= 32.0; // 64.0
     result.a /= 8.0;
 
 

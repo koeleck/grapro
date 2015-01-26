@@ -18,6 +18,8 @@ void main()
         return;
 
     const uint idx = uStartNode + threadId;
+    if ((octree[idx].id & 0x80000000u) == 0)
+        return;
 
     uint neighbors[6] = uint[6](
             octreeInfo[idx].x_negative,
@@ -31,14 +33,11 @@ void main()
     if (neighbor == 0)
         return;
 
-    bool isEmpty = (octree[idx].id & 0x80000000u) == 0;
-    if (isEmpty && (octree[neighbor].id & 0x80000000u) == 0)
-        return;
+    bool neighborEmpty = (octree[neighbor].id & 0x80000000u) == 0;
 
     ivec3 thisBrick = getBrickCoord(idx);
     ivec3 otherBrick = getBrickCoord(neighbor);
 
-    bool readZero = isEmpty && (uSide > 0);
     for (int i = -1; i < 2; ++i) {
         for (int j = -1; j < 2; ++j) {
             ivec3 c0;
@@ -49,12 +48,14 @@ void main()
             ivec3 c1 = c0;
             c1[uSwizzle.z] = -uSide;
 
-            vec4 val = readZero ? vec4(0.0) : imageLoad(octreeBrickTex, thisBrick + c0);
-            if (uSide < 0) {
-                val *= 0.5;
-                imageStore(octreeBrickTex, thisBrick + c0, val);
-            } else {
-                val += imageLoad(octreeBrickTex, otherBrick + c1);
+            vec4 val = imageLoad(octreeBrickTex, thisBrick + c0);
+            if (!neighborEmpty) {
+                if (uSide < 0) {
+                    val *= 0.5;
+                    imageStore(octreeBrickTex, thisBrick + c0, val);
+                } else {
+                    val += imageLoad(octreeBrickTex, otherBrick + c1);
+                }
             }
             imageStore(octreeBrickTex, otherBrick + c1, val);
         }
