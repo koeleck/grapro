@@ -30,7 +30,7 @@ void emitTriangle(in int ID, in vec4 vertex[3], in int layer)
     // cull back faces
     vec3 normal = cross(vertex[1].xyz - vertex[0].xyz,
                         vertex[2].xyz - vertex[0].xyz);
-    if (normal.z < 0.0)
+    if (normal.z < -0.25)
         return;
 
     // frustum culling
