@@ -1,0 +1,47 @@
+\usetheme{boxes}
+
+\definecolor{mygray}{gray}{.57}
+
+\usenavigationsymbolstemplate{}
+
+\defbeamertemplate*{headline}{}
+{
+  \leavevmode%
+  \vskip 1.5em%
+}
+
+\defbeamertemplate*{footline}{}
+{
+  \leavevmode%
+  \hfill \includegraphics[width=2cm]{lgdv/lgdv-en-cl} \hskip 3.5mm\ %
+  \newline%
+  \vskip 0.2ex
+  { \color{mygray}
+  \ \hskip 5mm \hrulefill \hskip 5mm\ %
+  }
+  \newline%
+  \vskip 0.2ex
+  \hfill \includegraphics[width=2cm]{lgdv/lgdv-en-cl-mirror} \hskip 3.5mm\ %
+  \newline%
+  \vskip -5.5mm
+  { \color{mygray}
+  \rule{0pt}{2.5ex}\mbox{\ \hskip 5mm\ } \mbox{\insertshorttitle}
+  }
+  \newline%
+  \vskip 2.0em%
+}
+
+\setbeamercolor*{titlelike}{fg=black}
+\setbeamercolor*{itemize item}{fg=black}
+\setbeamercolor*{itemize subitem}{fg=black}
+\setbeamercolor*{itemize subsubitem}{fg=black}
+  
+\setbeamerfont{structure}{series=\bfseries,family=\rmfamily}
+ 
+
+\setbeamertemplate{frametitle}[default][center]
+
+\setbeamertemplate{itemize item}{$\bullet$}
+\setbeamertemplate{itemize subitem}{--}
+\setbeamertemplate{itemize subsubitem}{$\bullet$}
+

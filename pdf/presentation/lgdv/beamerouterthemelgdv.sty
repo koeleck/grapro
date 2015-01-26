@@ -1,0 +1,172 @@
+% Copyright 2007 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/licenses/LICENSE for more details.
+
+% keine Angst, quasi zammkopiert ;)
+
+\ProvidesPackageRCS $Header: /cvsroot/latex-beamer/latex-beamer/themes/outer/beamerouterthemeinfolines.sty,v 1.9 2007/01/28 20:48:30 tantau Exp $
+
+
+\mode<presentation>
+
+\setbeamercolor*{author in head/foot}{parent=palette tertiary}
+\setbeamercolor*{title in head/foot}{parent=palette secondary}
+\setbeamercolor*{date in head/foot}{parent=palette primary}
+
+\setbeamercolor*{section in head/foot}{parent=palette tertiary}
+\setbeamercolor*{subsection in head/foot}{parent=palette primary}
+
+
+% \defbeamertemplate*{footline}{infolines theme}
+% {
+%   \leavevmode%
+%   \hbox{%
+%   \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
+%     \usebeamerfont{author in head/foot}\insertshortauthor~~(\insertshortinstitute)
+%   \end{beamercolorbox}%
+%   \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+%     \usebeamerfont{title in head/foot}\insertshorttitle
+%   \end{beamercolorbox}%
+%   \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,right]{date in head/foot}%
+%     \usebeamerfont{date in head/foot}\insertshortdate{}\hspace*{2em}
+%     \insertframenumber{} / \inserttotalframenumber\hspace*{2ex} 
+%   \end{beamercolorbox}}%
+%   \vskip0pt%
+% }
+
+\defbeamertemplate*{footline}{infolines theme}
+{
+  \leavevmode%
+  \hbox{%
+  \begin{beamercolorbox}[wd=.45\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
+    \usebeamerfont{author in head/foot}\insertshortauthor%~~(\insertshortinstitute)
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.45\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+    \usebeamerfont{title in head/foot}\insertshorttitle
+  \end{beamercolorbox}%
+  \hskip-.05\paperwidth\begin{beamercolorbox}[wd=.15\paperwidth,ht=2.25ex,dp=1ex,right]{pagenumberquad}%
+%     \usebeamerfont{date in head/foot}\insertshortdate{}\hspace*{2em}
+    \insertframenumber{} / \inserttotalframenumber\hspace*{2ex} 
+  \end{beamercolorbox}}%
+  \vskip0pt%
+}
+
+% keep it
+% \defbeamertemplate*{headline}{infolines theme}
+% {
+%   \leavevmode%
+%   \hbox{%
+%   \begin{beamercolorbox}[wd=.5\paperwidth,ht=2.25ex,dp=1ex,right]{section in head/foot}%
+%     \usebeamerfont{section in head/foot}\insertsectionhead\hspace*{2ex}
+%   \end{beamercolorbox}%
+%   \begin{beamercolorbox}[wd=.5\paperwidth,ht=2.25ex,dp=1ex,left]{subsection in head/foot}%
+%     \usebeamerfont{subsection in head/foot}\hspace*{2ex}\insertsubsectionhead
+%   \end{beamercolorbox}}%
+%   \vskip0pt%
+% %   \includegraphics[scale=.24]{logo_esf.png}
+% }
+
+% exist logo bar
+\defbeamertemplate*{headline}{infolines theme}
+{
+  \leavevmode%
+  \vskip1mm%
+  \hbox{%
+	\begin{beamercolorbox}[wd=\paperwidth]{headerlogos}%
+  	\hskip1mm\hskip7.8cm
+% 	\fbox{%
+		\hskip2mm %
+% 	} \fbox{% 
+% 	}%
+	\end{beamercolorbox}%
+	}%
+  \vskip0pt%
+%   \includegraphics[scale=.24]{logo_esf.png}
+}
+
+
+\defbeamertemplate*{frametitle}{infolines theme}[1][left]
+{
+  \ifbeamercolorempty[bg]{frametitle}{}{\nointerlineskip}%
+  \@tempdima=\textwidth%
+  \advance\@tempdima by\beamer@leftmargin%
+  \advance\@tempdima by\beamer@rightmargin%
+  \vbox{}\vskip1ex
+%   \hrule
+  \begin{beamercolorbox}[sep=0.3cm,#1,wd=\the\@tempdima]{frametitle}
+    \usebeamerfont{frametitle}%
+    \vbox{}\vskip-1.2ex%
+    \if@tempswa\else\csname beamer@fte#1\endcsname\fi%
+    \strut\hskip2mm\insertframetitle\strut\par%
+    {%
+      \ifx\insertframesubtitle\@empty%
+      \else%
+      {\usebeamerfont{framesubtitle}\usebeamercolor[fg]{framesubtitle}\hskip2mm\insertframesubtitle\strut\par}%
+      \fi
+    }%
+    \vskip-1ex%
+    \if@tempswa\else\vskip-.3cm\fi% set inside beamercolorbox... evil here...
+  \end{beamercolorbox}%
+  \hrule
+}
+
+
+\setbeamersize{text margin left=1em,text margin right=1em}
+
+\mode
+<all>
+
+
+%	ORIGINAL VERSION 
+% \ProvidesPackageRCS $Header: /cvsroot/latex-beamer/latex-beamer/themes/outer/beamerouterthemeinfolines.sty,v 1.9 2007/01/28 20:48:30 tantau Exp $
+% 
+% 
+% \mode<presentation>
+% 
+% \setbeamercolor*{author in head/foot}{parent=palette tertiary}
+% \setbeamercolor*{title in head/foot}{parent=palette secondary}
+% \setbeamercolor*{date in head/foot}{parent=palette primary}
+% 
+% \setbeamercolor*{section in head/foot}{parent=palette tertiary}
+% \setbeamercolor*{subsection in head/foot}{parent=palette primary}
+% 
+% \defbeamertemplate*{footline}{infolines theme}
+% {
+%   \leavevmode%
+%   \hbox{%
+%   \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
+%     \usebeamerfont{author in head/foot}\insertshortauthor~~(\insertshortinstitute)
+%   \end{beamercolorbox}%
+%   \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+%     \usebeamerfont{title in head/foot}\insertshorttitle
+%   \end{beamercolorbox}%
+%   \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,right]{date in head/foot}%
+%     \usebeamerfont{date in head/foot}\insertshortdate{}\hspace*{2em}
+%     \insertframenumber{} / \inserttotalframenumber\hspace*{2ex} 
+%   \end{beamercolorbox}}%
+%   \vskip0pt%
+% }
+% 
+% \defbeamertemplate*{headline}{infolines theme}
+% {
+%   \leavevmode%
+%   \hbox{%
+%   \begin{beamercolorbox}[wd=.5\paperwidth,ht=2.25ex,dp=1ex,right]{section in head/foot}%
+%     \usebeamerfont{section in head/foot}\insertsectionhead\hspace*{2ex}
+%   \end{beamercolorbox}%
+%   \begin{beamercolorbox}[wd=.5\paperwidth,ht=2.25ex,dp=1ex,left]{subsection in head/foot}%
+%     \usebeamerfont{subsection in head/foot}\hspace*{2ex}\insertsubsectionhead
+%   \end{beamercolorbox}}%
+%   \vskip0pt%
+% }
+% 
+% \setbeamersize{text margin left=1em,text margin right=1em}
+% 
+% \mode
+% <all>
+% 
