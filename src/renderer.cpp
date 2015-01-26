@@ -724,7 +724,9 @@ void Renderer::render(const Options & options)
         glEnable(GL_CULL_FACE);
         glDepthFunc(GL_LEQUAL);
 
+        glProgramUniform1ui(m_vertexpulling_prog, 0, 1);
         renderGeometry(m_vertexpulling_prog, false, core::res::cameras->getDefaultCam());
+        glProgramUniform1ui(m_vertexpulling_prog, 0, 0);
     } else if (options.renderVoxelBoxesColored) {
         debugRenderTree(false, options.debugLevel, true);
 
@@ -732,7 +734,9 @@ void Renderer::render(const Options & options)
         glEnable(GL_CULL_FACE);
         glDepthFunc(GL_LEQUAL);
 
+        glProgramUniform1ui(m_vertexpulling_prog, 0, 1);
         renderGeometry(m_vertexpulling_prog, false, core::res::cameras->getDefaultCam());
+        glProgramUniform1ui(m_vertexpulling_prog, 0, 0);
     } else if (options.renderVoxelColors) {
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
@@ -752,7 +756,7 @@ void Renderer::render(const Options & options)
 
     //     glDisable(GL_DEPTH_TEST);
     //     m_gbuffer.bindTextures();
-        
+
     } else {
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);

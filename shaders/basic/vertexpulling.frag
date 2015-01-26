@@ -20,6 +20,8 @@ in VertexData
     flat uint materialID;
 } inData;
 
+layout(location = 0) uniform uint u_uncompressed;
+
 void main()
 {
     const uint materialID = inData.materialID;
@@ -41,6 +43,11 @@ void main()
         diffuse_color = texture(uDiffuseTex, uv).rgb;
     } else {
         diffuse_color = materials[materialID].diffuseColor;
+    }
+
+    if (u_uncompressed != 0) {
+        out_DiffuseNormal = vec4(diffuse_color, 0);
+        return;
     }
 
     if (materials[materialID].hasSpecularTex != 0) {
@@ -95,5 +102,6 @@ void main()
     out_SpecGlossEmissive.x = spec;
     out_SpecGlossEmissive.y = glossiness;
     out_SpecGlossEmissive.zw = (isBlack) ? em_YCoCg.rg : em_YCoCg.rb;
+
 }
 
