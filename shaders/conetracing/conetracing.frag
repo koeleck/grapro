@@ -215,7 +215,7 @@ vec3 calculateDiffuseColorAO(const vec3 normal, const vec3 pos)
         totalColor /= totalColor.w;
     }
 
-    // ambient occlusion
+    // ambient occlusion - correct? incorrect? -1? no -1?
     occlusion = 1.f - clamp(occlusion / float(u_coneGridSize * u_coneGridSize), 0.f, 1.f);
 
     return totalColor.xyz * occlusion;
