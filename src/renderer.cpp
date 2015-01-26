@@ -714,16 +714,26 @@ void Renderer::render(const Options & options)
 
     if (options.renderVoxelBoxes) {
         debugRenderTree(false, options.debugLevel, false);
+
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+        glDepthFunc(GL_LEQUAL);
+
+        renderGeometry(m_vertexpulling_prog, false, core::res::cameras->getDefaultCam());
     } else if (options.renderVoxelBoxesColored) {
         debugRenderTree(false, options.debugLevel, true);
+
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+        glDepthFunc(GL_LEQUAL);
+
+        renderGeometry(m_vertexpulling_prog, false, core::res::cameras->getDefaultCam());
     } else if (options.renderVoxelColors) {
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
         glDepthFunc(GL_LEQUAL);
         debugRenderTree(true, options.debugLevel, true);
-    }
-
-    if (!options.renderVoxelColors) {
+    } else {
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
         glDepthFunc(GL_LEQUAL);
