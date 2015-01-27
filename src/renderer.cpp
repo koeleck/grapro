@@ -729,15 +729,12 @@ void Renderer::render(const Options & options)
         glEnable(GL_CULL_FACE);
         glDepthFunc(GL_LEQUAL);
 
-        m_gbuffer.bindFramebuffer(true);
+        m_gbuffer.bindFramebuffer();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         renderGeometry(m_vertexpulling_prog, false, core::res::cameras->getDefaultCam());
 
-        m_gbuffer.unbindFramebuffer();
-
-        glDisable(GL_DEPTH_TEST);
-        m_gbuffer.bindTextures();
+        m_gbuffer.bindForShading();
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_ONE, GL_ONE);
@@ -778,6 +775,8 @@ void Renderer::render(const Options & options)
 
         }
 
+        m_gbuffer.unbindFramebuffer();
+        m_gbuffer.blit();
         glDisable(GL_BLEND);
 
         glEnable(GL_DEPTH_TEST);
@@ -791,20 +790,6 @@ void Renderer::render(const Options & options)
 
     if (options.renderBBoxes)
         renderBoundingBoxes();
-
-    if (options.debugGBuffer)
-    {
-        m_gbuffer.bindTextures();
-        m_gbuffer.bindReadFramebuffer();
-        glReadBuffer(GL_COLOR_ATTACHMENT0);
-        glBlitFramebuffer(0, 0, vars.screen_width, vars.screen_height,
-            0, 0, vars.screen_width/2, vars.screen_height/2,
-            GL_COLOR_BUFFER_BIT, GL_LINEAR);
-        glReadBuffer(GL_COLOR_ATTACHMENT1);
-        glBlitFramebuffer(0, 0, vars.screen_width, vars.screen_height,
-            0, vars.screen_height/2, vars.screen_width/2, vars.screen_height,
-            GL_COLOR_BUFFER_BIT, GL_LINEAR);
-    }
 }
 
 /****************************************************************************/
