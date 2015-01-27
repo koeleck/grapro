@@ -837,6 +837,7 @@ void Renderer::render(const Options & options)
             } else {
                 glUniform1ui(11, 0);
             }
+            glUniform1f(12, m_options.angleModifier);
 
             glDrawArrays(GL_TRIANGLES, 0, 3);
 

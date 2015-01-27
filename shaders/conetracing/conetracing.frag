@@ -20,6 +20,7 @@ layout(location = 8) uniform uint u_numStepsSpecular;
 layout(location = 9) uniform uint u_numStepsDiffuse;
 layout(location = 10) uniform uint u_showSpecular;
 layout(location = 11) uniform uint u_showDiffuse;
+layout(location = 12) uniform float u_angleModifier;
 
 in vec2 vsTexCoord;
 
@@ -318,7 +319,7 @@ vec3 calculateSpecularColor(in const vec3 wpos, in const vec3 normal,
 {
     const vec3 incident = normalize(wpos.xyz - cam.Position.xyz);
     const vec3 refl = reflect(incident, normal);
-    const float angle = degreesToRadians(max(60.0, 180.0 * (1.0 - glossy)));
+    const float angle = degreesToRadians(max(60.0, 180.0 * (1.0 - glossy)) * u_angleModifier);
     return specular * traceConeSpecular(wpos.xyz, refl, angle, u_numStepsSpecular);
 }
 
