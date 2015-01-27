@@ -40,6 +40,8 @@ GraPro::GraPro(GLFWwindow* window)
     m_options.debugGBuffer = false;
     m_options.renderDirectLighting = false;
     m_options.angleModifier = 1.f;
+    m_options.diffuseModifier = 2.5;
+    m_options.specularModifier = 1;
 
     const auto* instances = core::res::instances;
     m_renderer.setGeometry(instances->getInstances());
@@ -135,6 +137,8 @@ void GraPro::update_gui(const double delta_t)
             ImGui::SliderInt("diffuse cone steps", &m_options.diffuseConeSteps, 1, 512);
             ImGui::SliderInt("specular cone step size (inverse)", &m_options.specularConeSteps, 1, 512);
             ImGui::SliderFloat("specular angle modifier", &m_options.angleModifier, 0.f, 1.f);
+            ImGui::SliderFloat("specular intensity modifier", &m_options.specularModifier, 0.f, 10.f);
+            ImGui::SliderFloat("diffuse intensity modifier", &m_options.diffuseModifier, 0.f, 10.f);
             bool specBefore = m_options.renderIndirectSpecular;
             bool diffBefore = m_options.renderIndirectDiffuse;
             ImGui::Checkbox("show indirect specular", &m_options.renderIndirectSpecular);
