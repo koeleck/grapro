@@ -18,11 +18,9 @@ layout(location = 6) uniform uint u_treeLevels;
 layout(location = 7) uniform uint u_coneGridSize;
 layout(location = 8) uniform uint u_numStepsSpecular;
 layout(location = 9) uniform uint u_numStepsDiffuse;
-layout(location = 10) uniform uint u_showSpecular;
-layout(location = 11) uniform uint u_showDiffuse;
-layout(location = 12) uniform float u_angleModifier;
-layout(location = 13) uniform float u_diffuseModifier;
-layout(location = 14) uniform float u_specularModifier;
+layout(location = 10) uniform float u_angleModifier;
+layout(location = 11) uniform float u_diffuseModifier;
+layout(location = 12) uniform float u_specularModifier;
 
 in vec2 vsTexCoord;
 
@@ -338,18 +336,10 @@ void main()
     readIn(diffuse, normal, specular, glossy, emissive);
     vec4 wpos = resconstructWorldPos(vsTexCoord);
 
-    if (u_showSpecular != 0) {
-        const vec3 spec = calculateSpecularColor(wpos.xyz, normal, glossy, specular);
-        outFragColor = vec4(u_specularModifier * spec, 1.0);
-    } else if (u_showDiffuse != 0) {
-        const vec3 diff = calculateDiffuseColor(normal, wpos.xyz);
-        outFragColor = vec4(u_diffuseModifier * diff, 1.0);
-    } else {
-        const vec3 diff = calculateDiffuseColor(normal, wpos.xyz);
-        const vec3 spec = calculateSpecularColor(wpos.xyz, normal, glossy, specular);
-        outFragColor = vec4(u_specularModifier * spec + u_diffuseModifier * diff, 1.0);
-    }
-
+    vec3 spec = calculateSpecularColor(wpos.xyz, normal, glossy, specular);
+    vec3 diff = calculateDiffuseColor(normal, wpos.xyz) * diffuse;
+    
+    outFragColor = vec4(u_specularModifier * spec + u_diffuseModifier * diff, 1.0);
 }
 
 /******************************************************************************/
