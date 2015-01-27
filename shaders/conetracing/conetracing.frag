@@ -200,6 +200,9 @@ vec3 traceConeSpecular(in const vec3 origin, in const vec3 direction,
 
         alpha *= (1.0 - color.a);
         dist += stepSize;
+
+        // alpha correction because of step size
+        alpha = 1.0 - pow(1.0 - alpha, stepSize / voxelSize);
     }
 
     return result;
