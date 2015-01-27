@@ -321,21 +321,21 @@ void main()
     readIn(diffuse, normal, specular, glossy, emissive);
     vec4 wpos = resconstructWorldPos(vsTexCoord);
 
-    //outFragColor = getColor(u_treeLevels - 4, wpos.xyz);
-    //return;
-
     // specular
     vec3 incident = normalize(wpos.xyz - cam.Position.xyz);
     vec3 refl = reflect(incident, normal);
-
     float angle = degreesToRadians(max(60.0, 180.0 * (1.0 - glossy)));
     vec3 spec = specular * traceConeSpecular(wpos.xyz, refl, angle, u_numStepsSpecular);
+
+    // diffuse
+    vec3 diff = calculateDiffuseColor(normal, wpos.xyz);
+
     if (u_showSpecular != 0) {
         outFragColor = vec4(spec, 1.0);
     } else if (u_showDiffuse != 0) {
-        outFragColor = vec4(2.5 * calculateDiffuseColor(normal, wpos.xyz), 1.0);
+        outFragColor = vec4(2.5 * diff, 1.0);
     } else {
-        outFragColor = 0.2*vec4(spec + 5 * calculateDiffuseColor(normal, wpos.xyz), 1.0);
+        outFragColor = 0.2 * vec4(spec + 4 * diff, 1.0);
     }
 
 }
