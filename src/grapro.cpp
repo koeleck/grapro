@@ -34,11 +34,11 @@ GraPro::GraPro(GLFWwindow* window)
     m_options.aoConeSteps = 2;
     m_options.aoWeight = 1;
     m_options.diffuseConeGridSize = 5;
-    m_options.diffuseConeSteps = 4;
-    m_options.specularConeSteps = 4;
+    m_options.diffuseConeSteps = 2;
+    m_options.specularConeSteps = 10;
     m_options.debugOutput = false;
     m_options.debugGBuffer = false;
-    m_options.renderDirectLighting = true;
+    m_options.renderDirectLighting = false;
 
     const auto* instances = core::res::instances;
     m_renderer.setGeometry(instances->getInstances());
@@ -131,7 +131,8 @@ void GraPro::update_gui(const double delta_t)
         if(m_options.renderConeTracing)
         {
             ImGui::SliderInt("diffuse cone grid size", &m_options.diffuseConeGridSize, 1, 10);
-            ImGui::SliderInt("diffuse cone steps", &m_options.diffuseConeSteps, 1, 20);
+            ImGui::SliderInt("diffuse cone steps", &m_options.diffuseConeSteps, 1, 10);
+            ImGui::SliderInt("specular cone steps", &m_options.specularConeSteps, 10, 50);
         }
 
         // Timers: Just create your timer via m_timers and they will
