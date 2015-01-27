@@ -28,10 +28,10 @@ layout(std430, binding = LIGHT_ID_BINDING) restrict readonly buffer LightIDBlock
 void emitTriangle(in int ID, in vec4 vertex[3], in int layer)
 {
     // cull back faces
-    vec3 normal = cross(vertex[1].xyz - vertex[0].xyz,
-                        vertex[2].xyz - vertex[0].xyz);
-    if (normal.z < -0.25)
-        return;
+    //vec3 normal = cross(vertex[1].xyz - vertex[0].xyz,
+    //                    vertex[2].xyz - vertex[0].xyz);
+    //if (normal.z < -0.25)
+    //    return;
 
     // frustum culling
     const mat4 ProjMat = lights[ID].ProjViewMatrix; // this is actually just a projection matrix
