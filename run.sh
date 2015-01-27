@@ -4,17 +4,18 @@ set -e
 
 make
 
-use_gdb=false
-if egrep -q "^ *gl_debug_break += +true" grapro.cfg; then
-    use_gdb=true
-    echo "use gdb"
-fi
-
 config_file="grapro.cfg"
 if [[ -n "$1" ]]; then
     config_file="$1"
 fi
-echo "Using config file: ${config_file}"
+echo ":: Using config file: ${config_file}"
+
+use_gdb=false
+if egrep -q "^ *gl_debug_break += +true" "${config_file}"; then
+    use_gdb=true
+    echo ":: Using gdb"
+fi
+
 
 if [[ "$(hostname)" == "pkl03" ]]; then
     if [[ "$use_gdb" = true ]]; then
