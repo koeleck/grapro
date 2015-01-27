@@ -18,11 +18,9 @@ layout(location = 6) uniform uint u_treeLevels;
 layout(location = 7) uniform uint u_coneGridSize;
 layout(location = 8) uniform uint u_numStepsSpecular;
 layout(location = 9) uniform uint u_numStepsDiffuse;
-layout(location = 10) uniform uint u_showSpecular;
-layout(location = 11) uniform uint u_showDiffuse;
-layout(location = 12) uniform float u_angleModifier;
-layout(location = 13) uniform float u_diffuseModifier;
-layout(location = 14) uniform float u_specularModifier;
+layout(location = 10) uniform float u_angleModifier;
+layout(location = 11) uniform float u_diffuseModifier;
+layout(location = 12) uniform float u_specularModifier;
 
 in vec2 vsTexCoord;
 
