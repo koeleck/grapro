@@ -18,6 +18,9 @@ layout(location = 6) uniform uint u_treeLevels;
 layout(location = 7) uniform uint u_coneGridSize;
 layout(location = 8) uniform uint u_numStepsSpecular;
 layout(location = 9) uniform uint u_numStepsDiffuse;
+layout(location = 10) uniform uint u_showSpecular;
+layout(location = 11) uniform uint u_showDiffuse;
+layout(location = 12) uniform float u_angleModifier;
 
 in vec2 vsTexCoord;
 
@@ -158,7 +161,7 @@ vec3 traceConeSpecular(in const vec3 origin, in const vec3 direction,
 {
     const float tan_a = tan(angle / 2.0);
     const float stepSize = (u_bboxMax.x - u_bboxMin.x) / float(steps);
-    //const float stepSize = voxelSize;
+    const float maxLevel = float(u_treeLevels - 1);
 
     vec3 result = vec3(0.0);
     float alpha = 1.0;
@@ -176,7 +179,6 @@ vec3 traceConeSpecular(in const vec3 origin, in const vec3 direction,
             color = getColor(u_treeLevels - 1, pos);
         } else {
             // bigger than lowest level
-            const float maxLevel = float(u_treeLevels - 1);
             const float logSize = clamp(log2(diameter / voxelSize), 0.0, maxLevel);
             const float level = maxLevel - logSize;
             if (float(uint(level)) == level) {
@@ -199,6 +201,9 @@ vec3 traceConeSpecular(in const vec3 origin, in const vec3 direction,
 
         alpha *= (1.0 - color.a);
         dist += stepSize;
+
+        // alpha correction because of step size
+        alpha = 1.0 - pow(1.0 - alpha, stepSize / voxelSize);
     }
 
     return result;
@@ -227,7 +232,8 @@ vec3 calculateDiffuseColor(const vec3 normal, const vec3 pos)
             float d = abs(dot(normal, dir));
 
             const float tan_a = tan(angle / 2.0);
-            const float stepSize = voxelSize;
+            const float stepSize = (u_bboxMax.x - u_bboxMin.x) / float(u_numStepsDiffuse);
+            //const float stepSize = voxelSize;
 
             float dist = stepSize;
             float alpha = 0.0;
@@ -308,6 +314,17 @@ void readIn(out vec3 diffuse, out vec3 normal, out float spec,
 
 /******************************************************************************/
 
+vec3 calculateSpecularColor(in const vec3 wpos, in const vec3 normal,
+                            in const float glossy, in const float specular)
+{
+    const vec3 incident = normalize(wpos.xyz - cam.Position.xyz);
+    const vec3 refl = reflect(incident, normal);
+    const float angle = degreesToRadians(max(60.0, 180.0 * (1.0 - glossy)) * u_angleModifier);
+    return specular * traceConeSpecular(wpos.xyz, refl, angle, u_numStepsSpecular);
+}
+
+/******************************************************************************/
+
 void main()
 {
     vec3 diffuse;
@@ -319,19 +336,18 @@ void main()
     readIn(diffuse, normal, specular, glossy, emissive);
     vec4 wpos = resconstructWorldPos(vsTexCoord);
 
-    //outFragColor = getColor(u_treeLevels - 4, wpos.xyz);
-    //return;
+    if (u_showSpecular != 0) {
+        const vec3 spec = calculateSpecularColor(wpos.xyz, normal, glossy, specular);
+        outFragColor = vec4(spec, 1.0);
+    } else if (u_showDiffuse != 0) {
+        const vec3 diff = calculateDiffuseColor(normal, wpos.xyz);
+        outFragColor = vec4(2.5 * diff, 1.0);
+    } else {
+        const vec3 diff = calculateDiffuseColor(normal, wpos.xyz);
+        const vec3 spec = calculateSpecularColor(wpos.xyz, normal, glossy, specular);
+        outFragColor = 0.2 * vec4(spec + 4 * diff, 1.0);
+    }
 
-    // specular
-    vec3 incident = normalize(wpos.xyz - cam.Position.xyz);
-    vec3 refl = reflect(incident, normal);
-
-    float angle = degreesToRadians(max(60.0, 180.0 * (1.0 - glossy)));
-    vec3 spec = specular * traceConeSpecular(wpos.xyz, refl, angle, u_numStepsSpecular);
-    outFragColor = vec4(spec, 1.0);
-
-    //outFragColor = vec4(2.5 * calculateDiffuseColor(normal, wpos.xyz), 1.0);
-    //outFragColor = 0.2*vec4(spec + 5 * calculateDiffuseColor(normal, wpos.xyz), 1.0);
 }
 
 /******************************************************************************/

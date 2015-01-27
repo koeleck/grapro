@@ -24,6 +24,7 @@ struct Options
     int diffuseConeSteps;
     int specularConeSteps;
     bool debugOutput;
+    float angleModifier;
 };
 
 /****************************************************************************/
