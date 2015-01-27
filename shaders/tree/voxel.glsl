@@ -73,8 +73,7 @@ ivec3 getBrickCoord(in uint idx)
 vec3 getBrickTexCoord(in uint idx, vec3 posInVoxel)
 {
     posInVoxel = clamp(posInVoxel, vec3(0.0), vec3(1.0));
-    vec3 off = vec3(1.25) - 1.25 * posInVoxel;
-    //return (vec3(getBrickCoord(idx)) + off) / (3.0 * vec3(NUM_BRICKS_X, NUM_BRICKS_Y, NUM_BRICKS_Z));
+    vec3 off = 2.0 * posInVoxel - 0.5;
     return (vec3(getBrickCoord(idx)) + off) / (3.0 * vec3(NUM_BRICKS_X, NUM_BRICKS_Y, NUM_BRICKS_Z));
 }
 

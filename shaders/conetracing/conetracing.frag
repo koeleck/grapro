@@ -111,6 +111,7 @@ vec3 toWorld(ONB onb, vec3 v)
 
 vec4 getColor(uint maxLevel, vec3 wpos)
 {
+    maxLevel = min(maxLevel, u_treeLevels - 1);
     vec3 vpos = float(u_voxelDim) * (wpos - u_bboxMin) / (u_bboxMax - u_bboxMin);
     uvec3 pos = min(uvec3(vpos), uvec3(u_voxelDim - 1));
 
@@ -120,7 +121,7 @@ vec4 getColor(uint maxLevel, vec3 wpos)
     uint currentNode = 0;
 
     // iterate through all tree levels
-    for (uint i = 0u; i <= maxLevel; ++i) {
+    for (uint i = 0u; i < maxLevel; ++i) {
         uint nodeptr = octree[currentNode].id;
         if ((nodeptr & 0x80000000u) == 0)
             break;
@@ -142,9 +143,9 @@ vec4 getColor(uint maxLevel, vec3 wpos)
     if ((octree[currentNode].id & 0x80000000u) == 0)
         return vec4(0.0);
 
-    //vec3 coord = getBrickTexCoord(currentNode, vpos - floor(vpos));
-    //return texture(uOctree3DTex, coord);
-    return imageLoad(octreeBrickTex, getBrickCoord(currentNode));
+    vec3 coord = getBrickTexCoord(currentNode, vpos - floor(vpos));
+    return texture(uOctree3DTex, coord);
+    //return imageLoad(octreeBrickTex, getBrickCoord(currentNode));
 }
 
 /******************************************************************************/
@@ -276,6 +277,9 @@ void main()
 
     readIn(diffuse, normal, specular, glossy, emissive);
     vec4 wpos = resconstructWorldPos(vsTexCoord);
+
+    outFragColor = getColor(u_treeLevels - 1, wpos.xyz);
+    return;
 
     // specular
     vec3 incident = normalize(wpos.xyz - cam.Position.xyz);
