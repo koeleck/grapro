@@ -18,6 +18,8 @@ layout(location = 6) uniform uint u_treeLevels;
 layout(location = 7) uniform uint u_coneGridSize;
 layout(location = 8) uniform uint u_numStepsSpecular;
 layout(location = 9) uniform uint u_numStepsDiffuse;
+layout(location = 10) uniform uint u_showSpecular;
+layout(location = 11) uniform uint u_showDiffuse;
 
 in vec2 vsTexCoord;
 
@@ -158,7 +160,6 @@ vec3 traceConeSpecular(in const vec3 origin, in const vec3 direction,
 {
     const float tan_a = tan(angle / 2.0);
     const float stepSize = (u_bboxMax.x - u_bboxMin.x) / float(steps);
-    //const float stepSize = voxelSize;
 
     vec3 result = vec3(0.0);
     float alpha = 1.0;
@@ -227,7 +228,8 @@ vec3 calculateDiffuseColor(const vec3 normal, const vec3 pos)
             float d = abs(dot(normal, dir));
 
             const float tan_a = tan(angle / 2.0);
-            const float stepSize = voxelSize;
+            const float stepSize = (u_bboxMax.x - u_bboxMin.x) / float(u_numStepsDiffuse);
+            //const float stepSize = voxelSize;
 
             float dist = stepSize;
             float alpha = 0.0;
@@ -328,10 +330,14 @@ void main()
 
     float angle = degreesToRadians(max(60.0, 180.0 * (1.0 - glossy)));
     vec3 spec = specular * traceConeSpecular(wpos.xyz, refl, angle, u_numStepsSpecular);
-    outFragColor = vec4(spec, 1.0);
+    if (u_showSpecular != 0) {
+        outFragColor = vec4(spec, 1.0);
+    } else if (u_showDiffuse != 0) {
+        outFragColor = vec4(2.5 * calculateDiffuseColor(normal, wpos.xyz), 1.0);
+    } else {
+        outFragColor = 0.2*vec4(spec + 5 * calculateDiffuseColor(normal, wpos.xyz), 1.0);
+    }
 
-    //outFragColor = vec4(2.5 * calculateDiffuseColor(normal, wpos.xyz), 1.0);
-    //outFragColor = 0.2*vec4(spec + 5 * calculateDiffuseColor(normal, wpos.xyz), 1.0);
 }
 
 /******************************************************************************/

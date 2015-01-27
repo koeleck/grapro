@@ -827,6 +827,16 @@ void Renderer::render(const Options & options)
             glUniform1ui(7, static_cast<unsigned int>(m_options.diffuseConeGridSize));
             glUniform1ui(8, static_cast<unsigned int>(m_options.specularConeSteps));
             glUniform1ui(9, static_cast<unsigned int>(m_options.diffuseConeSteps));
+            if (m_options.renderIndirectSpecular) {
+                glUniform1ui(10, 1);
+            } else {
+                glUniform1ui(10, 0);
+            }
+            if (m_options.renderIndirectDiffuse) {
+                glUniform1ui(11, 1);
+            } else {
+                glUniform1ui(11, 0);
+            }
 
             glDrawArrays(GL_TRIANGLES, 0, 3);
 
