@@ -134,7 +134,7 @@ void GraPro::update_gui(const double delta_t)
             ImGui::SliderInt("diffuse cone grid size", &m_options.diffuseConeGridSize, 1, 10);
             ImGui::SliderInt("diffuse cone steps", &m_options.diffuseConeSteps, 1, 512);
             ImGui::SliderInt("specular cone step size (inverse)", &m_options.specularConeSteps, 1, 512);
-            ImGui::SliderFloat("angle modifier", &m_options.angleModifier, 0.f, 1.f);
+            ImGui::SliderFloat("specular angle modifier", &m_options.angleModifier, 0.f, 1.f);
             bool specBefore = m_options.renderIndirectSpecular;
             bool diffBefore = m_options.renderIndirectDiffuse;
             ImGui::Checkbox("show indirect specular", &m_options.renderIndirectSpecular);
