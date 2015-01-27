@@ -255,23 +255,8 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
     core::res::shaders->registerShader("mipmap_comp", "tree/mipmap.comp", GL_COMPUTE_SHADER,
             "LOCAL_SIZE " + std::to_string(MIPMAP_PROG_LOCAL_SIZE) + ", " +
             bricks_def);
-    core::res::shaders->registerShader("mipmap2_comp", "tree/mipmap2.comp", GL_COMPUTE_SHADER,
-            "LOCAL_SIZE " + std::to_string(MIPMAP_PROG_LOCAL_SIZE) + ", " +
-            bricks_def);
-    core::res::shaders->registerShader("mipmap3_comp", "tree/mipmap3.comp", GL_COMPUTE_SHADER,
-            "LOCAL_SIZE " + std::to_string(MIPMAP_PROG_LOCAL_SIZE) + ", " +
-            bricks_def);
-    core::res::shaders->registerShader("mipmap4_comp", "tree/mipmap4.comp", GL_COMPUTE_SHADER,
-            "LOCAL_SIZE " + std::to_string(MIPMAP_PROG_LOCAL_SIZE) + ", " +
-            bricks_def);
     m_mipmap_prog = core::res::shaders->registerProgram("mipmap_prog",
             {"mipmap_comp"});
-    m_mipmap2_prog = core::res::shaders->registerProgram("mipmap2_prog",
-            {"mipmap2_comp"});
-    m_mipmap3_prog = core::res::shaders->registerProgram("mipmap3_prog",
-            {"mipmap3_comp"});
-    m_mipmap4_prog = core::res::shaders->registerProgram("mipmap4_prog",
-            {"mipmap4_comp"});
 
     core::res::shaders->registerShader("conetracing_frag", "conetracing/conetracing.frag",
             GL_FRAGMENT_SHADER, bricks_def);
@@ -327,10 +312,6 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
 
     std::vector<DrawElementsIndirectCommand> indirectCmds;
     indirectCmds.reserve(m_geometry.size());
-    //std::vector<GLuint> instanceIDs;
-    //instanceIDs.reserve(m_geometry.size() + 1);
-    //// first entry in instanceIDs is the number of instances
-    //instanceIDs.push_back(static_cast<GLuint>(m_geometry.size()));
 
     std::size_t indirect = 0;
     GLenum current_type = 0;
@@ -493,8 +474,6 @@ void Renderer::createVoxelList()
     renderGeometry(voxel_prog, false, nullptr);
     //glMemoryBarrier(GL_ALL_BARRIER_BITS);
     gl::printInfo();
-    //glFlush();
-    //glFinish();
 
     // TODO move to shader
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, m_atomicCounterBuffer);
@@ -625,8 +604,6 @@ void Renderer::buildVoxelTree()
         GLuint alloc_workgroups = (previously_allocated + ALLOC_PROG_LOCAL_SIZE - 1) / ALLOC_PROG_LOCAL_SIZE;
         glDispatchCompute(alloc_workgroups, 1, 1);
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
-        glFinish();
-        glFlush();
 
         /*
          * Init child nodes
@@ -671,7 +648,6 @@ void Renderer::buildVoxelTree()
     {
         const unsigned int start = static_cast<unsigned int>(m_tree_levels.back().first);
         const unsigned int count = static_cast<unsigned int>(m_tree_levels.back().second);
-        LOG_INFO("inject: ", start, " -> ", count);
         const GLuint inject_prog = m_inject_lighting_prog;
         glUseProgram(inject_prog);
         glUniform1ui(0, count);
@@ -692,8 +668,7 @@ void Renderer::buildVoxelTree()
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
     glBindImageTexture(0, m_brick_texture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA16F);
     distributeToNeighbors(m_tree_levels.back(), true);
-    glFinish();
-    glFlush();
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
     for (int i = static_cast<int>(vars.voxel_octree_levels) - 2; i >= 0; i--) {
         const unsigned int start = static_cast<unsigned int>(m_tree_levels[static_cast<size_t>(i)].first);
@@ -705,32 +680,11 @@ void Renderer::buildVoxelTree()
         glUniform1ui(1, start);
         glDispatchCompute(workgroups, 1, 1);
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
-        glFinish();
-        glFlush();
 
         distributeToNeighbors(m_tree_levels[static_cast<size_t>(i)], true);
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
-        glFinish();
-        glFlush();
-
     }
 
-}
-
-/****************************************************************************/
-
-void Renderer::populateGBuffer()
-{
-    m_gbuffer.bindTextures();
-    m_gbuffer.bindFramebuffer();
-
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    renderGeometry(m_gbuffer.getProg(), false, core::res::cameras->getDefaultCam());
-
-    m_gbuffer.unbindFramebuffer();
 }
 
 /****************************************************************************/
@@ -781,17 +735,6 @@ void Renderer::render(const Options & options)
         renderGeometry(m_vertexpulling_prog, false, core::res::cameras->getDefaultCam());
 
         m_gbuffer.unbindFramebuffer();
-
-        // debug
-        /*
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glDisable(GL_DEPTH_TEST);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, m_gbuffer.getDepthTex());
-        glUseProgram(m_debug_tex_prog);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-        return;
-        */
 
         glDisable(GL_DEPTH_TEST);
         m_gbuffer.bindTextures();
@@ -1120,8 +1063,6 @@ void Renderer::distributeToNeighbors(const std::pair<int, int>& level, const boo
     glDispatchCompute(workgroups, 1, 1);
     //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    glFinish();
-    glFlush();
 
     // x-
     glUniform1i(2, 0);
@@ -1129,8 +1070,6 @@ void Renderer::distributeToNeighbors(const std::pair<int, int>& level, const boo
     glDispatchCompute(workgroups, 1, 1);
     //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    glFinish();
-    glFlush();
 
     // y+
     glUniform1i(2, 3);
@@ -1139,8 +1078,6 @@ void Renderer::distributeToNeighbors(const std::pair<int, int>& level, const boo
     glDispatchCompute(workgroups, 1, 1);
     //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    glFinish();
-    glFlush();
 
     // y-
     glUniform1i(2, 2);
@@ -1148,8 +1085,6 @@ void Renderer::distributeToNeighbors(const std::pair<int, int>& level, const boo
     glDispatchCompute(workgroups, 1, 1);
     //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    glFinish();
-    glFlush();
 
     // z+
     glUniform1i(2, 5);
@@ -1158,8 +1093,6 @@ void Renderer::distributeToNeighbors(const std::pair<int, int>& level, const boo
     glDispatchCompute(workgroups, 1, 1);
     //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    glFinish();
-    glFlush();
 
     // z-
     glUniform1i(2, 4);
@@ -1167,8 +1100,6 @@ void Renderer::distributeToNeighbors(const std::pair<int, int>& level, const boo
     glDispatchCompute(workgroups, 1, 1);
     //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    glFinish();
-    glFlush();
 }
 
 /****************************************************************************/
