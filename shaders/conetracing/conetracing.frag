@@ -16,7 +16,8 @@ layout(location = 4) uniform uint u_screenwidth;
 layout(location = 5) uniform uint u_screenheight;
 layout(location = 6) uniform uint u_treeLevels;
 layout(location = 7) uniform uint u_coneGridSize;
-layout(location = 8) uniform uint u_numSteps;
+layout(location = 8) uniform uint u_numStepsSpecular;
+layout(location = 9) uniform uint u_numStepsDiffuse;
 
 in vec2 vsTexCoord;
 
@@ -158,7 +159,6 @@ vec3 traceCone(in const vec3 origin, in const vec3 direction,
     const float tan_a = tan(angle / 2.0);
     const float stepSize = (u_bboxMax.x - u_bboxMin.x) / float(steps);
 
-
     vec3 result = vec3(0.0);
     float alpha = 1.0;
     float dist = stepSize;
@@ -169,12 +169,8 @@ vec3 traceCone(in const vec3 origin, in const vec3 direction,
 
         const float diameter = 2.0 * (tan_a * dist);
 
-        // calculate mipmap level
-        //const uint level = clamp(uint(log2(diameter / float(voxelSize))) - 1, 0, u_treeLevels - 1);
-        //const vec4 color = getColor(level, pos);
-
         // quadrilinear
-        float level = clamp(log2(diameter / voxelSize), 0.0, float(u_treeLevels - 1));
+        float level = float(u_treeLevels - 1) - clamp(log2(diameter / voxelSize), 0.0, float(u_treeLevels - 1));
         vec4 color0 = getColor(uint(floor(level)), pos);
         vec4 color1 = getColor(uint(floor(level + 1.0)), pos);
         float fac = level - floor(level);
@@ -210,16 +206,44 @@ vec3 calculateDiffuseColor(const vec3 normal, const vec3 pos)
             const float ux = (0.5 + float(x)) * step;
 
             // create the cone
-            vec3 v = uniformHemisphereSampling(ux, uy); //  do random here if you want
+            vec3 v = uniformHemisphereSampling(ux, uy);
             vec3 dir = normalize(toWorld(onb, v));
 
             float d = abs(dot(normal, dir));
 
-            totalColor += d * traceCone(pos, dir, angle, u_numSteps);
+            const float tan_a = tan(angle / 2.0);
+            const float stepSize = voxelSize;
+
+            float dist = stepSize;
+            float alpha = 0.0;
+            for (uint i = 0; i < u_numStepsDiffuse; ++i) {
+                const vec3 pos = pos + dist * dir;
+                if (!inScene(pos))
+                    break;
+
+                const float diameter = 2.0 * (tan_a * dist);
+
+                // quadrilinear
+                float level = float(u_treeLevels - 1) - clamp(log2(diameter / voxelSize), 0.0, float(u_treeLevels - 1));
+                vec4 color0 = getColor(uint(floor(level)), pos);
+                vec4 color1 = getColor(uint(floor(level + 1.0)), pos);
+                float fac = level - floor(level);
+                vec4 color = fac * color0 + (1.0 - fac) * color1;
+
+                if(color.a >= 0.0)
+                {
+                    totalColor += d * d * color.rgb;
+                    alpha += color.a;
+                }
+
+                if(alpha >= 1.0) break;
+
+                dist += stepSize;
+            }
         }
 
     }
-    return 0.8 * totalColor / float(u_coneGridSize * u_coneGridSize);
+    return totalColor / float(u_coneGridSize * u_coneGridSize);
 }
 
 /******************************************************************************/
@@ -287,12 +311,12 @@ void main()
     vec3 incident = normalize(wpos.xyz - cam.Position.xyz);
     vec3 refl = reflect(incident, normal);
 
-    float angle = degreesToRadians(20.0);
-    vec3 spec = specular * traceCone(wpos.xyz, refl, angle, u_numSteps);
-    outFragColor = vec4(spec, 1.0);
+    float angle = degreesToRadians(max(60.0, 180.0 * (1.0 - glossy)));
+    vec3 spec = specular * traceCone(wpos.xyz, refl, angle, u_numStepsSpecular);
+    //outFragColor = vec4(spec, 1.0);
 
-    //outFragColor = vec4(calculateDiffuseColor(normal, wpos.xyz), 1.0);
-    //outFragColor = vec4(spec + 2.5 * calculateDiffuseColorAO(normal, wpos.xyz), 1.0);
+    outFragColor = vec4(2.5 * calculateDiffuseColor(normal, wpos.xyz), 1.0);
+    //outFragColor = 0.2*vec4(spec + 5 * calculateDiffuseColor(normal, wpos.xyz), 1.0);
 }
 
 /******************************************************************************/

@@ -825,7 +825,8 @@ void Renderer::render(const Options & options)
             glUniform1ui(6, static_cast<unsigned int>(options.treeLevels));
             //glUniform1ui(6, static_cast<unsigned int>(options.debugLevel + 1));
             glUniform1ui(7, static_cast<unsigned int>(m_options.diffuseConeGridSize));
-            glUniform1ui(8, static_cast<unsigned int>(m_options.diffuseConeSteps));
+            glUniform1ui(8, static_cast<unsigned int>(m_options.specularConeSteps));
+            glUniform1ui(9, static_cast<unsigned int>(m_options.diffuseConeSteps));
 
             glDrawArrays(GL_TRIANGLES, 0, 3);
 
