@@ -152,12 +152,12 @@ vec4 getColor(uint maxLevel, vec3 wpos)
 
 /******************************************************************************/
 
-vec3 traceCone(in const vec3 origin, in const vec3 direction,
+vec3 traceConeSpecular(in const vec3 origin, in const vec3 direction,
         in const float angle, const in uint steps)
 {
     const float tan_a = tan(angle / 2.0);
-    const float stepSize = (u_bboxMax.x - u_bboxMin.x) / float(steps);
-
+    //const float stepSize = (u_bboxMax.x - u_bboxMin.x) / float(steps);
+    const float stepSize = voxelSize;
 
     vec3 result = vec3(0.0);
     float alpha = 1.0;
@@ -173,12 +173,18 @@ vec3 traceCone(in const vec3 origin, in const vec3 direction,
         //const uint level = clamp(uint(log2(diameter / float(voxelSize))) - 1, 0, u_treeLevels - 1);
         //const vec4 color = getColor(level, pos);
 
-        // quadrilinear
-        float level = float(u_treeLevels - 1) - clamp(log2(diameter / voxelSize), 0.0, float(u_treeLevels - 1));
-        vec4 color0 = getColor(uint(floor(level)), pos);
-        vec4 color1 = getColor(uint(floor(level + 1.0)), pos);
-        float fac = level - floor(level);
-        vec4 color = fac * color0 + (1.0 - fac) * color1;
+        vec4 color;
+        if (diameter < voxelSize) {
+            // smaller than lowest level -> no interpolating
+            color = getColor(u_treeLevels - 1, pos);
+        } else {
+            // bigger than lowest level -> quadrilinear interpolating
+            float level = float(u_treeLevels - 1) - clamp(log2(diameter / voxelSize), 0.0, float(u_treeLevels - 1));
+            vec4 color0 = getColor(uint(floor(level)), pos);
+            vec4 color1 = getColor(uint(floor(level + 1.0)), pos);
+            float fac = level - floor(level);
+            color = fac * color0 + (1.0 - fac) * color1;
+        }
 
         result += alpha * color.a * color.rgb;
 
@@ -215,7 +221,7 @@ vec3 calculateDiffuseColor(const vec3 normal, const vec3 pos)
 
             float d = abs(dot(normal, dir));
 
-            totalColor += d * traceCone(pos, dir, angle, u_numSteps);
+            totalColor += d * traceConeSpecular(pos, dir, angle, u_numSteps);
         }
 
     }
@@ -288,7 +294,7 @@ void main()
     vec3 refl = reflect(incident, normal);
 
     float angle = degreesToRadians(20.0);
-    vec3 spec = specular * traceCone(wpos.xyz, refl, angle, u_numSteps);
+    vec3 spec = specular * traceConeSpecular(wpos.xyz, refl, angle, u_numSteps);
     outFragColor = vec4(spec, 1.0);
 
     //outFragColor = vec4(calculateDiffuseColor(normal, wpos.xyz), 1.0);
