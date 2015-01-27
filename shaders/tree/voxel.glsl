@@ -81,6 +81,30 @@ layout(binding = 0, rgba16f) uniform restrict image3D octreeBrickTex;
 
 layout(binding = BRICK_TEX) uniform sampler3D uOctree3DTex;
 
+vec4 sampleBrick(in ivec3 brickCoord, in ivec3 center, in bool fullRange)
+{
+    ivec3 minP = max(center - ivec3(1), ivec3(-1));
+    ivec3 maxP = min(center + ivec3(1), ivec3(1)) + (fullRange ? ivec3(1) : ivec3(0));
+
+    float weights[4] = float[4](1.0 /  8.0,
+                                1.0 / 16.0,
+                                1.0 / 32.0,
+                                1.0 / 64.0);
+
+    vec4 result = vec4(0.0);
+    for (int z = minP.z; z < maxP.z; ++z) {
+        for (int y = minP.y; y < maxP.y; ++y) {
+            for (int x = minP.x; x < maxP.x; ++x) {
+                ivec3 pos = ivec3(x, y, z);
+                ivec3 diff = abs(pos - center);
+                float w = weights[diff.x + diff.y + diff.z];
+                result += w * imageLoad(octreeBrickTex, brickCoord + pos);
+            }
+        }
+    }
+    return result;
+}
+
 #endif // NUM_BRICKS_*
 
 #endif // SHADERS_TREE_VOXEL_GLSL
