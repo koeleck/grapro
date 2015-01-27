@@ -21,6 +21,8 @@ layout(location = 9) uniform uint u_numStepsDiffuse;
 layout(location = 10) uniform uint u_showSpecular;
 layout(location = 11) uniform uint u_showDiffuse;
 layout(location = 12) uniform float u_angleModifier;
+layout(location = 13) uniform float u_diffuseModifier;
+layout(location = 14) uniform float u_specularModifier;
 
 in vec2 vsTexCoord;
 
@@ -338,14 +340,14 @@ void main()
 
     if (u_showSpecular != 0) {
         const vec3 spec = calculateSpecularColor(wpos.xyz, normal, glossy, specular);
-        outFragColor = vec4(spec, 1.0);
+        outFragColor = vec4(u_specularModifier * spec, 1.0);
     } else if (u_showDiffuse != 0) {
         const vec3 diff = calculateDiffuseColor(normal, wpos.xyz);
-        outFragColor = vec4(2.5 * diff, 1.0);
+        outFragColor = vec4(u_diffuseModifier * diff, 1.0);
     } else {
         const vec3 diff = calculateDiffuseColor(normal, wpos.xyz);
         const vec3 spec = calculateSpecularColor(wpos.xyz, normal, glossy, specular);
-        outFragColor = 0.2 * vec4(spec + 4 * diff, 1.0);
+        outFragColor = vec4(u_specularModifier * spec + u_diffuseModifier * diff, 1.0);
     }
 
 }
