@@ -174,7 +174,7 @@ vec3 traceCone(in const vec3 origin, in const vec3 direction,
         //const vec4 color = getColor(level, pos);
 
         // quadrilinear
-        float level = clamp(log2(diameter / voxelSize), 0.0, float(u_treeLevels - 1));
+        float level = float(u_treeLevels - 1) - clamp(log2(diameter / voxelSize), 0.0, float(u_treeLevels - 1));
         vec4 color0 = getColor(uint(floor(level)), pos);
         vec4 color1 = getColor(uint(floor(level + 1.0)), pos);
         float fac = level - floor(level);
