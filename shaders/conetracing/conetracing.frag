@@ -335,9 +335,6 @@ void main()
     readIn(diffuse, normal, specular, glossy, emissive);
     vec4 wpos = resconstructWorldPos(vsTexCoord);
 
-    // diffuse
-    vec3 diff = calculateDiffuseColor(normal, wpos.xyz);
-
     if (u_showSpecular != 0) {
         const vec3 spec = calculateSpecularColor(wpos.xyz, normal, glossy, specular);
         outFragColor = vec4(spec, 1.0);
