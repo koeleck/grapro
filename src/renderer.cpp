@@ -816,7 +816,8 @@ void Renderer::render(const Options & options)
             glUniform3f(3, m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z);
             glUniform1ui(4, static_cast<unsigned int>(vars.screen_width));
             glUniform1ui(5, static_cast<unsigned int>(vars.screen_height));
-            glUniform1ui(6, vars.voxel_octree_levels);
+            //glUniform1ui(6, static_cast<unsigned int>(options.treeLevels));
+            glUniform1ui(6, static_cast<unsigned int>(options.debugLevel + 1));
             glUniform1ui(7, static_cast<unsigned int>(m_options.diffuseConeGridSize));
             glUniform1ui(8, static_cast<unsigned int>(m_options.diffuseConeSteps));
 
