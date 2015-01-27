@@ -26,10 +26,10 @@ float get2DShadow(in const mat4 ProjViewMatrix,
     // scale normal offset by shadow depth
     shadowMapTexelSize *= abs(dot(diff, lightDir)) * fovFactor;
 
-    float cosLightAngle = dot(toLight, normal);
+    float cosLightAngle = abs(dot(toLight, normal));
 
     float normalOffsetScale = clamp(1.0 - cosLightAngle, 0.0, 1.0);
-    const float shadowNormalOffset = 10.0; // TODO
+    const float shadowNormalOffset = 50.0; // TODO
     normalOffsetScale *= shadowNormalOffset * shadowMapTexelSize;
     vec4 shadowOffset = vec4(normal * normalOffsetScale, 0.0);
 
@@ -41,8 +41,8 @@ float get2DShadow(in const mat4 ProjViewMatrix,
     // slope scale
     float sinLightAngle = sqrt(1.0 - cosLightAngle*cosLightAngle);
     float slope = sinLightAngle / max(cosLightAngle, 0.00001);
-    const float slopeScaleBias = 0.02; // TODO
-    float shadowBias = 0.01; // TODO
+    const float slopeScaleBias = 0.09; // TODO
+    float shadowBias = 0.09; // TODO
     shadowBias += slope * slopeScaleBias;
     lP.z -= shadowBias;
 
