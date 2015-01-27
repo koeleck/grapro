@@ -42,7 +42,14 @@ void main()
         // init empty children
         for (uint i = 0; i < 8; ++i) {
             octree[off + i].id = 0u;
-            imageStore(octreeBrickTex, getBrickCoord(off + 1), vec4(0.0));
+            ivec3 brick = getBrickCoord(off + 1);
+            for (int z = -1; z < 2; ++z) {
+                for (int y = -1; y < 2; ++y) {
+                    for (int x = -1; x < 2; ++x) {
+                        imageStore(octreeBrickTex, brick + ivec3(x, y, z), vec4(0.0));
+                    }
+                }
+            }
             octreeInfo[off + i].diffuse = vec3(0.0);
             octreeInfo[off + i].emissive = vec3(0.0);
             octreeInfo[off + i].count = 0;

@@ -29,6 +29,7 @@ void main()
      *   - center:          1/8   (1 point)
      */
 
+    /*
     vec4 result = vec4(0.0);
     float count = 0.0;
     for (int i = 0; i < 8; ++i) {
@@ -43,7 +44,7 @@ void main()
     }
     //result.rgb /= (count * 8.0);
     result.rgb /= 32.0; // 64.0
-    result.a /= 8.0;
+    result.a = 1.0;
 
 
     // edges
@@ -71,13 +72,32 @@ void main()
     // center:
     result.rgb += imageLoad(octreeBrickTex, brick[0] + ivec3(1)).rgb / 4.0; // 8.0;
 
+    */
+
+    vec4 result = vec4(0.0);
+    float count = 0.0;
+    for (int i = 0; i < 8; ++i) {
+        bool isEmpty = ((octree[childidx + i].id & 0x80000000u) == 0);
+        ivec3 brick = getBrickCoord(childidx + i);
+
+        // read value at child center
+        if (!isEmpty) {
+            count += 1.0;
+            result += imageLoad(octreeBrickTex, brick);
+        }
+    }
+    //result.rgb /= count;
+    //result.a /= 8.0;
+    result /= 8.0;
+
     ivec3 thisBrick = getBrickCoord(idx);
-    imageStore(octreeBrickTex, thisBrick, result);
-    //for (int z = -1; z < 2; ++z) {
-    //    for (int y = -1; y < 2; ++y) {
-    //        for (int x = -1; x < 2; ++x) {
-    //            imageStore(octreeBrickTex, thisBrick + ivec3(x, y, z), result);
-    //        }
-    //    }
-    //}
+    //imageStore(octreeBrickTex, thisBrick, result);
+    for (int z = -1; z < 2; ++z) {
+        for (int y = -1; y < 2; ++y) {
+            for (int x = -1; x < 2; ++x) {
+                imageStore(octreeBrickTex, thisBrick + ivec3(x, y, z), result);
+            }
+        }
+    }
+
 }

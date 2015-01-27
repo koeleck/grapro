@@ -684,11 +684,15 @@ void Renderer::buildVoxelTree()
         glDispatchCompute(workgroups, 1, 1);
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
+        distributeToNeighbors(m_tree_levels[static_cast<size_t>(i)], true);
+        glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
         glUseProgram(m_mipmap2_prog);
         glUniform1ui(0, count);
         glUniform1ui(1, start);
         glDispatchCompute(workgroups, 1, 1);
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
+        /*
 
         glUseProgram(m_mipmap3_prog);
         glUniform1ui(0, count);
@@ -696,7 +700,7 @@ void Renderer::buildVoxelTree()
         glDispatchCompute(workgroups, 1, 1);
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
-        distributeToNeighbors(m_tree_levels[static_cast<size_t>(i + 1)], false);
+        distributeToNeighbors(m_tree_levels[static_cast<size_t>(i)], false);
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
         glUseProgram(m_mipmap4_prog);
@@ -704,6 +708,7 @@ void Renderer::buildVoxelTree()
         glUniform1ui(1, start);
         glDispatchCompute(workgroups, 1, 1);
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
+        */
     }
 
 }

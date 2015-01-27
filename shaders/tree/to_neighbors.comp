@@ -31,9 +31,8 @@ void main()
             octreeInfo[idx].z_positive);
 
     uint neighbor = neighbors[uNeighborIdx];
-    if (neighbor == 0)
-        return;
 
+    bool neighborEmpty = (neighbor == 0) || ((octree[idx].id & 0x80000000u) == 0);
     ivec3 thisBrick = getBrickCoord(idx);
     ivec3 otherBrick = getBrickCoord(neighbor);
 
@@ -48,13 +47,19 @@ void main()
             c1[uSwizzle.z] = -uSide;
 
             vec4 val = imageLoad(octreeBrickTex, thisBrick + c0);
-            if (uAverage && uSide < 0) {
-                val *= 0.5;
-                imageStore(octreeBrickTex, thisBrick + c0, val);
-            } else {
-                val += imageLoad(octreeBrickTex, otherBrick + c1);
+            if (!neighborEmpty) {
+                if (uAverage && uSide < 0) {
+                    val *= 0.5;
+                    imageStore(octreeBrickTex, thisBrick + c0, val);
+                } else {
+                    val += imageLoad(octreeBrickTex, otherBrick + c1);
+                }
+            } else if (uAverage) {
+                //val *= 0.5;
+                //imageStore(octreeBrickTex, thisBrick + c0, val);
             }
-            imageStore(octreeBrickTex, otherBrick + c1, val);
+            if (neighbor != 0)
+                imageStore(octreeBrickTex, otherBrick + c1, val);
         }
     }
 }

@@ -55,6 +55,13 @@ float radiansToDegrees(in float rad)
 
 /******************************************************************************/
 
+bool inScene(in vec3 pos)
+{
+    return all(greaterThan(pos, u_bboxMin)) && all(lessThan(pos, u_bboxMax));
+}
+
+/******************************************************************************/
+
 float coneRadiusAtDistance(in Cone cone, in float distance)
 {
     const float angle  = cone.angle * 0.5;
@@ -142,17 +149,21 @@ vec4 getColor(uint maxLevel, vec3 wpos)
 
 /******************************************************************************/
 
-vec3 traceCone(in vec3 origin, in vec3 direction, in float angle, in uint steps)
+vec3 traceCone(in const vec3 origin, in const vec3 direction,
+        in const float angle, const in uint steps)
 {
     const float tan_a = tan(angle / 2.0);
+    const float stepSize = (u_bboxMax.x - u_bboxMin.x) / float(steps);
 
-    float stepSize = (u_bboxMax.x - u_bboxMin.x) / float(steps);
 
     vec3 result = vec3(0.0);
     float alpha = 1.0;
     float dist = stepSize;
     for (uint i = 0; i < steps; ++i) {
         const vec3 pos = origin + dist * direction;
+        if (!inScene(pos))
+            break;
+
         const float diameter = 2.0 * (tan_a * dist);
 
         // calculate mipmap level
@@ -162,10 +173,9 @@ vec3 traceCone(in vec3 origin, in vec3 direction, in float angle, in uint steps)
         // quadrilinear
         float level = clamp(log2(diameter / voxelSize), 0.0, float(u_treeLevels - 1));
         vec4 color0 = getColor(uint(floor(level)), pos);
-        vec4 color1 = getColor(uint(floor(level + 1.1)), pos);
+        vec4 color1 = getColor(uint(floor(level + 1.0)), pos);
         float fac = level - floor(level);
         vec4 color = fac * color0 + (1.0 - fac) * color1;
-
 
         result += alpha * color.a * color.rgb;
 
@@ -271,8 +281,7 @@ void main()
     vec3 incident = normalize(wpos.xyz - cam.Position.xyz);
     vec3 refl = reflect(incident, normal);
 
-
-    float angle = degreesToRadians(10.0);
+    float angle = degreesToRadians(20.0);
     vec3 spec = specular * traceCone(wpos.xyz, refl, angle, u_numSteps);
     outFragColor = vec4(spec, 1.0);
 
