@@ -95,7 +95,7 @@ private:
     core::Program                       m_voxel_prog;
     core::Program                       m_octreeNodeFlag_prog;
     core::Program                       m_octreeNodeAlloc_prog;
-    core::Program                       m_octreeLeafStore_prog;
+    core::Program                       m_octreeNodeInit_prog;
     core::Program                       m_inject_lighting_prog;
     core::Program                       m_dist_to_neighbors_prog;
     core::Program                       m_mipmap_prog;

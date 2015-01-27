@@ -121,7 +121,9 @@ vec4 getColor(uint maxLevel, vec3 wpos)
     uint currentNode = 0;
 
     // iterate through all tree levels
+    vpos /= pow(2.0, float(u_treeLevels - maxLevel - 1));;
     for (uint i = 0u; i < maxLevel; ++i) {
+        //vpos *= 0.5;
         uint nodeptr = octree[currentNode].id;
         if ((nodeptr & 0x80000000u) == 0)
             break;
@@ -278,8 +280,8 @@ void main()
     readIn(diffuse, normal, specular, glossy, emissive);
     vec4 wpos = resconstructWorldPos(vsTexCoord);
 
-    outFragColor = getColor(u_treeLevels - 1, wpos.xyz);
-    return;
+    //outFragColor = getColor(u_treeLevels - 4, wpos.xyz);
+    //return;
 
     // specular
     vec3 incident = normalize(wpos.xyz - cam.Position.xyz);

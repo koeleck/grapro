@@ -26,6 +26,7 @@ namespace
 
 constexpr int FLAG_PROG_LOCAL_SIZE = 256;
 constexpr int ALLOC_PROG_LOCAL_SIZE = 256;
+constexpr int INIT_PROG_LOCAL_SIZE = 256;
 constexpr int INJECT_PROG_LOCAL_SIZE = 256;
 constexpr int TO_NEIGHBORS_PROG_LOCAL_SIZE = 256;
 constexpr int MIPMAP_PROG_LOCAL_SIZE = 128;
@@ -232,8 +233,12 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
             bricks_def);
     m_octreeNodeAlloc_prog = core::res::shaders->registerProgram("octreeNodeAlloc_prog", {"octreeNodeAllocComp"});
 
-    core::res::shaders->registerShader("octreeLeafStoreComp", "tree/leafstore.comp", GL_COMPUTE_SHADER);
-    m_octreeLeafStore_prog = core::res::shaders->registerProgram("octreeLeafStore_prog", {"octreeLeafStoreComp"});
+    core::res::shaders->registerShader("octreeNodeInitComp", "tree/nodeinit.comp",
+            GL_COMPUTE_SHADER,
+            "LOCAL_SIZE " + std::to_string(INIT_PROG_LOCAL_SIZE) + ", " +
+            bricks_def);
+    m_octreeNodeInit_prog = core::res::shaders->registerProgram("octreeNodeInit_prog",
+            {"octreeNodeInitComp"});
 
     core::res::shaders->registerShader("octreeInjectLightingComp", "tree/inject_direct_lighting.comp",
             GL_COMPUTE_SHADER, "LOCAL_SIZE " + std::to_string(INJECT_PROG_LOCAL_SIZE) + ", " +
@@ -528,6 +533,7 @@ void Renderer::buildVoxelTree()
 
     const GLuint flag_prog = m_octreeNodeFlag_prog;
     const GLuint alloc_prog = m_octreeNodeAlloc_prog;
+    const GLuint init_prog = m_octreeNodeInit_prog;
 
     // uniforms
     glProgramUniform1ui(flag_prog, 0, m_numVoxelFrag);
@@ -615,10 +621,24 @@ void Renderer::buildVoxelTree()
 
         glProgramUniform1ui(alloc_prog, 0, previously_allocated);
         glProgramUniform1ui(alloc_prog, 1, start_node);
-        glProgramUniform1f(alloc_prog, 2, quarterVoxelSize);
 
         GLuint alloc_workgroups = (previously_allocated + ALLOC_PROG_LOCAL_SIZE - 1) / ALLOC_PROG_LOCAL_SIZE;
         glDispatchCompute(alloc_workgroups, 1, 1);
+        glMemoryBarrier(GL_ALL_BARRIER_BITS);
+        glFinish();
+        glFlush();
+
+        /*
+         * Init child nodes
+         */
+        glUseProgram(init_prog);
+
+        glProgramUniform1ui(init_prog, 0, previously_allocated);
+        glProgramUniform1ui(init_prog, 1, start_node);
+        glProgramUniform1f(init_prog, 2, quarterVoxelSize);
+
+        GLuint init_workgroups = (previously_allocated + INIT_PROG_LOCAL_SIZE - 1) / INIT_PROG_LOCAL_SIZE;
+        glDispatchCompute(init_workgroups, 1, 1);
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
         // start_node points to the first node that was allocated in this iteration
@@ -671,7 +691,9 @@ void Renderer::buildVoxelTree()
     // mipmap
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
     glBindImageTexture(0, m_brick_texture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA16F);
-    distributeToNeighbors(m_tree_levels.back(), false);
+    distributeToNeighbors(m_tree_levels.back(), true);
+    glFinish();
+    glFlush();
 
     for (int i = static_cast<int>(vars.voxel_octree_levels) - 2; i >= 0; i--) {
         const unsigned int start = static_cast<unsigned int>(m_tree_levels[static_cast<size_t>(i)].first);
@@ -683,32 +705,14 @@ void Renderer::buildVoxelTree()
         glUniform1ui(1, start);
         glDispatchCompute(workgroups, 1, 1);
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
+        glFinish();
+        glFlush();
 
         distributeToNeighbors(m_tree_levels[static_cast<size_t>(i)], true);
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
+        glFinish();
+        glFlush();
 
-        glUseProgram(m_mipmap2_prog);
-        glUniform1ui(0, count);
-        glUniform1ui(1, start);
-        glDispatchCompute(workgroups, 1, 1);
-        glMemoryBarrier(GL_ALL_BARRIER_BITS);
-        /*
-
-        glUseProgram(m_mipmap3_prog);
-        glUniform1ui(0, count);
-        glUniform1ui(1, start);
-        glDispatchCompute(workgroups, 1, 1);
-        glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-        distributeToNeighbors(m_tree_levels[static_cast<size_t>(i)], false);
-        glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-        glUseProgram(m_mipmap4_prog);
-        glUniform1ui(0, count);
-        glUniform1ui(1, start);
-        glDispatchCompute(workgroups, 1, 1);
-        glMemoryBarrier(GL_ALL_BARRIER_BITS);
-        */
     }
 
 }
@@ -810,14 +814,16 @@ void Renderer::render(const Options & options)
             glBindTexture(GL_TEXTURE_3D, m_brick_texture);
             glUseProgram(m_conetracing_prog);
 
-            const auto voxelDim = static_cast<unsigned int>(std::pow(2, vars.voxel_octree_levels - 1));
+            //const auto voxelDim = static_cast<unsigned int>(std::pow(2, options.treeLevels - 1));
+            const auto voxelDim = static_cast<unsigned int>(std::pow(2, options.treeLevels - 1));
+            //const auto voxelDim = static_cast<unsigned int>(std::pow(2, options.debugLevel));
             glUniform1ui(1, voxelDim);
             glUniform3f(2, m_scene_bbox.pmin.x, m_scene_bbox.pmin.y, m_scene_bbox.pmin.z);
             glUniform3f(3, m_scene_bbox.pmax.x, m_scene_bbox.pmax.y, m_scene_bbox.pmax.z);
             glUniform1ui(4, static_cast<unsigned int>(vars.screen_width));
             glUniform1ui(5, static_cast<unsigned int>(vars.screen_height));
-            //glUniform1ui(6, static_cast<unsigned int>(options.treeLevels));
-            glUniform1ui(6, static_cast<unsigned int>(options.debugLevel + 1));
+            glUniform1ui(6, static_cast<unsigned int>(options.treeLevels));
+            //glUniform1ui(6, static_cast<unsigned int>(options.debugLevel + 1));
             glUniform1ui(7, static_cast<unsigned int>(m_options.diffuseConeGridSize));
             glUniform1ui(8, static_cast<unsigned int>(m_options.diffuseConeSteps));
 
@@ -1100,6 +1106,8 @@ void Renderer::distributeToNeighbors(const std::pair<int, int>& level, const boo
     glDispatchCompute(workgroups, 1, 1);
     //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    glFinish();
+    glFlush();
 
     // x-
     glUniform1i(2, 0);
@@ -1107,6 +1115,8 @@ void Renderer::distributeToNeighbors(const std::pair<int, int>& level, const boo
     glDispatchCompute(workgroups, 1, 1);
     //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    glFinish();
+    glFlush();
 
     // y+
     glUniform1i(2, 3);
@@ -1115,6 +1125,8 @@ void Renderer::distributeToNeighbors(const std::pair<int, int>& level, const boo
     glDispatchCompute(workgroups, 1, 1);
     //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    glFinish();
+    glFlush();
 
     // y-
     glUniform1i(2, 2);
@@ -1122,6 +1134,8 @@ void Renderer::distributeToNeighbors(const std::pair<int, int>& level, const boo
     glDispatchCompute(workgroups, 1, 1);
     //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    glFinish();
+    glFlush();
 
     // z+
     glUniform1i(2, 5);
@@ -1130,6 +1144,8 @@ void Renderer::distributeToNeighbors(const std::pair<int, int>& level, const boo
     glDispatchCompute(workgroups, 1, 1);
     //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    glFinish();
+    glFlush();
 
     // z-
     glUniform1i(2, 4);
@@ -1137,6 +1153,8 @@ void Renderer::distributeToNeighbors(const std::pair<int, int>& level, const boo
     glDispatchCompute(workgroups, 1, 1);
     //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    glFinish();
+    glFlush();
 }
 
 /****************************************************************************/

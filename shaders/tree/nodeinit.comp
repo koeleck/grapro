@@ -1,27 +1,152 @@
 #version 440 core
 
 #include "common/bindings.glsl"
+#include "common/compression.glsl"
+#include "voxel.glsl"
 
-layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout(local_size_x = LOCAL_SIZE, local_size_y = 1, local_size_z = 1) in;
 
-// octree buffer
-struct octreeBuffer {
-	uint id;
-};
+layout(location = 0) uniform uint uCount;
+layout(location = 1) uniform uint uStartNode;
+layout(location = 2) uniform float uQuarterVoxelSize;
 
-layout (std430, binding = OCTREE_BINDING) buffer octreeBlock {
-	octreeBuffer octree[];
-};
-
-uniform uint u_num;
-uniform uint u_allocStart;
+uint findChild(in uint node, in uint child)
+{
+    if (node == 0)
+        return 0;
+    uint childidx = octree[node].id;
+    if ((childidx & 0x80000000u) == 0u)
+        return 0;
+    return (childidx & 0x7fffffffu) + child;
+}
 
 void main()
 {
-	// retrieve current thread id and return if out of bounds
-	uint threadId = gl_GlobalInvocationID.y * gl_NumWorkGroups.x * gl_WorkGroupSize.x + gl_GlobalInvocationID.x;
-	if (threadId >= u_num)
-		return;
+    // retrieve current thread id and return if out of bounds
+    const uint threadId = gl_GlobalInvocationID.x;
+    if (threadId >= uCount)
+        return;
 
-	octree[u_allocStart + threadId].id = 0;
+    const uint idx = uStartNode + threadId;
+    uint childidx = octree[idx].id;
+    if ((childidx & 0x80000000u) == 0u)
+        return;
+
+    // alloc
+    uint off = (octree[idx].id & 0x7fffffffu);
+
+    // init empty children
+    for (uint i = 0; i < 8; ++i) {
+        octree[off + i].id = 0u;
+        ivec3 brick = getBrickCoord(off + 1);
+        for (int z = -1; z < 2; ++z) {
+            for (int y = -1; y < 2; ++y) {
+                for (int x = -1; x < 2; ++x) {
+                    imageStore(octreeBrickTex, brick + ivec3(x, y, z), vec4(0.0));
+                }
+            }
+        }
+        octreeInfo[off + i].diffuse = vec3(0.0);
+        octreeInfo[off + i].emissive = vec3(0.0);
+        octreeInfo[off + i].count = 0;
+        octreeInfo[off + i].normal = vec3(0.0);
+    }
+
+    // get informations about current node:
+    const vec3 pos = octreeInfo[idx].position;
+    uvec2 x_neighbor = uvec2(octreeInfo[idx].x_negative, octreeInfo[idx].x_positive);
+    uvec2 y_neighbor = uvec2(octreeInfo[idx].y_negative, octreeInfo[idx].y_positive);
+    uvec2 z_neighbor = uvec2(octreeInfo[idx].z_negative, octreeInfo[idx].z_positive);
+
+
+
+    /*
+              --------
+             / 6 | 7 |
+            /---------
+           / | 4 | 5 |
+          /  ---------
+         /  /        /
+        /  /        /   ^ z
+       ---------   /   /
+    ^  | 2 | 3 |  /   /
+    |  --------- /   /
+    |  | 0 | 1 |/
+       ---------    ---> x
+    */
+
+    // set info
+    // child 0:
+    octreeInfo[off + 0].position = pos - uQuarterVoxelSize;
+    octreeInfo[off + 0].x_negative = findChild(x_neighbor[0], 1);
+    octreeInfo[off + 0].x_positive = off + 1;
+    octreeInfo[off + 0].y_negative = findChild(y_neighbor[0], 2);
+    octreeInfo[off + 0].y_positive = off + 2;
+    octreeInfo[off + 0].z_negative = findChild(z_neighbor[0], 4);
+    octreeInfo[off + 0].z_positive = off + 4;
+
+    // child 1:
+    octreeInfo[off + 1].position = vec3(pos.x + uQuarterVoxelSize, pos.yz - uQuarterVoxelSize);
+    octreeInfo[off + 1].x_negative = off;
+    octreeInfo[off + 1].x_positive = findChild(x_neighbor[1], 0);
+    octreeInfo[off + 1].y_negative = findChild(y_neighbor[0], 3);
+    octreeInfo[off + 1].y_positive = off + 3;
+    octreeInfo[off + 1].z_negative = findChild(z_neighbor[0], 5);
+    octreeInfo[off + 1].z_positive = off + 5;
+
+    // child 2:
+    octreeInfo[off + 2].position = vec3(pos.x - uQuarterVoxelSize, pos.y + uQuarterVoxelSize,
+            pos.z - uQuarterVoxelSize);
+    octreeInfo[off + 2].x_negative = findChild(x_neighbor[0], 3);
+    octreeInfo[off + 2].x_positive = off + 3;
+    octreeInfo[off + 2].y_negative = off;
+    octreeInfo[off + 2].y_positive = findChild(y_neighbor[1], 0);
+    octreeInfo[off + 2].z_negative = findChild(z_neighbor[0], 6);
+    octreeInfo[off + 2].z_positive = off + 6;
+
+    // child 3:
+    octreeInfo[off + 3].position = vec3(pos.xy + uQuarterVoxelSize, pos.z - uQuarterVoxelSize);
+    octreeInfo[off + 3].x_negative = off + 2;
+    octreeInfo[off + 3].x_positive = findChild(x_neighbor[1], 2);
+    octreeInfo[off + 3].y_negative = off + 1;
+    octreeInfo[off + 3].y_positive = findChild(y_neighbor[1], 1);
+    octreeInfo[off + 3].z_negative = findChild(z_neighbor[0], 7);
+    octreeInfo[off + 3].z_positive = off + 7;
+
+    // child 4:
+    octreeInfo[off + 4].position = vec3(pos.xy - uQuarterVoxelSize, pos.z + uQuarterVoxelSize);
+    octreeInfo[off + 4].x_negative = findChild(x_neighbor[0], 5);
+    octreeInfo[off + 4].x_positive = off + 5;
+    octreeInfo[off + 4].y_negative = findChild(y_neighbor[0], 6);
+    octreeInfo[off + 4].y_positive = off + 6;
+    octreeInfo[off + 4].z_negative = off;
+    octreeInfo[off + 4].z_positive = findChild(z_neighbor[1], 0);
+
+    // child 5:
+    octreeInfo[off + 5].position = vec3(pos.x + uQuarterVoxelSize, pos.y - uQuarterVoxelSize,
+            pos.z + uQuarterVoxelSize);
+    octreeInfo[off + 5].x_negative = off + 4;
+    octreeInfo[off + 5].x_positive = findChild(x_neighbor[1], 4);
+    octreeInfo[off + 5].y_negative = findChild(y_neighbor[0], 7);
+    octreeInfo[off + 5].y_positive = off + 7;
+    octreeInfo[off + 5].z_negative = off + 1;
+    octreeInfo[off + 5].z_positive = findChild(z_neighbor[1], 1);
+
+    // child 6:
+    octreeInfo[off + 6].position = vec3(pos.x - uQuarterVoxelSize, pos.yz + uQuarterVoxelSize);
+    octreeInfo[off + 6].x_negative = findChild(x_neighbor[0], 7);
+    octreeInfo[off + 6].x_positive = off + 7;
+    octreeInfo[off + 6].y_negative = off + 4;
+    octreeInfo[off + 6].y_positive = findChild(y_neighbor[1], 4);
+    octreeInfo[off + 6].z_negative = off + 2;
+    octreeInfo[off + 6].z_positive = findChild(z_neighbor[1], 2);
+
+    // child 7:
+    octreeInfo[off + 7].position = pos + uQuarterVoxelSize;
+    octreeInfo[off + 7].x_negative = off + 6;
+    octreeInfo[off + 7].x_positive = findChild(x_neighbor[1], 6);
+    octreeInfo[off + 7].y_negative = off + 5;
+    octreeInfo[off + 7].y_positive = findChild(y_neighbor[1], 5);
+    octreeInfo[off + 7].z_negative = off + 3;
+    octreeInfo[off + 7].z_positive = findChild(z_neighbor[1], 3);
 }

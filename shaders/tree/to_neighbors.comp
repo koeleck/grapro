@@ -52,7 +52,7 @@ void main()
             if (uSide == 1) {
                 vec4 other_val = imageLoad(octreeBrickTex, otherBrick + c1);
                 val += other_val;
-            } else {
+            } else if (uAverage) {
                 val *= 0.5;
                 imageStore(octreeBrickTex, thisBrick + c0, val);
             }

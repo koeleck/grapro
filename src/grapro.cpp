@@ -124,8 +124,7 @@ void GraPro::update_gui(const double delta_t)
             }
             m_renderer.markTreeInvalid();
         }
-        if (m_options.renderVoxelBoxes || m_options.renderVoxelColors || m_options.renderVoxelBoxesColored)
-            ImGui::SliderInt("Debug tree level", &m_options.debugLevel, 0, m_options.treeLevels - 1);
+        ImGui::SliderInt("Debug tree level", &m_options.debugLevel, 0, m_options.treeLevels - 1);
 
         ImGui::Checkbox("direct lighting", &m_options.renderDirectLighting);
         ImGui::Checkbox("toggle conetracing", &m_options.renderConeTracing);
