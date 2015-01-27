@@ -21,6 +21,7 @@ layout(location = 9) uniform uint u_numStepsDiffuse;
 layout(location = 10) uniform float u_angleModifier;
 layout(location = 11) uniform float u_diffuseModifier;
 layout(location = 12) uniform float u_specularModifier;
+layout(location = 13) uniform uint u_normalizeOutput;
 
 in vec2 vsTexCoord;
 
@@ -341,6 +342,7 @@ void main()
     if (u_diffuseModifier > 0.0) diff = calculateDiffuseColor(normal, wpos.xyz);
     if (u_specularModifier > 0.0) spec = calculateSpecularColor(wpos.xyz, normal, glossy, specular);
     outFragColor = vec4(u_specularModifier * spec + u_diffuseModifier * diff, 1.0);
+    if (u_normalizeOutput != 0) outFragColor /= (u_specularModifier * u_diffuseModifier);
 }
 
 /******************************************************************************/

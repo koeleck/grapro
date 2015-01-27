@@ -773,6 +773,11 @@ void Renderer::render(const Options & options)
             glUniform1f(10, m_options.angleModifier);
             glUniform1f(11, m_options.diffuseModifier);
             glUniform1f(12, m_options.specularModifier);
+            if (m_options.normalizeOutput) {
+                glUniform1ui(13, 1);
+            } else {
+                glUniform1ui(13, 0);
+            }
 
             glDrawArrays(GL_TRIANGLES, 0, 3);
 
