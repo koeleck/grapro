@@ -310,6 +310,17 @@ void readIn(out vec3 diffuse, out vec3 normal, out float spec,
 
 /******************************************************************************/
 
+vec3 calculateSpecularColor(in const vec3 wpos, in const vec3 normal,
+                            in const float glossy, in const float specular)
+{
+    const vec3 incident = normalize(wpos.xyz - cam.Position.xyz);
+    const vec3 refl = reflect(incident, normal);
+    const float angle = degreesToRadians(max(60.0, 180.0 * (1.0 - glossy)));
+    return specular * traceConeSpecular(wpos.xyz, refl, angle, u_numStepsSpecular);
+}
+
+/******************************************************************************/
+
 void main()
 {
     vec3 diffuse;
@@ -321,20 +332,18 @@ void main()
     readIn(diffuse, normal, specular, glossy, emissive);
     vec4 wpos = resconstructWorldPos(vsTexCoord);
 
-    // specular
-    vec3 incident = normalize(wpos.xyz - cam.Position.xyz);
-    vec3 refl = reflect(incident, normal);
-    float angle = degreesToRadians(max(60.0, 180.0 * (1.0 - glossy)));
-    vec3 spec = specular * traceConeSpecular(wpos.xyz, refl, angle, u_numStepsSpecular);
-
     // diffuse
     vec3 diff = calculateDiffuseColor(normal, wpos.xyz);
 
     if (u_showSpecular != 0) {
+        const vec3 spec = calculateSpecularColor(wpos.xyz, normal, glossy, specular);
         outFragColor = vec4(spec, 1.0);
     } else if (u_showDiffuse != 0) {
+        const vec3 diff = calculateDiffuseColor(normal, wpos.xyz);
         outFragColor = vec4(2.5 * diff, 1.0);
     } else {
+        const vec3 diff = calculateDiffuseColor(normal, wpos.xyz);
+        const vec3 spec = calculateSpecularColor(wpos.xyz, normal, glossy, specular);
         outFragColor = 0.2 * vec4(spec + 4 * diff, 1.0);
     }
 
