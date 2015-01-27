@@ -16,4 +16,19 @@
 #define LIGHT_ID_BINDING    9
 #define OCTREE_INFO_BINDING 10
 
+#define DIFFUSE_TEX_UNIT        0
+#define SPECULAR_TEX_UNIT       1
+#define GLOSSY_TEX_UNIT         2
+#define NORMAL_TEX_UNIT         3
+#define EMISSIVE_TEX_UNIT       4
+#define ALPHA_TEX_UNIT          5
+#define AMBIENT_TEX_UNIT        6
+#define SHADOWMAP_TEX_UNIT      7
+#define SHADOWCUBEMAP_TEX_UNIT  8
+
+#define GBUFFER_DEPTH_TEX                     9
+#define GBUFFER_DIFFUSE_NORMAL_TEX            10
+#define GBUFFER_SPECULAR_GLOSSY_EMISSIVE_TEX  11
+#define BRICK_TEX                             12
+
 #endif // SHADERS_COMMON_BINDINGS_GLSL

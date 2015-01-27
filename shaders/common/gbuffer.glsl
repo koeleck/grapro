@@ -3,9 +3,9 @@
 
 #include "common/camera.glsl"
 
-layout(binding = 0) uniform sampler2D uDepthTex;
-layout(binding = 1) uniform sampler2D uDiffuseNormalTex;
-layout(binding = 2) uniform sampler2D uSpecularGlossyEmissiveTex;
+layout(binding = GBUFFER_DEPTH_TEX) uniform sampler2D uDepthTex;
+layout(binding = GBUFFER_DIFFUSE_NORMAL_TEX) uniform sampler2D uDiffuseNormalTex;
+layout(binding = GBUFFER_SPECULAR_GLOSSY_EMISSIVE_TEX) uniform sampler2D uSpecularGlossyEmissiveTex;
 
 float edge_filter(in vec2 center, in vec2 a0, in vec2 a1,
                   in vec2 a2, in vec2 a3)

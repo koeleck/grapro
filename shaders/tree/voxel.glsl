@@ -79,7 +79,7 @@ vec3 getBrickTexCoord(in uint idx, vec3 posInVoxel)
 
 layout(binding = 0, rgba16f) uniform restrict image3D octreeBrickTex;
 
-layout(binding = 3) uniform sampler3D uOctree3DTex;
+layout(binding = BRICK_TEX) uniform sampler3D uOctree3DTex;
 
 #endif // NUM_BRICKS_*
 
