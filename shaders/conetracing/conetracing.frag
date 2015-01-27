@@ -338,17 +338,11 @@ void main()
     readIn(diffuse, normal, specular, glossy, emissive);
     vec4 wpos = resconstructWorldPos(vsTexCoord);
 
-    if (u_showSpecular != 0) {
-        const vec3 spec = calculateSpecularColor(wpos.xyz, normal, glossy, specular);
-        outFragColor = vec4(u_specularModifier * spec, 1.0);
-    } else if (u_showDiffuse != 0) {
-        const vec3 diff = calculateDiffuseColor(normal, wpos.xyz);
-        outFragColor = vec4(u_diffuseModifier * diff, 1.0);
-    } else {
-        const vec3 diff = calculateDiffuseColor(normal, wpos.xyz);
-        const vec3 spec = calculateSpecularColor(wpos.xyz, normal, glossy, specular);
-        outFragColor = vec4(u_specularModifier * spec + u_diffuseModifier * diff, 1.0);
-    }
+    vec3 diff = vec3(0);
+    vec3 spec = vec3(0);
+    if (u_diffuseModifier > 0.0) diff = calculateDiffuseColor(normal, wpos.xyz);
+    if (u_specularModifier > 0.0) spec = calculateSpecularColor(wpos.xyz, normal, glossy, specular);
+    outFragColor = vec4(u_specularModifier * spec + u_diffuseModifier * diff, 1.0);
 
 }
 
