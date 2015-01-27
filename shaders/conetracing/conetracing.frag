@@ -160,6 +160,7 @@ vec3 traceConeSpecular(in const vec3 origin, in const vec3 direction,
 {
     const float tan_a = tan(angle / 2.0);
     const float stepSize = (u_bboxMax.x - u_bboxMin.x) / float(steps);
+    const float maxLevel = float(u_treeLevels - 1);
 
     vec3 result = vec3(0.0);
     float alpha = 1.0;
@@ -177,7 +178,6 @@ vec3 traceConeSpecular(in const vec3 origin, in const vec3 direction,
             color = getColor(u_treeLevels - 1, pos);
         } else {
             // bigger than lowest level
-            const float maxLevel = float(u_treeLevels - 1);
             const float logSize = clamp(log2(diameter / voxelSize), 0.0, maxLevel);
             const float level = maxLevel - logSize;
             if (float(uint(level)) == level) {
