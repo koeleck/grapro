@@ -139,15 +139,6 @@ void GraPro::update_gui(const double delta_t)
             ImGui::SliderFloat("specular angle modifier", &m_options.angleModifier, 0.f, 1.f);
             ImGui::SliderFloat("specular intensity modifier", &m_options.specularModifier, 0.f, 10.f);
             ImGui::SliderFloat("diffuse intensity modifier", &m_options.diffuseModifier, 0.f, 10.f);
-            bool specBefore = m_options.renderIndirectSpecular;
-            bool diffBefore = m_options.renderIndirectDiffuse;
-            ImGui::Checkbox("show indirect specular", &m_options.renderIndirectSpecular);
-            ImGui::Checkbox("show indirect diffuse", &m_options.renderIndirectDiffuse);
-            if (!specBefore && m_options.renderIndirectSpecular && m_options.renderIndirectDiffuse) {
-                m_options.renderIndirectDiffuse = false;
-            } else if (!diffBefore && m_options.renderIndirectSpecular && m_options.renderIndirectDiffuse) {
-                m_options.renderIndirectSpecular = false;
-            }
         }
 
         // Timers: Just create your timer via m_timers and they will

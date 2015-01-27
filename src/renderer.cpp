@@ -770,19 +770,9 @@ void Renderer::render(const Options & options)
             glUniform1ui(7, static_cast<unsigned int>(m_options.diffuseConeGridSize));
             glUniform1ui(8, static_cast<unsigned int>(m_options.specularConeSteps));
             glUniform1ui(9, static_cast<unsigned int>(m_options.diffuseConeSteps));
-            if (m_options.renderIndirectSpecular) {
-                glUniform1ui(10, 1);
-            } else {
-                glUniform1ui(10, 0);
-            }
-            if (m_options.renderIndirectDiffuse) {
-                glUniform1ui(11, 1);
-            } else {
-                glUniform1ui(11, 0);
-            }
-            glUniform1f(12, m_options.angleModifier);
-            glUniform1f(13, m_options.diffuseModifier);
-            glUniform1f(14, m_options.specularModifier);
+            glUniform1f(10, m_options.angleModifier);
+            glUniform1f(11, m_options.diffuseModifier);
+            glUniform1f(12, m_options.specularModifier);
 
             glDrawArrays(GL_TRIANGLES, 0, 3);
 
