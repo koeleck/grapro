@@ -21,6 +21,7 @@ layout(location = 9) uniform uint u_numStepsDiffuse;
 layout(location = 10) uniform float u_angleModifier;
 layout(location = 11) uniform float u_diffuseModifier;
 layout(location = 12) uniform float u_specularModifier;
+layout(location = 13) uniform uint u_normalizeOutput;
 
 in vec2 vsTexCoord;
 
@@ -156,12 +157,41 @@ vec4 getColor(uint maxLevel, vec3 wpos)
 
 /******************************************************************************/
 
+vec4 calculateColorAt(in const vec3 pos, in const float diameter)
+{
+    const float maxLevel = float(u_treeLevels - 1);
+
+    if (diameter <= voxelSize) {
+        // smaller or equal than lowest level -> no interpolating
+        return getColor(u_treeLevels - 1, pos);
+    } else {
+        // bigger than lowest level
+        const float ratio = diameter / voxelSize;
+        const float logSize = min(log2(ratio), maxLevel);
+        const float level = maxLevel - logSize;
+        if (float(uint(level)) == level) {
+            // exactly at a level -> no interpolating
+            return getColor(uint(level), pos);
+        } else {
+            // between two levels -> quadrilinear interpolating
+            const vec4 colorHigher = getColor(uint(level) + 1, pos);
+            const vec4 colorLower = getColor(uint(level), pos);
+            //const float alpha = ceil(level) - level;
+            //const float alpha = pow(2.0, ceil(level) - level) - 1;
+            const float alpha = (ratio / pow(2, floor(logSize))) - 1;
+            //clamp(alpha, 0.0, 1.0);
+            return (1.0 - alpha) * colorHigher + alpha * colorLower;
+        }
+    }
+}
+
+/******************************************************************************/
+
 vec3 traceConeSpecular(in const vec3 origin, in const vec3 direction,
         in const float angle, const in uint steps)
 {
     const float tan_a = tan(angle / 2.0);
     const float stepSize = (u_bboxMax.x - u_bboxMin.x) / float(steps);
-    const float maxLevel = float(u_treeLevels - 1);
 
     vec3 result = vec3(0.0);
     float alpha = 1.0;
@@ -171,27 +201,8 @@ vec3 traceConeSpecular(in const vec3 origin, in const vec3 direction,
         if (!inScene(pos))
             break;
 
-        const float diameter = 2.0 * (tan_a * dist);
-
-        vec4 color;
-        if (diameter <= voxelSize) {
-            // smaller or equal than lowest level -> no interpolating
-            color = getColor(u_treeLevels - 1, pos);
-        } else {
-            // bigger than lowest level
-            const float logSize = clamp(log2(diameter / voxelSize), 0.0, maxLevel);
-            const float level = maxLevel - logSize;
-            if (float(uint(level)) == level) {
-                // exactly at a level -> no interpolating
-                color = getColor(uint(level), pos);
-            } else {
-                // between two levels -> quadrilinear interpolating
-                const vec4 colorHigher = getColor(uint(ceil(level)), pos);
-                const vec4 colorLower = getColor(uint(floor(level)), pos);
-                const float alpha = ceil(level) - level;
-                color = (1.0 - alpha) * colorHigher + alpha * colorLower;
-            }
-        }
+        const float diameter = clamp(2.0 * (tan_a * dist), 0.0, pow(2.0, u_treeLevels - 1));
+        const vec4 color = calculateColorAt(pos, diameter);
 
         result += alpha * color.a * color.rgb;
 
@@ -200,7 +211,7 @@ vec3 traceConeSpecular(in const vec3 origin, in const vec3 direction,
         }
 
         alpha *= (1.0 - color.a);
-        dist += stepSize;
+        dist += max(stepSize, diameter);
 
         // alpha correction because of step size
         alpha = 1.0 - pow(1.0 - alpha, stepSize / voxelSize);
@@ -242,14 +253,8 @@ vec3 calculateDiffuseColor(const vec3 normal, const vec3 pos)
                 if (!inScene(pos))
                     break;
 
-                const float diameter = 2.0 * (tan_a * dist);
-
-                // quadrilinear
-                float level = float(u_treeLevels - 1) - clamp(log2(diameter / voxelSize), 0.0, float(u_treeLevels - 1));
-                vec4 color0 = getColor(uint(floor(level)), pos);
-                vec4 color1 = getColor(uint(floor(level + 1.0)), pos);
-                float fac = level - floor(level);
-                vec4 color = fac * color0 + (1.0 - fac) * color1;
+                const float diameter = clamp(2.0 * (tan_a * dist), 0.0, pow(2.0, u_treeLevels - 1));
+                const vec4 color = calculateColorAt(pos, diameter);
 
                 if(color.a >= 0.0)
                 {
@@ -259,7 +264,7 @@ vec3 calculateDiffuseColor(const vec3 normal, const vec3 pos)
 
                 if(alpha >= 1.0) break;
 
-                dist += stepSize;
+                dist += max(stepSize, diameter);
             }
         }
 
@@ -336,10 +341,19 @@ void main()
     readIn(diffuse, normal, specular, glossy, emissive);
     vec4 wpos = resconstructWorldPos(vsTexCoord);
 
-    vec3 spec = calculateSpecularColor(wpos.xyz, normal, glossy, specular);
-    vec3 diff = calculateDiffuseColor(normal, wpos.xyz) * diffuse;
-    
+    vec3 diff = vec3(0);
+    vec3 spec = vec3(0);
+    if (u_diffuseModifier > 0.0) diff = calculateDiffuseColor(normal, wpos.xyz);
+    if (u_specularModifier > 0.0) spec = calculateSpecularColor(wpos.xyz, normal, glossy, specular);
     outFragColor = vec4(u_specularModifier * spec + u_diffuseModifier * diff, 1.0);
+    if (u_normalizeOutput != 0) {
+        if (u_specularModifier != 0.f) {
+            outFragColor /= u_specularModifier;
+        }
+        if (u_diffuseModifier != 0.f) {
+            outFragColor /= u_diffuseModifier;
+        }
+    }
 }
 
 /******************************************************************************/

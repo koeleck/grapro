@@ -27,6 +27,7 @@ struct Options
     float angleModifier;
     float diffuseModifier;
     float specularModifier;
+    bool normalizeOutput;
 };
 
 /****************************************************************************/
