@@ -28,6 +28,11 @@ struct Light
     int     type_texid; // 31:      is shadowcasting
                         // [30:29]: type
                         // [28:0]:  depth texture index
+
+    float   fovFactor;
+    float   padding1;
+    float   padding2;
+    float   padding3;
 };
 
 #define LIGHT_IS_SHADOWCASTING  0x80000000

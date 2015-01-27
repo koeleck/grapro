@@ -154,8 +154,11 @@ struct LightStruct
     GLint                           type_texid; // 31:      is shadowcasting
                                                 // [30:28]: type
                                                 // [27:0]:  depth texture index
+
+    GLfloat                         fovFactor;
+    GLfloat                         padding[3];
 };
-static_assert(sizeof(LightStruct) == 128 &&
+static_assert(sizeof(LightStruct) == 144 &&
         sizeof(LightStruct) % LightStruct::alignment() == 0, "");
 
 } // namespace shader

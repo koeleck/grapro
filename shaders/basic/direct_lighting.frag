@@ -11,6 +11,122 @@ in vec2 vsTexCoord;
 
 layout(location = 0) uniform bool u_shadowsEnabled;
 
+float get2DShadow(in const mat4 ProjViewMatrix,
+        in const float fovFactor,
+        in const vec3 lightDir,
+        in const vec3 toLight,
+        in const vec3 diff,
+        in const vec3 normal,
+        in const vec4 wpos,
+        in const int layer)
+{
+    // normal offset
+    float shadowMapTexelSize = 2.0 / textureSize(uShadowMapTex, 0).x;
+
+    // scale normal offset by shadow depth
+    shadowMapTexelSize *= abs(dot(diff, lightDir)) * fovFactor;
+
+    float cosLightAngle = dot(toLight, normal);
+
+    float normalOffsetScale = clamp(1.0 - cosLightAngle, 0.0, 1.0);
+    const float shadowNormalOffset = 10.0; // TODO
+    normalOffsetScale *= shadowNormalOffset * shadowMapTexelSize;
+    vec4 shadowOffset = vec4(normal * normalOffsetScale, 0.0);
+
+    // only uv offset
+    vec4 lP = ProjViewMatrix * wpos;
+    vec4 lUVOffsetP = ProjViewMatrix * (wpos + shadowOffset);
+    lP.xy = lUVOffsetP.xy;
+
+    // slope scale
+    float sinLightAngle = sqrt(1.0 - cosLightAngle*cosLightAngle);
+    float slope = sinLightAngle / max(cosLightAngle, 0.00001);
+    const float slopeScaleBias = 0.02; // TODO
+    float shadowBias = 0.01; // TODO
+    shadowBias += slope * slopeScaleBias;
+    lP.z -= shadowBias;
+
+    lP.xyz = (lP.xyz / lP.w) * 0.5 + 0.5;
+
+    vec4 texcoord = vec4(lP.xy, float(layer), lP.z);
+
+    // PCF:
+    return  (
+                textureOffset(uShadowMapTex, texcoord, ivec2(-1, -1)) +
+                textureOffset(uShadowMapTex, texcoord, ivec2( 0, -1)) +
+                textureOffset(uShadowMapTex, texcoord, ivec2( 1, -1)) +
+                textureOffset(uShadowMapTex, texcoord, ivec2(-1,  0)) +
+                textureOffset(uShadowMapTex, texcoord, ivec2( 0,  0)) +
+                textureOffset(uShadowMapTex, texcoord, ivec2( 1,  0)) +
+                textureOffset(uShadowMapTex, texcoord, ivec2(-1,  1)) +
+                textureOffset(uShadowMapTex, texcoord, ivec2( 0,  1)) +
+                textureOffset(uShadowMapTex, texcoord, ivec2( 1,  1))
+            ) / 9.0;
+}
+
+float get3DShadow(in const vec3 lightPos,
+        in const float fovFactor,
+        in const vec2 depthFactor,
+        in const vec3 toLight,
+        in const vec3 diff,
+        in const vec3 normal,
+        in vec3 wpos,
+        in const int layer)
+{
+    // normal offset
+    float shadowMapTexelSize = 2.0 / textureSize(uShadowCubeMapTex, 0).x;
+
+    // scale normal offset by shadow depth
+    shadowMapTexelSize *= length(diff) * fovFactor;
+
+    float cosLightAngle = dot(toLight, normal);
+
+    float normalOffsetScale = clamp(1.0 - cosLightAngle, 0.0, 1.0);
+    const float shadowNormalOffset = 10.0; // TODO
+    normalOffsetScale *= shadowNormalOffset * shadowMapTexelSize;
+    vec3 shadowOffset = normal * normalOffsetScale;
+    wpos += shadowOffset;
+
+    // slope scale
+    float sinLightAngle = sqrt(1.0 - cosLightAngle*cosLightAngle);
+    float slope = sinLightAngle / max(cosLightAngle, 0.00001);
+    const float cubeSlopeScaleBias = 0.5; // TODO
+    float cubeShadowBias = 50.19; // TODO
+    cubeShadowBias += slope * cubeSlopeScaleBias;
+
+    wpos += toLight * cubeShadowBias;
+
+    vec3 absDiff = abs(diff);
+    const float abs_z = max(absDiff.x, max(absDiff.y, absDiff.z));
+    // see lights.cpp for depthFactor
+    const float depth = depthFactor.x + depthFactor.y / abs_z;
+
+
+    vec3 dir = wpos - lightPos;
+
+    // hack: find perpendicular vector
+    vec3 offDir0 = 2.0 * shadowMapTexelSize * normalize(cross(dir, vec3(0.0, 0.0, 1.0)));
+    vec3 offDir1 = 2.0 * shadowMapTexelSize * normalize(cross(dir, offDir0));
+
+    //vec4 texcoord = vec4(dir, layer);
+    //return texture(uShadowCubeMapTex, texcoord, depth);
+    return
+        (
+            texture(uShadowCubeMapTex, vec4(dir - offDir0 - offDir1, layer), depth) +
+            texture(uShadowCubeMapTex, vec4(dir           - offDir1, layer), depth) +
+            texture(uShadowCubeMapTex, vec4(dir + offDir0 - offDir1, layer), depth) +
+            texture(uShadowCubeMapTex, vec4(dir - offDir0          , layer), depth) +
+            texture(uShadowCubeMapTex, vec4(dir                    , layer), depth) +
+            texture(uShadowCubeMapTex, vec4(dir + offDir0          , layer), depth) +
+            texture(uShadowCubeMapTex, vec4(dir - offDir0 - offDir1, layer), depth) +
+            texture(uShadowCubeMapTex, vec4(dir           - offDir1, layer), depth) +
+            texture(uShadowCubeMapTex, vec4(dir + offDir0 - offDir1, layer), depth) +
+            texture(uShadowCubeMapTex, vec4(dir - offDir0 + offDir1, layer), depth) +
+            texture(uShadowCubeMapTex, vec4(dir           + offDir1, layer), depth) +
+            texture(uShadowCubeMapTex, vec4(dir + offDir0 + offDir1, layer), depth)
+        ) / 9.0;
+}
+
 void readIn(out vec3 diffuse, out vec3 normal, out float spec,
         out float gloss, out vec3 emissive)
 {
@@ -77,20 +193,14 @@ void main()
             attenuation = 1.0;
             if (isShadowcasting) {
                 int layer = (type_texid & LIGHT_TEXID_BITS);
-                vec4 tmp = lights[i].ProjViewMatrix * wpos;
-                tmp.xyz = (tmp.xyz / tmp.w) * 0.5 + 0.5;
-                vec4 texcoord = vec4(tmp.xy, float(layer), tmp.z);
-                //attenuation *= texture(uShadowMapTex, texcoord);
-                // PCF:
-                attenuation *= (textureOffset(uShadowMapTex, texcoord, ivec2(-1, -1)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 0, -1)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 1, -1)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2(-1,  0)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 0,  0)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 1,  0)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2(-1,  1)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 0,  1)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 1,  1))) / 9.0;
+                attenuation *= get2DShadow(lights[i].ProjViewMatrix,
+                        lights[i].fovFactor,
+                        lights[i].direction,
+                        light_dir,
+                        light_dir,
+                        normal,
+                        wpos,
+                        layer);
             }
         } else if ((type_texid & LIGHT_TYPE_SPOT) != 0) {
             const vec3 diff = wpos.xyz - lights[i].position;
@@ -103,30 +213,15 @@ void main()
                     (lights[i].constantAttenuation + lights[i].linearAttenuation * dist +
                      lights[i].quadraticAttenuation * dist * dist);
             if (isShadowcasting) {
-                // normal offset
-                float normalOffsetScale = 1.0 - max(dot(light_dir, normal), 0.0);
-                vec3 normalOffset = normal * 50.0 * normalOffsetScale;
-
                 int layer = (type_texid & LIGHT_TEXID_BITS);
-
-                vec4 tmp = lights[i].ProjViewMatrix * wpos;
-                tmp.xyz = (tmp.xyz / tmp.w) * 0.5 + 0.5;
-
-                vec4 tmp2 = lights[i].ProjViewMatrix * (wpos + vec4(normalOffset, 1.0));
-                tmp.xy = (tmp2.xy / tmp2.w) * 0.5 + 0.5;
-
-                vec4 texcoord = vec4(tmp.xy, float(layer), tmp.z);
-                //attenuation *= texture(uShadowMapTex, texcoord);
-                // PCF:
-                attenuation *= (textureOffset(uShadowMapTex, texcoord, ivec2(-1, -1)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 0, -1)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 1, -1)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2(-1,  0)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 0,  0)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 1,  0)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2(-1,  1)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 0,  1)) +
-                                textureOffset(uShadowMapTex, texcoord, ivec2( 1,  1))) / 9.0;
+                attenuation *= get2DShadow(lights[i].ProjViewMatrix,
+                        lights[i].fovFactor,
+                        lights[i].direction,
+                        light_dir,
+                        diff,
+                        normal,
+                        wpos,
+                        layer);
             }
         } else { // POINT
             const vec3 diff = wpos.xyz - lights[i].position;
@@ -138,14 +233,21 @@ void main()
                      lights[i].quadraticAttenuation * dist * dist);
             if (isShadowcasting) {
                 int layer = (type_texid & LIGHT_TEXID_BITS);
-                vec3 absDiff = abs(diff);
-                const float abs_z = max(absDiff.x, max(absDiff.y, absDiff.z));
-                const float f = 2000.0; const float n = 1.0;
-                // see src/core/light.cpp:
-                const float depth = lights[i].direction.x + lights[i].direction.y / abs_z;
-
-                vec4 texcoord = vec4(dir, layer);
-                attenuation *= texture(uShadowCubeMapTex, texcoord, depth);
+                //vec3 absDiff = abs(diff);
+                //const float abs_z = max(absDiff.x, max(absDiff.y, absDiff.z));
+                //const float f = 2000.0; const float n = 1.0;
+                //// see src/core/light.cpp:
+                //const float depth = lights[i].direction.x + lights[i].direction.y / abs_z;
+                //vec4 texcoord = vec4(dir, layer);
+                //attenuation *= texture(uShadowCubeMapTex, texcoord, depth);
+                attenuation *= get3DShadow(lights[i].position,
+                        lights[i].fovFactor,
+                        lights[i].direction.xy, // see lights.cpp why
+                        light_dir,
+                        diff,
+                        normal,
+                        wpos.xyz,
+                        layer);
             }
         }
 

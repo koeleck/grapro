@@ -266,6 +266,7 @@ void SpotLight::updateMatrix()
             getPosition() + getDirection(), up);
 
     m_data->projViewMatrix = glm::mat4(projmat * viewmat);
+    m_data->fovFactor = 1.f / std::tan(getAngleOuterCone() / 2.f);
 }
 
 /****************************************************************************/
@@ -359,7 +360,7 @@ void DirectionalLight::updateMatrix()
 
 
     m_data->projViewMatrix = glm::mat4(projmat * viewmat);
-
+    m_data->fovFactor = 1.f;
 }
 
 /*****************************************************************************
@@ -397,6 +398,7 @@ void PointLight::updateMatrix()
     const double a = 0.5 - projmat[2][2] / 2.0;
     const double b = projmat[3][2] / 2.0;
     m_data->direction = glm::vec3(a, b, .0f);
+    m_data->fovFactor = 1.f / std::tan(static_cast<float>(angle) / 2.f);
 }
 
 /****************************************************************************/
