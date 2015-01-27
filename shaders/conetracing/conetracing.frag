@@ -343,7 +343,6 @@ void main()
     if (u_diffuseModifier > 0.0) diff = calculateDiffuseColor(normal, wpos.xyz);
     if (u_specularModifier > 0.0) spec = calculateSpecularColor(wpos.xyz, normal, glossy, specular);
     outFragColor = vec4(u_specularModifier * spec + u_diffuseModifier * diff, 1.0);
-
 }
 
 /******************************************************************************/
