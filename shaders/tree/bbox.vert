@@ -7,6 +7,7 @@
 layout(location = 0) uniform float uHalfSize;
 
 flat out ivec3 vsBrickCoord;;
+out vec3 vsTexCoords;
 
 void main()
 {
@@ -26,6 +27,11 @@ void main()
                     bbox[(gl_VertexID>>1) & 0x01].y,
                     bbox[(gl_VertexID>>2) & 0x01].z,
                     1.0);
+
+    vec3 posInVoxel = vec3(float((gl_VertexID>>0) & 0x01),
+                           float((gl_VertexID>>1) & 0x01),
+                           float((gl_VertexID>>2) & 0x01));
+    vsTexCoords = getBrickTexCoord(ID, posInVoxel);
 
     //vsBrickCoord += ivec3(-1 + 2 * ((gl_VertexID>>0) & 0x01),
     //                      -1 + 2 * ((gl_VertexID>>1) & 0x01),

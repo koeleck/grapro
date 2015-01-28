@@ -735,13 +735,14 @@ void Renderer::render(const Options & options)
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glDepthFunc(GL_LEQUAL);
-        debugRenderTree(true, options.debugLevel, true);
+        debugRenderTree(true, options.debugLevel, true, options.renderSmoothColors);
         glDisable(GL_BLEND);
     } else if (m_options.renderVoxelBoxes) {
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
         glDepthFunc(GL_LEQUAL);
-        debugRenderTree(false, options.debugLevel, m_options.renderVoxelBoxesColored);
+        debugRenderTree(false, options.debugLevel, m_options.renderVoxelBoxesColored,
+                options.renderSmoothColors);
         renderGeometry(m_diffuse_prog, false, core::res::cameras->getDefaultCam());
     } else {
         glEnable(GL_DEPTH_TEST);
@@ -966,7 +967,7 @@ void Renderer::initBBoxStuff()
 
 /****************************************************************************/
 
-void Renderer::debugRenderTree(const bool solid, const int level, const bool colored)
+void Renderer::debugRenderTree(const bool solid, const int level, const bool colored, const bool smooth)
 {
     GLuint prog = m_voxel_bbox_prog;
     glUseProgram(prog);
@@ -979,6 +980,7 @@ void Renderer::debugRenderTree(const bool solid, const int level, const bool col
         static_cast<float>(2 * num_voxels);
     glProgramUniform1f(prog, 0, halfSize);
     glProgramUniform1ui(prog, 1, colored);
+    glProgramUniform1i(prog, 2, static_cast<int>(smooth));
     glBindImageTexture(0, m_brick_texture, 0, GL_TRUE, 0, GL_READ_ONLY, GL_RGBA16F);
 
     const auto& level_info = m_tree_levels[static_cast<std::size_t>(level)];

@@ -11,6 +11,7 @@ struct Options
     bool renderVoxelBoxes;
     bool renderVoxelBoxesColored;
     bool renderVoxelColors;
+    bool renderSmoothColors;
     bool renderAO;
     bool renderIndirectDiffuse;
     bool renderIndirectSpecular;
@@ -76,7 +77,7 @@ private:
 
     void renderGeometry(GLuint prog, bool depthOnly,
             const core::Camera* cam);
-    void debugRenderTree(bool solid, int level, bool colored);
+    void debugRenderTree(bool solid, int level, bool colored, bool smooth);
     void renderBoundingBoxes();
     void renderShadowmaps();
     void distributeToNeighbors(const std::pair<int, int>& level, bool average);

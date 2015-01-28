@@ -26,6 +26,7 @@ GraPro::GraPro(GLFWwindow* window)
     m_options.renderVoxelBoxes = false;
     m_options.renderVoxelBoxesColored = false;
     m_options.renderVoxelColors = false;
+    m_options.renderSmoothColors = false;
     m_options.renderAO = false;
     m_options.renderIndirectDiffuse = false;
     m_options.renderIndirectSpecular = false;
@@ -117,6 +118,9 @@ void GraPro::update_gui(const double delta_t)
             ImGui::Checkbox("color voxel boxes", &m_options.renderVoxelBoxesColored);
         }
         ImGui::Checkbox("show voxel colors", &m_options.renderVoxelColors);
+        if (m_options.renderVoxelColors || m_options.renderVoxelBoxesColored) {
+            ImGui::Checkbox("smooth colors", &m_options.renderSmoothColors);
+        }
 
         bool debugAtMax = (m_options.debugLevel == m_options.treeLevels - 1);
         ImGui::SliderInt("Tree levels", &m_options.treeLevels, 1, 9);
