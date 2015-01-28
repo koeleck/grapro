@@ -13,6 +13,10 @@ GBuffer::GBuffer(const int width, const int height)
   : m_width{static_cast<int>(vars.r_ssaa * static_cast<float>(width))},
     m_height{static_cast<int>(vars.r_ssaa * static_cast<float>(height))}
 {
+    GLint max_color_attachments;
+    glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &max_color_attachments);
+    LOG_INFO("max color attachments: ", max_color_attachments);
+
     GLint prev_fbo;
     GLint prev_tex;
     glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &prev_fbo);
@@ -62,16 +66,25 @@ GBuffer::GBuffer(const int width, const int height)
     // Setup accumulation
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_accumulate_fbo);
 
-    glBindTexture(GL_TEXTURE_2D, m_accumulation);
+    glBindTexture(GL_TEXTURE_2D, m_accumulate0_tex);
     glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, m_width, m_height);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-            GL_TEXTURE_2D, m_accumulation, 0);
+            GL_TEXTURE_2D, m_accumulate0_tex, 0);
 
-    glDrawBuffers(1, drawBuffers);
+    glBindTexture(GL_TEXTURE_2D, m_accumulate1_tex);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, m_width, m_height);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,
+            GL_TEXTURE_2D, m_accumulate1_tex, 0);
+
+    glDrawBuffers(2, drawBuffers);
     if (glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         LOG_ERROR("Framebuffer not complete");
     }
@@ -125,6 +138,12 @@ GBuffer::GBuffer(const int width, const int height)
     core::res::shaders->registerShader("ssq_frag", "basic/ssq.frag", GL_FRAGMENT_SHADER);
     m_blit_prog = core::res::shaders->registerProgram("blit_prog", {"ssq_vert", "ssq_frag"});
 
+    // gamma correction
+    core::res::shaders->registerShader("gamma_frag", "basic/gamma.frag",
+            GL_FRAGMENT_SHADER);
+    m_gamma_prog = core::res::shaders->registerProgram("gamme_prog",
+            {"ssq_vert", "gamma_frag"});
+
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(prev_fbo));
     glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(prev_tex));
 
@@ -171,6 +190,13 @@ void GBuffer::bindForShading()
 
 void GBuffer::unbindFramebuffer()
 {
+    // perform post processing steps:
+    // - Gamme correction
+    glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, m_accumulate0_tex);
+    glUseProgram(m_blit_prog);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+
+
     glDepthMask(GL_TRUE);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(m_prev_fbo));
     glViewport(m_prev_viewport[0], m_prev_viewport[1],
@@ -181,12 +207,12 @@ void GBuffer::unbindFramebuffer()
 
 void GBuffer::bindTextures() const
 {
-    glActiveTexture(GL_TEXTURE0 + core::bindings::GBUFFER_DEPTH_TEX);
-    glBindTexture(GL_TEXTURE_2D, m_depth_tex);
-    glActiveTexture(GL_TEXTURE0 + core::bindings::GBUFFER_DIFFUSE_NORMAL_TEX);
-    glBindTexture(GL_TEXTURE_2D, m_diffuse_normal);
-    glActiveTexture(GL_TEXTURE0 + core::bindings::GBUFFER_SPECULAR_GLOSSY_EMISSIVE_TEX);
-    glBindTexture(GL_TEXTURE_2D, m_specular_gloss_emissive);
+    glBindMultiTextureEXT(GL_TEXTURE0 + core::bindings::GBUFFER_DEPTH_TEX,
+            GL_TEXTURE_2D, m_depth_tex);
+    glBindMultiTextureEXT(GL_TEXTURE0 + core::bindings::GBUFFER_DIFFUSE_NORMAL_TEX,
+            GL_TEXTURE_2D, m_diffuse_normal);
+    glBindMultiTextureEXT(GL_TEXTURE0 + core::bindings::GBUFFER_SPECULAR_GLOSSY_EMISSIVE_TEX,
+            GL_TEXTURE_2D, m_specular_gloss_emissive);
 }
 
 /****************************************************************************/
@@ -212,16 +238,9 @@ GLuint GBuffer::getDepthTex() const
 
 /****************************************************************************/
 
-GLuint GBuffer::getAccumulationTex() const
-{
-    return m_accumulation;
-}
-
-/****************************************************************************/
-
 void GBuffer::blit()
 {
-    glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, m_accumulation);
+    glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, m_accumulate1_tex);
     glUseProgram(m_blit_prog);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }

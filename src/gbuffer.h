@@ -18,7 +18,6 @@ public:
     GLuint getDiffuseNormalTex() const;
     GLuint getSpecGlossEmissiveTex() const;
     GLuint getDepthTex() const;
-    GLuint getAccumulationTex() const;
 
     gl::Texture& getTexDepth() { return m_depth_tex; }
     gl::Texture& getTexNormal() { return m_diffuse_normal; }
@@ -33,8 +32,10 @@ private:
     gl::Texture         m_specular_gloss_emissive;
 
     gl::Framebuffer     m_accumulate_fbo;
-    gl::Texture         m_accumulation;
+    gl::Texture         m_accumulate0_tex;
+    gl::Texture         m_accumulate1_tex;
     core::Program       m_blit_prog;
+    core::Program       m_gamma_prog;
 
     // smaa
     gl::Framebuffer     m_smaa_fbo;
