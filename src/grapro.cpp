@@ -110,6 +110,7 @@ void GraPro::update_gui(const double delta_t)
 
         ImGui::Spacing();
 
+        ImGui::Checkbox("SMAA", &vars.r_smaa);
         ImGui::Checkbox("bounding boxes", &m_options.renderBBoxes);
         ImGui::Checkbox("show voxel boxes", &m_options.renderVoxelBoxes);
         if (m_options.renderVoxelBoxes) {

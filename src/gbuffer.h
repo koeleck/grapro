@@ -24,6 +24,8 @@ public:
     gl::Texture& getTexColor() { return m_specular_gloss_emissive; }
 
 private:
+    void performSMAA();
+
     int                 m_width;
     int                 m_height;
     gl::Framebuffer     m_gbuffer_fbo;
@@ -43,9 +45,10 @@ private:
     gl::Texture         m_blendTex;
     gl::Texture         m_areaTex;
     gl::Texture         m_searchTex;
+    gl::Texture         m_stencilTex;
     core::Program       m_edge_detect_prog;
     core::Program       m_blending_weight_prog;
-    core::Program       m_blending__neighborhood_prog;
+    core::Program       m_blending_neighborhood_prog;
 
     int                 m_prev_fbo;
     int                 m_prev_viewport[4];

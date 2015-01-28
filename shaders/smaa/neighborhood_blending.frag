@@ -5,7 +5,7 @@ in vec4 vsOffset;
 
 #include "smaa.glsl"
 
-layout(location = 0) out vec4 outFragColor;
+layout(location = 2) out vec4 outFragColor;
 
 layout(binding = 0) uniform sampler2D uInputTex;
 layout(binding = 1) uniform sampler2D uBlendTex;

@@ -8,5 +8,6 @@ void main()
 {
     vec4 col = texelFetch(uTexture, ivec2(gl_FragCoord.xy), 0);
 
-    outFragColor = vec4(pow(col.rgb, 1.0 / 2.2), col.a);
+    //outFragColor = vec4(pow(col.rgb, 1.0 / 2.2), col.a);
+    outFragColor = col;
 }

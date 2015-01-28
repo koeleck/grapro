@@ -457,19 +457,27 @@ bool ShaderManager::link_program(ProgramInfo& p, const bool use_cache) const
         glAttachShader(prog, s.shader);
     }
     glLinkProgram(prog);
+
+    // detach shaders
+    for (const auto& shader : p.shaders) {
+        auto it = m_shader_names.find(shader);
+        auto& s = m_shaders[it->second];
+
+        glDetachShader(prog, s.shader);
+    }
+
     if (!prog) {
         LOG_ERROR("Failed to link program: ", prog.getInfoLog());
         p.broken = true;
         return false;
     }
 
-    // detach shaders and update list of filenames
+    // update list of filenames
     p.files.clear();
     for (const auto& shader : p.shaders) {
         auto it = m_shader_names.find(shader);
         auto& s = m_shaders[it->second];
 
-        glDetachShader(prog, s.shader);
         p.files.insert(p.files.end(), s.files.begin(), s.files.end());
     }
     std::sort(p.files.begin(), p.files.end());
