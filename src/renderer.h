@@ -58,7 +58,19 @@ public:
     const core::AABB& getSceneBBox() const;
 
 private:
-    struct DrawCmd;
+    struct DrawCmd
+    {
+        DrawCmd();
+        DrawCmd(GLenum, GLenum, const GLvoid*, GLsizei, GLsizei);
+
+        GLuint                  textures[core::bindings::NUM_TEXT_UNITS];
+        GLenum                  mode;
+        GLenum                  type;
+        const GLvoid*           indirect;
+        GLsizei                 drawcount;
+        GLsizei                 stride;
+        core::AABB              aabb;
+    };
 
     void initBBoxStuff();
 
@@ -77,6 +89,7 @@ private:
     core::AABB                          m_scene_bbox;
     std::vector<const core::Instance*>  m_geometry;
     std::vector<DrawCmd>                m_drawlist;
+    DrawCmd                             m_bbox_draw_cmd;
     gl::Buffer                          m_indirect_buffer;
 
     // lights

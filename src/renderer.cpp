@@ -44,27 +44,22 @@ typedef struct
 
 /****************************************************************************/
 
-struct Renderer::DrawCmd
+Renderer::DrawCmd::DrawCmd()
 {
-    DrawCmd(const GLenum mode_, const GLenum type_, const GLvoid* const indirect_,
-            const GLsizei drawcount_, const GLsizei stride_)
-      : textures{0,},
-        mode{mode_},
-        type{type_},
-        indirect{indirect_},
-        drawcount{drawcount_},
-        stride{stride_}
-    {
-    }
+}
 
-    GLuint                  textures[core::bindings::NUM_TEXT_UNITS];
-    GLenum                  mode;
-    GLenum                  type;
-    const GLvoid*           indirect;
-    GLsizei                 drawcount;
-    GLsizei                 stride;
-    core::AABB              aabb;
-};
+/****************************************************************************/
+
+Renderer::DrawCmd::DrawCmd(const GLenum mode_, const GLenum type_, const GLvoid* const indirect_,
+            const GLsizei drawcount_, const GLsizei stride_)
+  : textures{0,},
+    mode{mode_},
+    type{type_},
+    indirect{indirect_},
+    drawcount{drawcount_},
+    stride{stride_}
+{
+}
 
 /****************************************************************************/
 
@@ -393,11 +388,25 @@ void Renderer::setGeometry(std::vector<const core::Instance*> geometry)
         indirect += sizeof(DrawElementsIndirectCommand);
     }
 
+    // bounding boxes
+    for (const auto& g : m_geometry) {
+        indirectCmds.emplace_back();
+        auto& indirectCmd = indirectCmds.back();
+        indirectCmd.count = 24;
+        indirectCmd.instanceCount = 1;
+        indirectCmd.firstIndex = 0;
+        indirectCmd.baseVertex = 0;
+        indirectCmd.baseInstance = g->getIndex();
+    }
+    m_bbox_draw_cmd = DrawCmd(GL_LINES, GL_UNSIGNED_BYTE,
+            reinterpret_cast<const GLvoid*>(indirect),
+            static_cast<GLsizei>(m_geometry.size()), 0);
+
     // upload draw calls
     m_indirect_buffer = gl::Buffer();
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, m_indirect_buffer);
     glBufferStorage(GL_DRAW_INDIRECT_BUFFER,
-            static_cast<GLsizeiptr>(m_geometry.size() * sizeof(DrawElementsIndirectCommand)),
+            static_cast<GLsizeiptr>(indirectCmds.size() * sizeof(DrawElementsIndirectCommand)),
             indirectCmds.data(), 0);
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 
@@ -900,10 +909,13 @@ void Renderer::renderBoundingBoxes()
 
     glDisable(GL_DEPTH_TEST);
 
-    for (const auto* g : m_geometry) {
-        glDrawElementsInstancedBaseVertexBaseInstance(GL_LINES, 24, GL_UNSIGNED_BYTE,
-                nullptr, 1, 0, g->getIndex());
-    }
+    glMultiDrawElementsIndirect(m_bbox_draw_cmd.mode, m_bbox_draw_cmd.type,
+            m_bbox_draw_cmd.indirect, m_bbox_draw_cmd.drawcount, m_bbox_draw_cmd.stride);
+
+    //for (const auto* g : m_geometry) {
+    //    glDrawElementsInstancedBaseVertexBaseInstance(GL_LINES, 24, GL_UNSIGNED_BYTE,
+    //            nullptr, 1, 0, g->getIndex());
+    //}
 }
 
 /****************************************************************************/
