@@ -68,10 +68,10 @@ struct CameraStruct
 {
     static constexpr int alignment() {return 64;} // ??? not sure why, but glBindBufferRange
                                                   // doesn't accept other alignments
-    glm::mat4                       ViewMatrix;
-    glm::mat4                       ProjMatrix;
-    glm::mat4                       ProjViewMatrix;
-    glm::mat4                       InvProjViewMatrix;
+    glm::mat4                       ViewMatrix_T;
+    glm::mat4                       ProjMatrix_T;
+    glm::mat4                       ProjViewMatrix_T;
+    glm::mat4                       InvProjViewMatrix_T;
     glm::vec4                       CameraPosition;
     glm::vec4                       padding[3];
 };
@@ -109,7 +109,7 @@ static_assert(sizeof(MaterialStruct) == 96 &&
 struct InstanceStruct
 {
     static constexpr int alignment() {return  16;}
-    glm::mat4                       ModelMatrix;
+    glm::mat4                       ModelMatrix_T;
     GLfloat                         BBox_min[3];
     GLuint                          MeshID;
     GLfloat                         BBox_max[3];
@@ -137,7 +137,7 @@ struct LightStruct
                        DIRECTIONAL = 0x20000000,
                        POINT       = 0x40000000};
 
-    glm::mat4                       projViewMatrix;
+    glm::mat4                       projViewMatrix_T;
 
     glm::vec3                       position;
     GLfloat                         angleInnerCone;

@@ -11,7 +11,7 @@
 
 struct Instance
 {
-    mat4    modelMatrix;
+    mat4    modelMatrix_T;
     vec3    bbox_min;
     uint    meshID;
     vec3    bbox_max;

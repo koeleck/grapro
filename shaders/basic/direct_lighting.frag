@@ -11,7 +11,7 @@ in vec2 vsTexCoord;
 
 layout(location = 0) uniform bool u_shadowsEnabled;
 
-float get2DShadow(in const mat4 ProjViewMatrix,
+float get2DShadow(in const mat4 ProjViewMatrix_T,
         in const float fovFactor,
         in const vec3 lightDir,
         in const vec3 toLight,
@@ -34,8 +34,8 @@ float get2DShadow(in const mat4 ProjViewMatrix,
     vec4 shadowOffset = vec4(normal * normalOffsetScale, 0.0);
 
     // only uv offset
-    vec4 lP = ProjViewMatrix * wpos;
-    vec4 lUVOffsetP = ProjViewMatrix * (wpos + shadowOffset);
+    vec4 lP = wpos * ProjViewMatrix_T;
+    vec4 lUVOffsetP = (wpos + shadowOffset) * ProjViewMatrix_T;
     lP.xy = lUVOffsetP.xy;
 
     // slope scale
@@ -193,7 +193,7 @@ void main()
             attenuation = 1.0;
             if (isShadowcasting) {
                 int layer = (type_texid & LIGHT_TEXID_BITS);
-                attenuation *= get2DShadow(lights[i].ProjViewMatrix,
+                attenuation *= get2DShadow(lights[i].ProjViewMatrix_T,
                         lights[i].fovFactor,
                         lights[i].direction,
                         light_dir,
@@ -214,7 +214,7 @@ void main()
                      lights[i].quadraticAttenuation * dist * dist);
             if (isShadowcasting) {
                 int layer = (type_texid & LIGHT_TEXID_BITS);
-                attenuation *= get2DShadow(lights[i].ProjViewMatrix,
+                attenuation *= get2DShadow(lights[i].ProjViewMatrix_T,
                         lights[i].fovFactor,
                         lights[i].direction,
                         light_dir,
@@ -233,13 +233,6 @@ void main()
                      lights[i].quadraticAttenuation * dist * dist);
             if (isShadowcasting) {
                 int layer = (type_texid & LIGHT_TEXID_BITS);
-                //vec3 absDiff = abs(diff);
-                //const float abs_z = max(absDiff.x, max(absDiff.y, absDiff.z));
-                //const float f = 2000.0; const float n = 1.0;
-                //// see src/core/light.cpp:
-                //const float depth = lights[i].direction.x + lights[i].direction.y / abs_z;
-                //vec4 texcoord = vec4(dir, layer);
-                //attenuation *= texture(uShadowCubeMapTex, texcoord, depth);
                 attenuation *= get3DShadow(lights[i].position,
                         lights[i].fovFactor,
                         lights[i].direction.xy, // see lights.cpp why

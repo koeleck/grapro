@@ -16,7 +16,7 @@ void main()
     const uint instanceID = gl_BaseInstanceARB + gl_InstanceID;
     const uint meshID = instances[instanceID].meshID;
     const uint components = meshes[meshID].components;
-    const mat4 modelMatrix = instances[instanceID].modelMatrix;
+    const mat4 modelMatrix_T = instances[instanceID].modelMatrix_T;
 
     outData.materialID = instances[instanceID].materialID;
 
@@ -27,7 +27,7 @@ void main()
     value.y = vertexData[idx++];
     value.z = vertexData[idx++];
 
-    gl_Position = modelMatrix * vec4(value, 1.0);
+    gl_Position = vec4(value, 1.0) * modelMatrix_T;
 
     if ((components & MESH_COMPONENT_TEXCOORD) != 0) {
         value.x = vertexData[idx++];

@@ -11,10 +11,10 @@
 
 struct Camera
 {
-    mat4        ViewMatrix;
-    mat4        ProjMatrix;
-    mat4        ProjViewMatrix;
-    mat4        InvProjViewMatrix;
+    mat4        ViewMatrix_T;
+    mat4        ProjMatrix_T;
+    mat4        ProjViewMatrix_T;
+    mat4        InvProjViewMatrix_T;
     vec4        Position;
     vec4        padding[3];
 };

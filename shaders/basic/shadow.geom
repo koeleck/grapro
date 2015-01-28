@@ -31,7 +31,7 @@ void main()
     if (ID == -1)
         return;
 
-    const mat4 PVM = lights[ID].ProjViewMatrix;
+    const mat4 PVM_T = lights[ID].ProjViewMatrix_T;
     const int layer = lights[ID].type_texid & LIGHT_TEXID_BITS;
 
     // cull back faces
@@ -45,7 +45,7 @@ void main()
     vec4 vertex[3];
     int outOfBound[6] = int[6](0, 0, 0, 0, 0, 0);
     for (int i = 0; i < 3; ++i) {
-        vertex[i] = PVM * gl_in[i].gl_Position;
+        vertex[i] = gl_in[i].gl_Position * PVM_T;
         vertex[i].z += BIAS;
         if (vertex[i].x > +vertex[i].w) ++outOfBound[0];
         if (vertex[i].x < -vertex[i].w) ++outOfBound[1];

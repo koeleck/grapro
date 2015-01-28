@@ -31,5 +31,5 @@ void main()
     //                      -1 + 2 * ((gl_VertexID>>1) & 0x01),
     //                      -1 + 2 * ((gl_VertexID>>2) & 0x01));
 
-    gl_Position = cam.ProjViewMatrix * pos;
+    gl_Position = pos * cam.ProjViewMatrix_T;
 }

@@ -30,7 +30,7 @@ Light::Light(shader::LightStruct* const data, const LightType type,
     m_type{type},
     m_depth_tex{depthTex}
 {
-    m_data->projViewMatrix = glm::mat4();
+    m_data->projViewMatrix_T = glm::mat4();
     m_data->position = m_position;
     m_data->intensity = m_intensity;
     m_data->maxDistance = m_max_distance;
@@ -265,7 +265,7 @@ void SpotLight::updateMatrix()
     glm::dmat4 viewmat = glm::lookAt<double, glm::defaultp>(getPosition(),
             getPosition() + getDirection(), up);
 
-    m_data->projViewMatrix = glm::mat4(projmat * viewmat);
+    m_data->projViewMatrix_T = glm::transpose(glm::mat4(projmat * viewmat));
     m_data->fovFactor = 1.f / std::tan(getAngleOuterCone() / 2.f);
 }
 
@@ -359,7 +359,7 @@ void DirectionalLight::updateMatrix()
             getPosition() + getDirection(), glm::vec3(1.0f, .0f, 0.f));
 
 
-    m_data->projViewMatrix = glm::mat4(projmat * viewmat);
+    m_data->projViewMatrix_T = glm::transpose(glm::mat4(projmat * viewmat));
     m_data->fovFactor = 1.f;
 }
 
@@ -389,7 +389,7 @@ void PointLight::updateMatrix()
                 vars.light_nearplane, getMaxDistance());
     }
     // view transformation will be done in the shaders
-    m_data->projViewMatrix = glm::mat4(projmat);
+    m_data->projViewMatrix_T = glm::transpose(glm::mat4(projmat));
 
     // we have to compute the fragments depth in the shader, so
     // store the necessary values in 'direction'

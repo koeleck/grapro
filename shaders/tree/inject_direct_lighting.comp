@@ -27,7 +27,7 @@ vec3 computeRadiance(in vec3 pos, in vec3 normal)
             attenuation = 1.0;
             if (isShadowcasting) {
                 int layer = (type_texid & LIGHT_TEXID_BITS);
-                vec4 tmp = lights[i].ProjViewMatrix * vec4(pos, 1.0);
+                vec4 tmp = vec4(pos, 1.0) * lights[i].ProjViewMatrix_T;
                 tmp.xyz = (tmp.xyz / tmp.w) * 0.5 + 0.5;
                 vec4 texcoord = vec4(tmp.xy, float(layer), tmp.z);
                 //attenuation *= texture(uShadowMapTex, texcoord);
@@ -59,10 +59,10 @@ vec3 computeRadiance(in vec3 pos, in vec3 normal)
 
                 int layer = (type_texid & LIGHT_TEXID_BITS);
 
-                vec4 tmp = lights[i].ProjViewMatrix * vec4(pos, 1.0);
+                vec4 tmp = vec4(pos, 1.0) * lights[i].ProjViewMatrix_T;
                 tmp.xyz = (tmp.xyz / tmp.w) * 0.5 + 0.5;
 
-                vec4 tmp2 = lights[i].ProjViewMatrix * vec4(pos + normalOffset, 1.0);
+                vec4 tmp2 = vec4(pos + normalOffset, 1.0) * lights[i].ProjViewMatrix_T;
                 tmp.xy = (tmp2.xy / tmp2.w) * 0.5 + 0.5;
 
                 vec4 texcoord = vec4(tmp.xy, float(layer), tmp.z);

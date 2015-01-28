@@ -31,7 +31,7 @@ vec4 resconstructWorldPos(in vec2 texcoord)
 {
     float d = texture(uDepthTex, texcoord).r * 2.0 - 1.0;
     vec4 pos = vec4(texcoord * 2.0 - 1.0, d, 1.0);
-    pos = cam.InvProjViewMatrix * pos;
+    pos = pos * cam.InvProjViewMatrix_T;
     pos /= pos.w;
     return vec4(pos.xyz, 1.0);
 }

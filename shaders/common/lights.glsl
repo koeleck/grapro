@@ -11,7 +11,7 @@
 
 struct Light
 {
-    mat4    ProjViewMatrix;
+    mat4    ProjViewMatrix_T;
 
     vec3    position;
     float   angleInnerCone;

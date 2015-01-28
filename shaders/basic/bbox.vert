@@ -18,7 +18,7 @@ void main()
                     BBox[(gl_VertexID>>2) & 0x01].z,
                     1.0);
 
-    gl_Position = cam.ProjViewMatrix * pos;
+    gl_Position = pos * cam.ProjViewMatrix_T;
 
     /*
      * Screen space bounding box:

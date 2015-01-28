@@ -34,10 +34,10 @@ void emitTriangle(in int ID, in vec4 vertex[3], in int layer)
     //    return;
 
     // frustum culling
-    const mat4 ProjMat = lights[ID].ProjViewMatrix; // this is actually just a projection matrix
+    const mat4 ProjMat_T = lights[ID].ProjViewMatrix_T; // this is actually just a projection matrix
     int outOfBound[6] = int[6](0, 0, 0, 0, 0, 0);
     for (int i = 0; i < 3; ++i) {
-        vertex[i] = ProjMat * vertex[i];
+        vertex[i] = vertex[i] * ProjMat_T;
         if (vertex[i].x >  vertex[i].w) ++outOfBound[0];
         if (vertex[i].x < -vertex[i].w) ++outOfBound[1];
         if (vertex[i].y >  vertex[i].w) ++outOfBound[2];

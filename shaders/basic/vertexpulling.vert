@@ -22,7 +22,7 @@ void main()
     const uint instanceID = gl_BaseInstanceARB + gl_InstanceID;
     const uint meshID = instances[instanceID].meshID;
     const uint components = meshes[meshID].components;
-    const mat4 modelMatrix = instances[instanceID].modelMatrix;
+    const mat4 modelMatrix_T = instances[instanceID].modelMatrix_T;
 
     outData.materialID = instances[instanceID].materialID;
 
@@ -33,7 +33,7 @@ void main()
     value.y = vertexData[idx++];
     value.z = vertexData[idx++];
 
-    const vec4 worldPos = modelMatrix * vec4(value, 1.0);
+    const vec4 worldPos = vec4(value, 1.0) * modelMatrix_T;
     outData.wpos = worldPos.xyz;
 
     outData.viewdir = normalize(cam.Position.xyz - worldPos.xyz);
@@ -47,19 +47,19 @@ void main()
         value.x = vertexData[idx++];
         value.y = vertexData[idx++];
         value.z = vertexData[idx++];
-        outData.normal = normalize((modelMatrix * vec4(value, 0.0)).xyz);
+        outData.normal = normalize((vec4(value, 0.0) * modelMatrix_T).xyz);
     }
     if ((components & MESH_COMPONENT_TANGENT) != 0) {
         value.x = vertexData[idx++];
         value.y = vertexData[idx++];
         value.z = vertexData[idx++];
-        outData.tangent = normalize((modelMatrix * vec4(value, 0.0)).xyz);
+        outData.tangent = normalize((vec4(value, 0.0) * modelMatrix_T).xyz);
         value.x = vertexData[idx++];
         value.y = vertexData[idx++];
         value.z = vertexData[idx++];
-        outData.bitangent = normalize((modelMatrix * vec4(value, 0.0)).xyz);
+        outData.bitangent = normalize((vec4(value, 0.0) * modelMatrix_T).xyz);
         const float reflect_normal = vertexData[idx++];
         outData.normal = reflect_normal * normalize(cross(outData.tangent, outData.bitangent));
     }
-    gl_Position = cam.ProjViewMatrix * worldPos;
+    gl_Position =  worldPos * cam.ProjViewMatrix_T;
 }

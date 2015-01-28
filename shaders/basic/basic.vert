@@ -28,20 +28,20 @@ void main()
     const uint instanceID = gl_BaseInstanceARB + gl_InstanceID;
     materialID = instances[instanceID].materialID;
 
-    const mat4 modelMatrix = instances[instanceID].modelMatrix;
-    const vec4 worldPos = modelMatrix* vec4(in_position, 1.0);
+    const mat4 modelMatrix_T = instances[instanceID].modelMatrix_T;
+    const vec4 worldPos = vec4(in_position, 1.0) * modelMatrix_T;
 
     vs_viewdir = normalize(cam.Position.xyz - worldPos.xyz);
 #ifdef HAS_NORMALS
-    vs_normal = normalize((modelMatrix * vec4(in_normal, 0.0)).xyz);
+    vs_normal = normalize((vec4(in_normal, 0.0) * modelMatrix_T).xyz);
 #endif
 #ifdef HAS_TEXCOORDS
     vs_uv = in_uv;
 #endif
 #ifdef HAS_TANGENTS
-    vs_tangent = normalize(modelMatrix * vec4(in_tangent.xyz, 0.0)).xyz);
-    vs_bitangent = normalize(modelMatrix * vec4(in_bitangent.xyz, 0.0)).xyz);
+    vs_tangent = normalize(vec4(in_tangent.xyz, 0.0) * modelMatrix_T).xyz);
+    vs_bitangent = normalize(vec4(in_bitangent.xyz, 0.0) * modelMatrix_T).xyz);
     vs_normal = in_bitangent.w * normalize(cross(vs_tangent, vs_bitangent));
 #endif
-    gl_Position = cam.ProjViewMatrix * worldPos;
+    gl_Position = worldPos * cam.ProjViewMatrix_T;
 }
