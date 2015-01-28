@@ -749,6 +749,9 @@ void Renderer::render(const Options & options)
         glEnable(GL_CULL_FACE);
         glDepthFunc(GL_LEQUAL);
 
+        m_gbuffer.createHiZ();
+        // TODO occlusion culling
+
         m_gbuffer.bindFramebuffer();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

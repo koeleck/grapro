@@ -185,6 +185,21 @@ GBuffer::GBuffer(const int width, const int height)
     m_gamma_prog = core::res::shaders->registerProgram("gamma_prog",
             {"ssq_vert", "gamma_frag"});
 
+    // occlusion culling / HiZ
+    const auto maxSize = std::max(m_width / 2, m_height / 2);
+    m_hiz_levels = 1 + static_cast<int>(std::floor(std::log2(maxSize)));
+    glBindTexture(GL_TEXTURE_2D, m_hiz_tex);
+    glTexStorage2D(GL_TEXTURE_2D, m_hiz_levels, GL_R32F, m_width / 2, m_height / 2);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    core::res::shaders->registerShader("downsample_depth_comp", "basic/downsample_depth.comp",
+            GL_COMPUTE_SHADER);
+    m_downsample_depth_prog = core::res::shaders->registerProgram("downsample_depth_prog",
+            {"downsample_depth_comp"});
+
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(prev_fbo));
     glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(prev_tex));
 
@@ -306,7 +321,7 @@ void GBuffer::blit()
         glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, m_accumulate0_tex);
     else
         glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, m_accumulate1_tex);
-    //glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, m_edgesTex);
+    glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, m_hiz_tex);
     glUseProgram(m_blit_prog);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
@@ -355,6 +370,41 @@ void GBuffer::performSMAA()
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
 
+}
+
+/****************************************************************************/
+
+void GBuffer::createHiZ()
+{
+    //auto minsize = glm::min(m_offscreen_buffer.m_height, m_offscreen_buffer.m_width);
+    //const auto levels = static_cast<int>(std::floor(std::log2(minsize)));
+
+    glUseProgram(m_downsample_depth_prog);
+
+    glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, m_depth_tex);
+
+    unsigned int width = static_cast<unsigned int>(m_width / 2);
+    unsigned int height = static_cast<unsigned int>(m_height / 2);
+    for (int i = 0; i < m_hiz_levels; ++i) {
+        glBindImageTexture(1, m_hiz_tex, i, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);
+        if (i == 1) {
+            glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, m_hiz_tex);
+        }
+
+        glUniform1i(0, (i == 0) ? 0 : (i - 1));
+        glDispatchCompute((width + 15) / 16, (height + 15) / 16, 1);
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+        width = std::max(1u, width / 2);
+        height = std::max(1u, height / 2);
+    }
+}
+
+/****************************************************************************/
+
+GLuint GBuffer::getHiZTex() const
+{
+    return m_hiz_tex;
 }
 
 /****************************************************************************/

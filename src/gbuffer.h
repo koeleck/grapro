@@ -14,10 +14,12 @@ public:
     void blit();
     int getWidth() const;
     int getHeight() const;
+    void createHiZ();
 
     GLuint getDiffuseNormalTex() const;
     GLuint getSpecGlossEmissiveTex() const;
     GLuint getDepthTex() const;
+    GLuint getHiZTex() const;
 
     gl::Texture& getTexDepth() { return m_depth_tex; }
     gl::Texture& getTexNormal() { return m_diffuse_normal; }
@@ -32,6 +34,10 @@ private:
     gl::Texture         m_depth_tex;
     gl::Texture         m_diffuse_normal;
     gl::Texture         m_specular_gloss_emissive;
+
+    gl::Texture         m_hiz_tex;
+    int                 m_hiz_levels;
+    core::Program       m_downsample_depth_prog;
 
     gl::Framebuffer     m_accumulate_fbo;
     gl::Texture         m_accumulate0_tex;
