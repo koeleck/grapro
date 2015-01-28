@@ -223,6 +223,11 @@ vec3 traceConeSpecular(in const vec3 origin, in const vec3 direction,
 
 /******************************************************************************/
 
+float distanceDecay(in const float r)
+{
+    const float lambda = u_aoWeight / 100.f;
+    return 1.f / (1.f + lambda * r);
+}
 
 vec4 calculateDiffuseColor(const vec3 normal, const vec3 pos)
 {
@@ -248,7 +253,7 @@ vec4 calculateDiffuseColor(const vec3 normal, const vec3 pos)
             const float tan_a = tan(angle / 2.0);
             const float stepSize = (u_bboxMax.x - u_bboxMin.x) / float(u_numStepsDiffuse);
             //const float stepSize = voxelSize;
-
+            float occlusionPerCone = 0.f;
             float dist = stepSize;
             float alpha = 0.0;
             for (uint i = 0; i < u_numStepsDiffuse; ++i) {
@@ -262,26 +267,32 @@ vec4 calculateDiffuseColor(const vec3 normal, const vec3 pos)
                 if(color.a > 0.0)
                 {
                     totalColor.rgb += d * d * color.rgb;
-                    alpha += color.a;
+                    alpha *= (1.0 - color.a);
+                    const float decay = distanceDecay(dist);
+                    occlusionPerCone += decay * color.a;
                 }
-                else
+                /*else
                 {
                     occlusion += d;
-                }
+                }*/
 
-                if(alpha >= 1.0) 
+                if(alpha < 0.01)
                     break;
 
                 dist += max(stepSize, diameter);
+
+                // alpha correction because of step size
+                alpha = 1.0 - pow(1.0 - alpha, stepSize / voxelSize);
             }
+            occlusion += min(1.f, occlusionPerCone) / (u_coneGridSize * u_coneGridSize);
         }
 
     }
-    occlusion = u_aoWeight * clamp(occlusion / (u_coneGridSize * u_coneGridSize), 0.f, 1.f);
-    
+    //occlusion = u_aoWeight * clamp(occlusion / (u_coneGridSize * u_coneGridSize), 0.f, 1.f);
+
     // save ambient occlusion in alpha channel
     totalColor /= float(u_coneGridSize * u_coneGridSize);
-    totalColor.a = occlusion;
+    totalColor.a = 1.f - occlusion;
 
     return totalColor;
 }

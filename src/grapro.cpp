@@ -32,7 +32,7 @@ GraPro::GraPro(GLFWwindow* window)
     m_options.renderConeTracing = true;
     m_options.aoWeight = 0.0f;
     m_options.diffuseConeGridSize = 5;
-    m_options.diffuseConeSteps = 128;
+    m_options.diffuseConeSteps = 64;
     m_options.specularConeSteps = 128;
     m_options.debugOutput = false;
     m_options.debugGBuffer = false;
