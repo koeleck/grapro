@@ -284,15 +284,14 @@ vec4 calculateDiffuseColor(const vec3 normal, const vec3 pos)
                 // alpha correction because of step size
                 alpha = 1.0 - pow(1.0 - alpha, stepSize / voxelSize);
             }
-            occlusion += min(1.f, occlusionPerCone) / (u_coneGridSize * u_coneGridSize);
+            occlusion += min(1.f, occlusionPerCone);
         }
 
     }
-    //occlusion = u_aoWeight * clamp(occlusion / (u_coneGridSize * u_coneGridSize), 0.f, 1.f);
 
     // save ambient occlusion in alpha channel
     totalColor /= float(u_coneGridSize * u_coneGridSize);
-    totalColor.a = 1.f - occlusion;
+    totalColor.a = 1.f - occlusion / float(u_coneGridSize * u_coneGridSize);
 
     return totalColor;
 }

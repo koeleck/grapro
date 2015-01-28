@@ -31,7 +31,7 @@ GraPro::GraPro(GLFWwindow* window)
     m_options.renderIndirectSpecular = false;
     m_options.renderConeTracing = true;
     m_options.aoWeight = 0.0f;
-    m_options.diffuseConeGridSize = 5;
+    m_options.diffuseConeGridSize = 6;
     m_options.diffuseConeSteps = 64;
     m_options.specularConeSteps = 128;
     m_options.debugOutput = false;
@@ -134,7 +134,7 @@ void GraPro::update_gui(const double delta_t)
         ImGui::Checkbox("toggle conetracing", &m_options.renderConeTracing);
         if(m_options.renderConeTracing)
         {
-            ImGui::SliderInt("diffuse cone grid size", &m_options.diffuseConeGridSize, 1, 10);
+            ImGui::SliderInt("diffuse cone grid size", &m_options.diffuseConeGridSize, 1, 20);
             ImGui::SliderInt("diffuse cone steps", &m_options.diffuseConeSteps, 1, 512);
             ImGui::SliderInt("specular cone step size (inverse)", &m_options.specularConeSteps, 1, 512);
             ImGui::SliderFloat("specular angle modifier", &m_options.angleModifier, 0.f, 1.f);
