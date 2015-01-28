@@ -17,9 +17,7 @@ struct Options
     bool renderConeTracing;
     bool debugGBuffer;
     bool renderDirectLighting;
-    int aoConeGridSize;
-    int aoConeSteps;
-    int aoWeight;
+    float aoWeight;
     int diffuseConeGridSize;
     int diffuseConeSteps;
     int specularConeSteps;

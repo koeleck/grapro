@@ -22,6 +22,7 @@ layout(location = 10) uniform float u_angleModifier;
 layout(location = 11) uniform float u_diffuseModifier;
 layout(location = 12) uniform float u_specularModifier;
 layout(location = 13) uniform uint u_normalizeOutput;
+layout(location = 14) uniform float u_aoWeight;
 
 in vec2 vsTexCoord;
 
@@ -223,10 +224,12 @@ vec3 traceConeSpecular(in const vec3 origin, in const vec3 direction,
 /******************************************************************************/
 
 
-vec3 calculateDiffuseColor(const vec3 normal, const vec3 pos)
+vec4 calculateDiffuseColor(const vec3 normal, const vec3 pos)
 {
-    vec3 totalColor = vec3(0.0);
+    vec4 totalColor = vec4(0.0);
     const float step = (1.0 / float(u_coneGridSize));
+
+    float occlusion = 0.f;
 
     ONB onb = toONB(normal);
     const float angle = degreesToRadians(179.0 / float(u_coneGridSize));
@@ -256,20 +259,32 @@ vec3 calculateDiffuseColor(const vec3 normal, const vec3 pos)
                 const float diameter = clamp(2.0 * (tan_a * dist), 0.0, pow(2.0, u_treeLevels - 1));
                 const vec4 color = calculateColorAt(pos, diameter);
 
-                if(color.a >= 0.0)
+                if(color.a > 0.0)
                 {
-                    totalColor += d * d * color.rgb;
+                    totalColor.rgb += d * d * color.rgb;
                     alpha += color.a;
                 }
+                else
+                {
+                    occlusion += d;
+                    break;
+                }
 
-                if(alpha >= 1.0) break;
+                if(alpha >= 1.0) 
+                    break;
 
                 dist += max(stepSize, diameter);
             }
         }
 
     }
-    return totalColor / float(u_coneGridSize * u_coneGridSize);
+    occlusion = u_aoWeight * clamp(occlusion / (u_coneGridSize * u_coneGridSize), 0.f, 1.f);
+    
+    // save ambient occlusion in alpha channel
+    totalColor /= float(u_coneGridSize * u_coneGridSize);
+    totalColor.a = occlusion;
+
+    return totalColor;
 }
 
 /******************************************************************************/
@@ -341,11 +356,12 @@ void main()
     readIn(diffuse, normal, specular, glossy, emissive);
     vec4 wpos = resconstructWorldPos(vsTexCoord);
 
-    vec3 diff = vec3(0);
+    vec4 diff = vec4(0, 0, 0, 1);
     vec3 spec = vec3(0);
     if (u_diffuseModifier > 0.0) diff = calculateDiffuseColor(normal, wpos.xyz);
     if (u_specularModifier > 0.0) spec = calculateSpecularColor(wpos.xyz, normal, glossy, specular);
-    outFragColor = vec4(u_specularModifier * spec + u_diffuseModifier * diff, 1.0);
+    outFragColor = vec4(u_specularModifier * spec + u_diffuseModifier * diff.xyz, 1.0);
+
     if (u_normalizeOutput != 0) {
         if (u_specularModifier != 0.f) {
             outFragColor /= u_specularModifier;
@@ -353,6 +369,12 @@ void main()
         if (u_diffuseModifier != 0.f) {
             outFragColor /= u_diffuseModifier;
         }
+    }
+
+    // ambient occlusion
+    if(u_aoWeight > 0.0)
+    {
+        outFragColor *= diff.a;
     }
 }
 

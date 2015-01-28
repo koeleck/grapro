@@ -785,6 +785,7 @@ void Renderer::render(const Options & options)
             } else {
                 glUniform1ui(13, 0);
             }
+            glUniform1f(14, m_options.aoWeight);
 
             glDrawArrays(GL_TRIANGLES, 0, 3);
 
