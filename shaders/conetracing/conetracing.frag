@@ -68,7 +68,7 @@ bool inScene(in vec3 pos)
 
 /******************************************************************************/
 
-float coneRadiusAtDistance(in Cone cone, in float distance)
+float coneRadiusAtDistance(in const Cone cone, in float distance)
 {
     const float angle  = cone.angle * 0.5;
     return distance * tan(degreesToRadians(angle));
@@ -87,7 +87,7 @@ vec3 uniformHemisphereSampling(in float ux, in float uy)
 
 /******************************************************************************/
 
-ONB toONB(vec3 normal)
+ONB toONB(in const vec3 normal)
 {
     ONB onb;
     onb.N = normal;
@@ -108,7 +108,7 @@ ONB toONB(vec3 normal)
 
 /******************************************************************************/
 
-vec3 toWorld(ONB onb, vec3 v)
+vec3 toWorld(in const ONB onb, in const vec3 v)
 {
     return onb.S * v.x + onb.T * v.y + onb.N * v.z;
 }
@@ -229,30 +229,27 @@ float distanceDecay(in const float r)
     return 1.f / (1.f + lambda * r);
 }
 
-vec4 calculateDiffuseColor(const vec3 normal, const vec3 pos)
+vec4 traceConeDiffuse(const vec3 normal, const vec3 pos)
 {
-    vec4 totalColor = vec4(0.0);
-    const float step = (1.0 / float(u_coneGridSize));
-
+    vec4 totalColor = vec4(0.f);
     float occlusion = 0.f;
 
-    ONB onb = toONB(normal);
-    const float angle = degreesToRadians(179.0 / float(u_coneGridSize));
+    const ONB onb = toONB(normal);
+    const float angle = degreesToRadians(179.99f / float(u_coneGridSize));
+    const float tan_a = tan(angle / 2.0);
+    const float stepSize = (u_bboxMax.x - u_bboxMin.x) / float(u_numStepsDiffuse);
 
+    const float step = (1.0 / float(u_coneGridSize));
     for (uint y = 0; y < u_coneGridSize; ++y) {
         const float uy = (0.5 + float(y)) * step;
         for (uint x = 0; x < u_coneGridSize; ++x) {
             const float ux = (0.5 + float(x)) * step;
 
             // create the cone
-            vec3 v = uniformHemisphereSampling(ux, uy);
-            vec3 dir = normalize(toWorld(onb, v));
+            const vec3 v = uniformHemisphereSampling(ux, uy);
+            const vec3 dir = normalize(toWorld(onb, v));
+            const float d = abs(dot(normal, dir));
 
-            float d = abs(dot(normal, dir));
-
-            const float tan_a = tan(angle / 2.0);
-            const float stepSize = (u_bboxMax.x - u_bboxMin.x) / float(u_numStepsDiffuse);
-            //const float stepSize = voxelSize;
             float occlusionPerCone = 0.f;
             float dist = stepSize;
             float alpha = 0.0;
@@ -268,13 +265,11 @@ vec4 calculateDiffuseColor(const vec3 normal, const vec3 pos)
                 {
                     totalColor.rgb += d * d * color.rgb;
                     alpha *= (1.0 - color.a);
+
+                    // AO
                     const float decay = distanceDecay(dist);
                     occlusionPerCone += decay * color.a;
                 }
-                /*else
-                {
-                    occlusion += d;
-                }*/
 
                 if(alpha < 0.01)
                     break;
@@ -283,8 +278,11 @@ vec4 calculateDiffuseColor(const vec3 normal, const vec3 pos)
 
                 // alpha correction because of step size
                 alpha = 1.0 - pow(1.0 - alpha, stepSize / voxelSize);
+
             }
+
             occlusion += min(1.f, occlusionPerCone);
+
         }
 
     }
@@ -354,6 +352,16 @@ vec3 calculateSpecularColor(in const vec3 wpos, in const vec3 normal,
 
 /******************************************************************************/
 
+vec4 calculateDiffuseColorPlusAO(in const vec3 wpos, in const vec3 normal,
+                                 in const vec3 diffuse)
+{
+    const vec4 colorIndirect = traceConeDiffuse(normal, wpos);
+    const vec4 color = vec4(colorIndirect.rgb * diffuse, colorIndirect.a);
+    return color;
+}
+
+/******************************************************************************/
+
 void main()
 {
     vec3 diffuse;
@@ -367,7 +375,7 @@ void main()
 
     vec4 diff = vec4(0, 0, 0, 1);
     vec3 spec = vec3(0);
-    if (u_diffuseModifier > 0.0) diff = calculateDiffuseColor(normal, wpos.xyz);
+    if (u_diffuseModifier > 0.0) diff = calculateDiffuseColorPlusAO(wpos.xyz, normal, diffuse);
     if (u_specularModifier > 0.0) spec = calculateSpecularColor(wpos.xyz, normal, glossy, specular);
     outFragColor = vec4(u_specularModifier * spec + u_diffuseModifier * diff.xyz, 1.0);
 
@@ -385,6 +393,8 @@ void main()
     {
         outFragColor *= diff.a;
     }
+
+    //outFragColor = vec4(diffuse, 1);
 }
 
 /******************************************************************************/
