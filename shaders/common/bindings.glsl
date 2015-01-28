@@ -15,6 +15,7 @@
 #define LIGHT_BINDING       8
 #define LIGHT_ID_BINDING    9
 #define OCTREE_INFO_BINDING 10
+#define INDIRECT_CMD_BINDING 11
 
 #define DIFFUSE_TEX_UNIT        0
 #define SPECULAR_TEX_UNIT       1

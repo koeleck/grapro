@@ -51,6 +51,7 @@ DEF_VAR(light_nearplane, float, .1f)
 
 // Camera
 DEF_VAR(cam_nearplane, double, 0.1)
+DEF_VAR(cam_farplane, double, 2500.0)
 
 /***************************************************************
  *

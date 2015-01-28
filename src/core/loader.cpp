@@ -22,8 +22,6 @@ namespace core
 
 bool loadScenefiles(const std::string& scenefiles)
 {
-    constexpr double FAR_PLANE = std::numeric_limits<double>::infinity();
-
     AABB scene_bbox;
     bool result = true;
     boost::char_separator<char> sep(",");
@@ -66,7 +64,7 @@ bool loadScenefiles(const std::string& scenefiles)
             res::cameras->createPerspectiveCam(cam->name, cam->position,
                     cam->position + cam->direction,
                     2.0 * glm::atan(glm::tan(glm::radians(cam->hfov) / 2.0) / cam->aspect_ratio),
-                    cam->aspect_ratio, vars.cam_nearplane, FAR_PLANE);
+                    cam->aspect_ratio, vars.cam_nearplane, vars.cam_farplane);
         }
 
         for (unsigned int i = 0; i < scene->num_lights; ++i) {
@@ -120,7 +118,7 @@ bool loadScenefiles(const std::string& scenefiles)
     if (res::cameras->getDefaultCam() == nullptr) {
         auto* cam = res::cameras->createPerspectiveCam("default_cam", glm::dvec3(0.0),
                 glm::dvec3(0.0, 0.0, 1.0), glm::radians(45.0), 4.0 / 3.0,
-                vars.cam_nearplane, FAR_PLANE);
+                vars.cam_nearplane, vars.cam_farplane);
         res::cameras->makeDefault(cam);
     }
 

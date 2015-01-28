@@ -77,6 +77,7 @@ private:
 
     void renderGeometry(GLuint prog, bool depthOnly,
             const core::Camera* cam);
+    void performOcclusionCulling();
     void debugRenderTree(bool solid, int level, bool colored, bool smooth);
     void renderBoundingBoxes();
     void renderShadowmaps();
@@ -104,6 +105,7 @@ private:
     core::Program                       m_bbox_prog;
 
     core::Program                       m_vertexpulling_prog;
+    core::Program                       m_occlusionculling_prog;
     gl::VertexArray                     m_vertexpulling_vao;
 
     core::OrthogonalCamera*             m_voxelize_cam;

@@ -31,6 +31,7 @@ constexpr int OCTREE    = 7;
 constexpr int LIGHT     = 8;
 constexpr int LIGHT_IDS = 9;
 constexpr int VOXEL_NODE_INFO = 10;
+constexpr int INDIRECT_CMD_BUFFER = 11;
 
 // Vertex Attrib Arrays
 constexpr int POSITIONS = 0;

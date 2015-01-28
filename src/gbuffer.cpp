@@ -56,6 +56,8 @@ GBuffer::GBuffer(const int width, const int height)
             m_width, m_height);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //GLfloat hizBorderColor[4] = {1.f, 1.f, 1.f, 1.f};
+    //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, hizBorderColor);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,
@@ -190,7 +192,7 @@ GBuffer::GBuffer(const int width, const int height)
     m_hiz_levels = 1 + static_cast<int>(std::floor(std::log2(maxSize)));
     glBindTexture(GL_TEXTURE_2D, m_hiz_tex);
     glTexStorage2D(GL_TEXTURE_2D, m_hiz_levels, GL_R32F, m_width / 2, m_height / 2);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -321,7 +323,7 @@ void GBuffer::blit()
         glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, m_accumulate0_tex);
     else
         glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, m_accumulate1_tex);
-    glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, m_hiz_tex);
+    //glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, m_hiz_tex);
     glUseProgram(m_blit_prog);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }

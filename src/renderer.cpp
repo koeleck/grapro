@@ -80,6 +80,12 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
     m_vertexpulling_prog = core::res::shaders->registerProgram("vertexpulling_prog",
             {"vertexpulling_vert", "vertexpulling_frag"});
 
+    // occlusion culling
+    core::res::shaders->registerShader("occlusionculling_comp", "basic/occlusionculling.comp",
+            GL_COMPUTE_SHADER);
+    m_occlusionculling_prog = core::res::shaders->registerProgram("occlusionculling_prog",
+            {"occlusionculling_comp"});
+
     // shadows
     core::res::shaders->registerShader("shadow_vert", "basic/shadow.vert",
             GL_VERTEX_SHADER);
@@ -715,8 +721,6 @@ void Renderer::render(const Options & options)
     core::res::meshes->bind();
     core::res::lights->bind();
 
-    //populateGBuffer();
-
     if (m_rebuildTree) {
         // only render shadowmaps once
         glEnable(GL_DEPTH_TEST);
@@ -749,8 +753,8 @@ void Renderer::render(const Options & options)
         glEnable(GL_CULL_FACE);
         glDepthFunc(GL_LEQUAL);
 
-        m_gbuffer.createHiZ();
-        // TODO occlusion culling
+        // doesn't work :(
+        //performOcclusionCulling();
 
         m_gbuffer.bindFramebuffer();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1104,3 +1108,25 @@ void Renderer::distributeToNeighbors(const std::pair<int, int>& level, const boo
 }
 
 /****************************************************************************/
+
+void Renderer::performOcclusionCulling()
+{
+    m_gbuffer.createHiZ();
+
+    glUseProgram(m_occlusionculling_prog);
+
+    glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, m_gbuffer.getHiZTex());
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, core::bindings::INDIRECT_CMD_BUFFER,
+            m_indirect_buffer);
+
+    GLuint geometryCount = static_cast<GLuint>(m_geometry.size());
+    GLuint workgroupSize = (geometryCount + 255) / 256;
+
+    glUniform1ui(0, geometryCount);
+    glDispatchCompute(workgroupSize, 1, 1);
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+}
+
+/****************************************************************************/
+
