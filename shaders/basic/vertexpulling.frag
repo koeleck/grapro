@@ -38,31 +38,31 @@ void main()
     float glossiness;
 
     if (materials[materialID].hasDiffuseTex != 0) {
-        diffuse_color = texture(uDiffuseTex, uv).rgb;
+        diffuse_color = pow(texture(uDiffuseTex, uv).rgb, vec3(2.2));
     } else {
         diffuse_color = materials[materialID].diffuseColor;
     }
 
     if (materials[materialID].hasSpecularTex != 0) {
-        specular_color = texture(uSpecularTex, uv).rgb;
+        specular_color = pow(texture(uSpecularTex, uv).rgb, vec3(2.2));
     } else {
         specular_color = materials[materialID].specularColor;
     }
 
     if (materials[materialID].hasEmissiveTex != 0) {
-        emissive_color = texture(uEmissiveTex, uv).rgb;
+        emissive_color = pow(texture(uEmissiveTex, uv).rgb, vec3(2.2));
     } else {
         emissive_color = materials[materialID].emissiveColor;
     }
 
     if (materials[materialID].hasAmbientTex != 0) {
-        ambient_color = texture(uAmbientTex, uv).rgb;
+        ambient_color = pow(texture(uAmbientTex, uv).rgb, vec3(2.2));
     } else {
         ambient_color = materials[materialID].ambientColor;
     }
 
     if (materials[materialID].hasGlossyTex != 0) {
-        glossiness = texture(uGlossyTex, uv).r;
+        glossiness = pow(texture(uGlossyTex, uv).r, 2.2);
     } else {
         glossiness = materials[materialID].glossiness;
     }
