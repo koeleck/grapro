@@ -1,0 +1,56 @@
+#version 440 core
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0) uniform sampler2D uDepthTex;
+layout(binding = 1, r32f) uniform restrict readonly image2D  uDepthIn;
+layout(binding = 2, r32f) uniform restrict writeonly image2D  uDepthOut;
+
+void main()
+{
+
+    const int x = int(gl_GlobalInvocationID.x);
+    const int y = int(gl_GlobalInvocationID.y);
+
+    const ivec2 size = imageSize(uDepthOut).xy;
+
+    if (x < size.x && y < size.y) {
+        if (all(equal(size, textureSize(uDepthTex, 0)))) {
+            imageStore(uDepthOut, ivec2(x, y), texelFetch(uDepthTex, ivec2(x, y), 0).rrrr);
+        } else {
+            const ivec2 prev_size = imageSize(uDepthIn).xy;
+            ivec2 origin = 2 * ivec2(x, y);
+
+            bvec2 quad = lessThan(origin + ivec2(1), prev_size);
+            bvec2 extend = equal(origin + ivec2(3), prev_size);
+
+            float maxdepth = imageLoad(uDepthIn, origin).r;
+            if (quad[0] == true) {
+                maxdepth = max(maxdepth, imageLoad(uDepthIn, ivec2(origin.x + 1, origin.y)).r);
+                if (extend[0] == true) {
+                    maxdepth = max(maxdepth, imageLoad(uDepthIn, ivec2(origin.x + 2, origin.y)).r);
+                }
+            }
+            if (quad[1] == true) {
+                maxdepth = max(maxdepth, imageLoad(uDepthIn, ivec2(origin.x, origin.y + 1)).r);
+                if (extend[1] == true) {
+                    maxdepth = max(maxdepth, imageLoad(uDepthIn, ivec2(origin.x, origin.y + 2)).r);
+                }
+            }
+            if (all(quad) == true) {
+                maxdepth = max(maxdepth, imageLoad(uDepthIn, ivec2(origin.x + 1, origin.y + 1)).r);
+                if (extend[0] == true) {
+                    maxdepth = max(maxdepth, imageLoad(uDepthIn, ivec2(origin.x + 2, origin.y + 1)).r);
+                }
+                if (extend[1] == true) {
+                    maxdepth = max(maxdepth, imageLoad(uDepthIn, ivec2(origin.x + 1, origin.y + 2)).r);
+                }
+                if (all(extend) == true) {
+                    maxdepth = max(maxdepth, imageLoad(uDepthIn, ivec2(origin.x + 2, origin.y + 2)).r);
+                }
+            }
+
+            imageStore(uDepthOut, ivec2(x, y), vec4(maxdepth));
+        }
+    }
+}
