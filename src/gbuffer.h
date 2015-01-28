@@ -43,6 +43,9 @@ private:
     gl::Texture         m_blendTex;
     gl::Texture         m_areaTex;
     gl::Texture         m_searchTex;
+    core::Program       m_edge_detect_prog;
+    core::Program       m_blending_weight_prog;
+    core::Program       m_blending__neighborhood_prog;
 
     int                 m_prev_fbo;
     int                 m_prev_viewport[4];

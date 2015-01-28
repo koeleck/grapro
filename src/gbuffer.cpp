@@ -133,6 +133,30 @@ GBuffer::GBuffer(const int width, const int height)
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, AREATEX_WIDTH, AREATEX_HEIGHT,
             GL_RED, GL_UNSIGNED_BYTE, searchTexBytes);
 
+    core::res::shaders->registerShader("smaa_edge_detect_vert", "smaa/edgedetect.vert",
+            GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("smaa_edge_detect_frag", "smaa/edgedetect.frag",
+            GL_FRAGMENT_SHADER);
+    core::res::shaders->registerShader("smaa_blending_weight_vert", "smaa/blending_weight_calculation.vert",
+            GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("smaa_blending_weight_frag", "smaa/blending_weight_calculation.frag",
+            GL_FRAGMENT_SHADER);
+    core::res::shaders->registerShader("smaa_blending_neighborhood_vert", "smaa/neighborhood_blending.vert",
+            GL_VERTEX_SHADER);
+    core::res::shaders->registerShader("smaa_blending_neighborhood_frag", "smaa/neighborhood_blending.frag",
+            GL_FRAGMENT_SHADER);
+    m_edge_detect_prog = core::res::shaders->registerProgram("smaa_edge_detect_prog",
+            {"smaa_edge_detect_vert", "smaa_edge_detect_frag"});
+    m_blending_weight_prog = core::res::shaders->registerProgram("smaa_blending_weight_prog",
+            {"smaa_blending_weight_vert", "smaa_blending_weight_frag"});
+    m_blending__neighborhood_prog = core::res::shaders->registerProgram("smaa_blending_neighborhood_prog",
+            {"smaa_blending_neighborhood_vert", "smaa_blending_neighborhood_vert"});
+
+    float viewportSize[2] = {static_cast<float>(m_width), static_cast<float>(m_height)};
+    glProgramUniform2fv(m_edge_detect_prog, 0, 1, viewportSize);
+    glProgramUniform2fv(m_blending_weight_prog, 0, 1, viewportSize);
+    glProgramUniform2fv(m_blending__neighborhood_prog, 0, 1, viewportSize);
+
     // blit program
     core::res::shaders->registerShader("ssq_vert", "basic/ssq.vert", GL_VERTEX_SHADER);
     core::res::shaders->registerShader("ssq_frag", "basic/ssq.frag", GL_FRAGMENT_SHADER);

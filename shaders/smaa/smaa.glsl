@@ -1,17 +1,19 @@
 #ifndef SHADERS_SMAA_SMAA_GLSL
 #define SHADERS_SMAA_SMAA_GLSL
 
-#define SMAA_GLSL4 1
-#define SMAA_RT_METRICS vec4(1.0 / TARGET_WIDTH, 1.0 / TARGET_HEIGHT, TARGET_WIDTH, TARGET_HEIGHT)
-#define SMAA_PRESET_LOW
+layout(location = 0) uniform vec2 uViewportSize;
+
+#define SMAA_GLSL_4 1
+#define SMAA_RT_METRICS vec4(1.0 / uViewportSize.x, 1.0 / uViewportSize.y, uViewportSize.x, uViewportSize.y)
+#define SMAA_PRESET_LOW 1
 //SMAA_PRESET_MEDIUM
 //SMAA_PRESET_HIGH
 //SMAA_PRESET_ULTRA
 
 #if defined(VERTEX_SHADER)
-#define SMAA_INCLUDE_VS
+#define SMAA_INCLUDE_VS 1
 #elif defined(FRAGMENT_SHADER)
-#define SMAA_INCLUDE_PS
+#define SMAA_INCLUDE_PS 1
 #endif
 
 #include "SMAA.hlsl"
