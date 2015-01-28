@@ -141,7 +141,7 @@ GBuffer::GBuffer(const int width, const int height)
     // gamma correction
     core::res::shaders->registerShader("gamma_frag", "basic/gamma.frag",
             GL_FRAGMENT_SHADER);
-    m_gamma_prog = core::res::shaders->registerProgram("gamme_prog",
+    m_gamma_prog = core::res::shaders->registerProgram("gamma_prog",
             {"ssq_vert", "gamma_frag"});
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(prev_fbo));
