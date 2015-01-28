@@ -127,6 +127,7 @@ private:
 
     // debug voxeltree
     core::Program                       m_voxel_bbox_prog;
+    core::Program                       m_diffuse_prog;
 
     // debug
     core::Program                       m_debug_tex_prog;

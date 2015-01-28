@@ -113,8 +113,10 @@ void GraPro::update_gui(const double delta_t)
         ImGui::Spacing();
 
         ImGui::Checkbox("bounding boxes", &m_options.renderBBoxes);
-        ImGui::Checkbox("show white voxel boxes", &m_options.renderVoxelBoxes);
-        ImGui::Checkbox("show colored voxel boxes", &m_options.renderVoxelBoxesColored);
+        ImGui::Checkbox("show voxel boxes", &m_options.renderVoxelBoxes);
+        if (m_options.renderVoxelBoxes) {
+            ImGui::Checkbox("color voxel boxes", &m_options.renderVoxelBoxesColored);
+        }
         ImGui::Checkbox("show voxel colors", &m_options.renderVoxelColors);
 
         bool debugAtMax = (m_options.debugLevel == m_options.treeLevels - 1);

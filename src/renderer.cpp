@@ -274,6 +274,10 @@ Renderer::Renderer(const int width, const int height, core::TimerArray& timer_ar
     m_voxel_bbox_prog = core::res::shaders->registerProgram("octreeDebugBBox_prog",
             {"octreeDebugBBox_vert", "octreeDebugBBox_frag"});
 
+    core::res::shaders->registerShader("diffuse_frag", "basic/diffuse.frag", GL_FRAGMENT_SHADER);
+    m_diffuse_prog = core::res::shaders->registerProgram("diffuse_prog",
+            {"vertexpulling_vert", "diffuse_frag"});
+
 }
 
 /****************************************************************************/
@@ -724,6 +728,12 @@ void Renderer::render(const Options & options)
         glDepthFunc(GL_LEQUAL);
         debugRenderTree(true, options.debugLevel, true);
         glDisable(GL_BLEND);
+    } else if (m_options.renderVoxelBoxes) {
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+        glDepthFunc(GL_LEQUAL);
+        debugRenderTree(false, options.debugLevel, m_options.renderVoxelBoxesColored);
+        renderGeometry(m_diffuse_prog, false, core::res::cameras->getDefaultCam());
     } else {
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
@@ -783,13 +793,6 @@ void Renderer::render(const Options & options)
         m_gbuffer.unbindFramebuffer();
         m_gbuffer.blit();
         glDisable(GL_BLEND);
-
-        glEnable(GL_DEPTH_TEST);
-        if (options.renderVoxelBoxesColored) {
-            debugRenderTree(false, options.debugLevel, true);
-        } else if (options.renderVoxelBoxes) {
-            debugRenderTree(false, options.debugLevel, false);
-        }
 
     }
 
