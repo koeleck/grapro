@@ -9,13 +9,20 @@ out vec4 vsOffset[3];
 
 void main()
 {
-    vsTexCoord = vec2(float(gl_VertexID & 0x01) * 2.0,
-                      float(gl_VertexID & 0x02));
+    const vec2 texcoord = vec2(float(gl_VertexID & 0x01) * 2.0,
+                               float(gl_VertexID & 0x02));
 
-    SMAABlendingWeightCalculationVS(vsTexCoord,
-            vsPixCoord, vsOffset);
+    vsTexCoord = texcoord;
 
-    gl_Position = vec4(fma(vsTexCoord, vec2(2.0), vec2(-1.0)),
+    vec4 off[3];
+    vec2 pixcoord;
+
+    SMAABlendingWeightCalculationVS(texcoord, pixcoord, off);
+
+    vsOffset = off;
+    vsPixCoord = pixcoord;
+
+    gl_Position = vec4(fma(texcoord, vec2(2.0), vec2(-1.0)),
                        -1.0,
                        1.0);
 }

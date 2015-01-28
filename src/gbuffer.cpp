@@ -130,10 +130,10 @@ GBuffer::GBuffer(const int width, const int height)
 
     glBindTexture(GL_TEXTURE_2D, m_areaTex);
     glTexStorage2D(GL_TEXTURE_2D, 1, GL_RG8, AREATEX_WIDTH, AREATEX_HEIGHT);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, AREATEX_WIDTH, AREATEX_HEIGHT,
@@ -306,6 +306,7 @@ void GBuffer::blit()
         glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, m_accumulate0_tex);
     else
         glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, m_accumulate1_tex);
+    //glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, m_edgesTex);
     glUseProgram(m_blit_prog);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
