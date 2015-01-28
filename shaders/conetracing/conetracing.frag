@@ -267,7 +267,6 @@ vec4 calculateDiffuseColor(const vec3 normal, const vec3 pos)
                 else
                 {
                     occlusion += d;
-                    break;
                 }
 
                 if(alpha >= 1.0) 

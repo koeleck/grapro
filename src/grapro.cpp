@@ -140,7 +140,7 @@ void GraPro::update_gui(const double delta_t)
             ImGui::SliderFloat("specular angle modifier", &m_options.angleModifier, 0.f, 1.f);
             ImGui::SliderFloat("specular intensity modifier", &m_options.specularModifier, 0.f, 10.f);
             ImGui::SliderFloat("diffuse intensity modifier", &m_options.diffuseModifier, 0.f, 10.f);
-            ImGui::SliderFloat("ambient occlusion", &m_options.aoWeight, 0.f, 10.f);
+            ImGui::SliderFloat("ambient occlusion", &m_options.aoWeight, 0.f, 1.f);
             ImGui::Checkbox("normalize conetracing colors", &m_options.normalizeOutput);
         }
 
