@@ -123,7 +123,7 @@ void GraPro::update_gui(const double delta_t)
         }
 
         bool debugAtMax = (m_options.debugLevel == m_options.treeLevels - 1);
-        //ImGui::SliderInt("Tree levels", &m_options.treeLevels, 1, 9);
+        ImGui::SliderInt("Tree levels", &m_options.treeLevels, 1, 9);
         if (vars.voxel_octree_levels != static_cast<unsigned int>(m_options.treeLevels)) {
             vars.voxel_octree_levels = static_cast<unsigned int>(m_options.treeLevels);
             if (debugAtMax) {
