@@ -16,7 +16,7 @@
 GraPro::GraPro(GLFWwindow* window)
   : framework::MainWindow(window),
     m_cam(core::res::cameras->getDefaultCam()),
-    m_showgui{false},
+    m_showgui{true},
     m_renderer{getWidth(), getHeight(), m_timers}
 {
 
@@ -104,14 +104,14 @@ void GraPro::update_gui(const double delta_t)
             LOG_INFO("shadows toggled");
         }
 
-        if (ImGui::Button("show gbuffer")) {
+        /*if (ImGui::Button("show gbuffer")) {
             m_options.debugGBuffer = !m_options.debugGBuffer;
             LOG_INFO("displaying gbuffer");
-        }
+        }*/
 
         ImGui::Spacing();
 
-        ImGui::SliderFloat("gamma", &vars.r_gamma, .1f, 4.f);
+        ImGui::SliderFloat("inv gamma", &vars.r_gamma, .1f, 4.f);
         ImGui::Checkbox("SMAA", &vars.r_smaa);
         ImGui::Checkbox("bounding boxes", &m_options.renderBBoxes);
         ImGui::Checkbox("show voxel boxes", &m_options.renderVoxelBoxes);
@@ -134,15 +134,17 @@ void GraPro::update_gui(const double delta_t)
             }
             m_renderer.markTreeInvalid();
         }
-        ImGui::SliderInt("Debug tree level", &m_options.debugLevel, 0, m_options.treeLevels - 1);
+        if (m_options.renderVoxelBoxesColored || m_options.renderVoxelBoxes || m_options.renderVoxelColors) {
+            ImGui::SliderInt("Debug tree level", &m_options.debugLevel, 0, m_options.treeLevels - 1);
+        }
 
         ImGui::Checkbox("direct lighting", &m_options.renderDirectLighting);
         ImGui::Checkbox("toggle conetracing", &m_options.renderConeTracing);
         if(m_options.renderConeTracing)
         {
             ImGui::SliderInt("diffuse cone grid size", &m_options.diffuseConeGridSize, 1, 20);
-            ImGui::SliderInt("diffuse cone steps", &m_options.diffuseConeSteps, 1, 512);
-            ImGui::SliderInt("specular cone step size (inverse)", &m_options.specularConeSteps, 1, 512);
+            ImGui::SliderInt("inv diffuse cone steps", &m_options.diffuseConeSteps, 1, 512);
+            ImGui::SliderInt("inv specular cone step size", &m_options.specularConeSteps, 1, 512);
             ImGui::SliderFloat("specular angle modifier", &m_options.angleModifier, 0.f, 1.f);
             ImGui::SliderFloat("specular intensity modifier", &m_options.specularModifier, 0.f, 10.f);
             ImGui::SliderFloat("diffuse intensity modifier", &m_options.diffuseModifier, 0.f, 10.f);
