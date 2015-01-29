@@ -16,6 +16,7 @@ DEF_VAR(scene_files, std::string, "")
 // Quality
 DEF_VAR(r_ssaa, float, 1.0)
 DEF_VAR(r_smaa, bool, true)
+DEF_VAR(r_gamma, float, 1.f / 2.2f)
 
 // Meshes
 DEF_VAR(vertex_buffer_size, int, 268435456)

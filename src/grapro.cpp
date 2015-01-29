@@ -111,6 +111,7 @@ void GraPro::update_gui(const double delta_t)
 
         ImGui::Spacing();
 
+        ImGui::SliderFloat("gamma", &vars.r_gamma, .1f, 4.f);
         ImGui::Checkbox("SMAA", &vars.r_smaa);
         ImGui::Checkbox("bounding boxes", &m_options.renderBBoxes);
         ImGui::Checkbox("show voxel boxes", &m_options.renderVoxelBoxes);
