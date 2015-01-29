@@ -203,7 +203,7 @@ vec3 traceConeSpecular(in const vec3 origin, in const vec3 direction,
 
         result += alpha * color.a * color.rgb;
 
-        if(color.a >= 0.99) {
+        if(color.a > 0.99) {
             break;
         }
 
@@ -268,7 +268,7 @@ vec4 traceConeDiffuse(const vec3 normal, const vec3 pos)
                     occlusionPerCone += decay * color.a;
                 }
 
-                if(alpha > 0.4)
+                if(alpha > 0.99)
                     break;
 
                 dist += max(stepSize, diameter);
@@ -345,10 +345,8 @@ vec3 calculateSpecularColor(in const vec3 wpos, in const vec3 normal,
     const vec3 refl = reflect(incident, normal);
     //float angle = degreesToRadians((3060.0 / (specular * glossy)) * u_angleModifier);
 
-    vec3 tmp = cross(normal, refl);
-    tmp = cross(tmp, normal);
 
-    float angle = acos(dot(refl, tmp));
+    float angle = 0.5 * M_PI - acos(dot(refl, normal));
 
     return specular * traceConeSpecular(wpos.xyz, refl, angle, u_numStepsSpecular);
 }
