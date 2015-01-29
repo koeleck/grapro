@@ -16,12 +16,12 @@
 GraPro::GraPro(GLFWwindow* window)
   : framework::MainWindow(window),
     m_cam(core::res::cameras->getDefaultCam()),
-    m_showgui{true},
+    m_showgui{false},
     m_renderer{getWidth(), getHeight(), m_timers}
 {
 
     m_options.treeLevels = static_cast<int>(vars.voxel_octree_levels);
-    m_options.debugLevel = static_cast<int>(vars.voxel_octree_levels - 1);
+    m_options.debugLevel = 0;
     m_options.renderBBoxes = false;
     m_options.renderVoxelBoxes = false;
     m_options.renderVoxelBoxesColored = false;
@@ -30,14 +30,14 @@ GraPro::GraPro(GLFWwindow* window)
     m_options.renderAO = false;
     m_options.renderIndirectDiffuse = false;
     m_options.renderIndirectSpecular = false;
-    m_options.renderConeTracing = true;
+    m_options.renderConeTracing = false;
     m_options.aoWeight = 0.0f;
     m_options.diffuseConeGridSize = 6;
     m_options.diffuseConeSteps = 64;
     m_options.specularConeSteps = 128;
     m_options.debugOutput = false;
     m_options.debugGBuffer = false;
-    m_options.renderDirectLighting = false;
+    m_options.renderDirectLighting = true;
     m_options.angleModifier = 1.f;
     m_options.diffuseModifier = 2.5;
     m_options.specularModifier = 1;
