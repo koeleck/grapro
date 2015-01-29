@@ -91,7 +91,7 @@ float get3DShadow(in const vec3 lightPos,
     float sinLightAngle = sqrt(1.0 - cosLightAngle*cosLightAngle);
     float slope = sinLightAngle / max(cosLightAngle, 0.00001);
     const float cubeSlopeScaleBias = 0.5; // TODO
-    float cubeShadowBias = 50.19; // TODO
+    float cubeShadowBias = 0.19; // TODO
     cubeShadowBias += slope * cubeSlopeScaleBias;
 
     wpos += toLight * cubeShadowBias;

@@ -175,8 +175,8 @@ vec4 calculateColorAt(in const vec3 pos, in const float diameter)
     const vec4 colorHigher = getColor(uint(levelHigh), pos);
     const vec4 colorLower = getColor(uint(levelLow), pos);
 
-    //const float alpha = pow(2.0, (level - float(levelLow)) / (levelHigh - levelLow)) - 1.0;
-    float alpha = level - float(levelLow);
+    float alpha = pow(2.0, (level - float(levelLow)) / (levelHigh - levelLow)) - 1.0;
+    //float alpha = level - float(levelLow);
 
     alpha = clamp(alpha, 0.0, 1.0);
     return alpha * colorHigher + (1.0 - alpha) * colorLower;
@@ -342,8 +342,14 @@ vec3 calculateSpecularColor(in const vec3 wpos, in const vec3 normal,
                             in const float glossy, in const float specular)
 {
     const vec3 incident = normalize(wpos.xyz - cam.Position.xyz);
-    const vec3 refl = normalize(reflect(incident, normal));
-    const float angle = degreesToRadians(60.0 * (40.0 / glossy) * u_angleModifier);
+    const vec3 refl = reflect(incident, normal);
+    //float angle = degreesToRadians((3060.0 / (specular * glossy)) * u_angleModifier);
+
+    vec3 tmp = cross(normal, refl);
+    tmp = cross(tmp, normal);
+
+    float angle = acos(dot(refl, tmp));
+
     return specular * traceConeSpecular(wpos.xyz, refl, angle, u_numStepsSpecular);
 }
 
