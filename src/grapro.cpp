@@ -21,7 +21,7 @@ GraPro::GraPro(GLFWwindow* window)
 {
 
     m_options.treeLevels = static_cast<int>(vars.voxel_octree_levels);
-    m_options.debugLevel = static_cast<int>(vars.voxel_octree_levels - 1);
+    m_options.debugLevel = 0;
     m_options.renderBBoxes = false;
     m_options.renderVoxelBoxes = false;
     m_options.renderVoxelBoxesColored = false;
@@ -30,14 +30,14 @@ GraPro::GraPro(GLFWwindow* window)
     m_options.renderAO = false;
     m_options.renderIndirectDiffuse = false;
     m_options.renderIndirectSpecular = false;
-    m_options.renderConeTracing = true;
+    m_options.renderConeTracing = false;
     m_options.aoWeight = 0.0f;
     m_options.diffuseConeGridSize = 15;
     m_options.diffuseConeSteps = 64;
-    m_options.specularConeSteps = 128;
+    m_options.specularConeSteps = 80;
     m_options.debugOutput = false;
     m_options.debugGBuffer = false;
-    m_options.renderDirectLighting = false;
+    m_options.renderDirectLighting = true;
     m_options.angleModifier = 1.f;
     m_options.diffuseModifier = 2.5;
     m_options.specularModifier = 1;
@@ -114,16 +114,16 @@ void GraPro::update_gui(const double delta_t)
         ImGui::Checkbox("SMAA", &vars.r_smaa);
         ImGui::Checkbox("bounding boxes", &m_options.renderBBoxes);
         ImGui::Checkbox("show voxel boxes", &m_options.renderVoxelBoxes);
-        if (m_options.renderVoxelBoxes) {
+        /*if (m_options.renderVoxelBoxes) {
             ImGui::Checkbox("color voxel boxes", &m_options.renderVoxelBoxesColored);
-        }
+        }*/
         ImGui::Checkbox("show voxel colors", &m_options.renderVoxelColors);
         if (m_options.renderVoxelColors || m_options.renderVoxelBoxesColored) {
             ImGui::Checkbox("smooth colors", &m_options.renderSmoothColors);
         }
 
         bool debugAtMax = (m_options.debugLevel == m_options.treeLevels - 1);
-        ImGui::SliderInt("Tree levels", &m_options.treeLevels, 1, 9);
+        //ImGui::SliderInt("Tree levels", &m_options.treeLevels, 1, 9);
         if (vars.voxel_octree_levels != static_cast<unsigned int>(m_options.treeLevels)) {
             vars.voxel_octree_levels = static_cast<unsigned int>(m_options.treeLevels);
             if (debugAtMax) {
@@ -139,11 +139,13 @@ void GraPro::update_gui(const double delta_t)
         ImGui::Checkbox("toggle conetracing", &m_options.renderConeTracing);
         if(m_options.renderConeTracing)
         {
-            ImGui::SliderInt("diffuse cone grid size", &m_options.diffuseConeGridSize, 5, 30);
-            ImGui::SliderInt("diffuse cone steps", &m_options.diffuseConeSteps, 16, 64);
-            ImGui::SliderInt("inv specular cone step size", &m_options.specularConeSteps, 1, 512);
+            ImGui::SliderInt("diffuse cone grid size", &m_options.diffuseConeGridSize, 6, 30);
+            ImGui::SliderInt("inv diffuse cone step size", &m_options.diffuseConeSteps, 16, 64);
+            ImGui::Separator();
+            ImGui::SliderInt("inv specular cone step size", &m_options.specularConeSteps, 50, 80);
             ImGui::SliderFloat("specular angle modifier", &m_options.angleModifier, 0.f, 1.f);
-            ImGui::SliderFloat("inv specular intensity modifier", &m_options.specularModifier, 0.f, 10.f);
+            ImGui::Separator();
+            ImGui::SliderFloat("specular intensity modifier", &m_options.specularModifier, 0.f, 10.f);
             ImGui::SliderFloat("diffuse intensity modifier", &m_options.diffuseModifier, 0.f, 10.f);
             ImGui::SliderFloat("ambient occlusion", &m_options.aoWeight, 0.f, 1.f);
             ImGui::Checkbox("normalize conetracing colors", &m_options.normalizeOutput);

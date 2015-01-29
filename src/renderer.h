@@ -97,7 +97,7 @@ private:
     // lights
     core::Program                       m_2d_shadow_prog;
     core::Program                       m_cube_shadow_prog;
-    bool                                m_shadowsEnabled = true;
+    bool                                m_shadowsEnabled;
 
 
     gl::VertexArray                     m_bbox_vao;

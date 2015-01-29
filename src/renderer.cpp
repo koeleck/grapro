@@ -65,6 +65,7 @@ Renderer::DrawCmd::DrawCmd(const GLenum mode_, const GLenum type_, const GLvoid*
 
 Renderer::Renderer(const int width, const int height, core::TimerArray& timer_array)
   : m_gbuffer{width, height},
+    m_shadowsEnabled{false},
     m_numVoxelFrag{0u},
     m_rebuildTree{true},
     m_timers(timer_array)
