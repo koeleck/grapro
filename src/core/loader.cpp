@@ -53,16 +53,17 @@ bool loadScenefiles(const std::string& scenefiles)
             auto* inst = res::instances->addInstance(node->name,
                     res::meshes->getMesh(mesh->name),
                     res::materials->getMaterial(mat->name));
-            inst->move(node->position);
-            inst->setScale(node->scale);
+            inst->move(node->position * static_cast<float>(vars.scene_scale));
+            inst->setScale(node->scale * static_cast<float>(vars.scene_scale));
             inst->setOrientation(node->rotation);
             scene_bbox.expandBy(inst->getBoundingBox());
         }
 
         for (unsigned int i = 0; i < scene->num_cameras; i++) {
             const auto* cam = scene->cameras[i];
-            res::cameras->createPerspectiveCam(cam->name, cam->position,
-                    cam->position + cam->direction,
+            const auto pos = cam->position * static_cast<float>(vars.scene_scale);
+            res::cameras->createPerspectiveCam(cam->name, pos,
+                    pos + cam->direction,
                     2.0 * glm::atan(glm::tan(glm::radians(cam->hfov) / 2.0) / cam->aspect_ratio),
                     cam->aspect_ratio, vars.cam_nearplane, vars.cam_farplane);
         }
@@ -101,10 +102,10 @@ bool loadScenefiles(const std::string& scenefiles)
                 break;
             }
             if (newLight != nullptr) {
-                newLight->setPosition(light->position);
+                newLight->setPosition(light->position * static_cast<float>(vars.scene_scale));
                 newLight->setIntensity(light->color);
                 //newLight->setMaxDistance(light->max_distance);
-                newLight->setMaxDistance(2000.f); // TODO
+                newLight->setMaxDistance(100.f); // TODO
                 newLight->setLinearAttenuation(light->linear_attenuation);
                 newLight->setConstantAttenuation(light->constant_attenuation);
                 newLight->setQuadraticAttenuation(light->quadratic_attenuation);

@@ -178,9 +178,9 @@ void GraPro::update_gui(const double delta_t)
 void GraPro::handle_keyboard(const double delta_t)
 {
     // Camera:
-    double movement_scale = 2.0;
+    double movement_scale = vars.movement_scale;
     if (glfwGetKey(*this, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-        movement_scale *= 20.0;
+        movement_scale *= vars.movement_speedup;
     if (glfwGetKey(*this, GLFW_KEY_W) == GLFW_PRESS)
         m_cam->move(movement_scale * glm::dvec3(0.0, 0.0, 1.0));
     if (glfwGetKey(*this, GLFW_KEY_S) == GLFW_PRESS)
