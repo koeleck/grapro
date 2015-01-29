@@ -732,6 +732,8 @@ void Renderer::render(const Options & options)
         m_rebuildTree = false;
     }
 
+    glBindMultiTextureEXT(GL_TEXTURE0 + core::bindings::BRICK_TEX, GL_TEXTURE_3D, m_brick_texture);
+
 
     if (options.renderVoxelColors) {
         glEnable(GL_DEPTH_TEST);
@@ -776,9 +778,6 @@ void Renderer::render(const Options & options)
 
         // indirect lighting
         if (options.renderConeTracing) {
-
-            glActiveTexture(GL_TEXTURE0 + core::bindings::BRICK_TEX);
-            glBindTexture(GL_TEXTURE_3D, m_brick_texture);
             glUseProgram(m_conetracing_prog);
 
             //const auto voxelDim = static_cast<unsigned int>(std::pow(2, options.treeLevels - 1));
