@@ -112,7 +112,7 @@ bool loadScenefiles(const std::string& scenefiles)
                 newLight->setMaxDistance(maxDist);
                 newLight->setLinearAttenuation(light->linear_attenuation / scene_scale);
                 newLight->setConstantAttenuation(light->constant_attenuation);
-                newLight->setQuadraticAttenuation(light->quadratic_attenuation / scene_scale);
+                newLight->setQuadraticAttenuation(light->quadratic_attenuation / (scene_scale * scene_scale));
             } else {
                 LOG_WARNING("Unsupported light type for light'",
                         light->name, '\'');
