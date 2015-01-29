@@ -117,7 +117,7 @@ bool loadScenefiles(const std::string& scenefiles)
     }
 
     if (res::cameras->getDefaultCam() == nullptr) {
-        auto* cam = res::cameras->createPerspectiveCam("default_cam", glm::dvec3(0.0),
+        auto* cam = res::cameras->createPerspectiveCam("default_cam", glm::dvec3(50.0, 50.0, 0.0),
                 glm::dvec3(0.0, 0.0, 1.0), glm::radians(45.0), 4.0 / 3.0,
                 vars.cam_nearplane, vars.cam_farplane);
         res::cameras->makeDefault(cam);
