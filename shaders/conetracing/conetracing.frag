@@ -343,10 +343,8 @@ vec3 calculateSpecularColor(in const vec3 wpos, in const vec3 normal,
 {
     const vec3 incident = normalize(wpos.xyz - cam.Position.xyz);
     const vec3 refl = reflect(incident, normal);
-    //float angle = degreesToRadians((3060.0 / (specular * glossy)) * u_angleModifier);
+    float angle = degreesToRadians((1024.0 / (specular * glossy)) * u_angleModifier);
 
-
-    float angle = 0.5 * M_PI - acos(dot(refl, normal));
 
     return specular * traceConeSpecular(wpos.xyz, refl, angle, u_numStepsSpecular);
 }
