@@ -22,6 +22,7 @@ namespace core
 
 bool loadScenefiles(const std::string& scenefiles)
 {
+    const float scene_scale = static_cast<float>(vars.scene_scale);
     AABB scene_bbox;
     bool result = true;
     boost::char_separator<char> sep(",");
@@ -53,20 +54,23 @@ bool loadScenefiles(const std::string& scenefiles)
             auto* inst = res::instances->addInstance(node->name,
                     res::meshes->getMesh(mesh->name),
                     res::materials->getMaterial(mat->name));
-            inst->move(node->position * static_cast<float>(vars.scene_scale));
-            inst->setScale(node->scale * static_cast<float>(vars.scene_scale));
+            inst->move(node->position * scene_scale);
+            inst->setScale(node->scale * scene_scale);
             inst->setOrientation(node->rotation);
             scene_bbox.expandBy(inst->getBoundingBox());
         }
 
         for (unsigned int i = 0; i < scene->num_cameras; i++) {
             const auto* cam = scene->cameras[i];
-            const auto pos = cam->position * static_cast<float>(vars.scene_scale);
+            const auto pos = cam->position * scene_scale;
             res::cameras->createPerspectiveCam(cam->name, pos,
                     pos + cam->direction,
                     2.0 * glm::atan(glm::tan(glm::radians(cam->hfov) / 2.0) / cam->aspect_ratio),
                     cam->aspect_ratio, vars.cam_nearplane, vars.cam_farplane);
         }
+
+        const auto sceneDiff = scene_bbox.pmax - scene_bbox.pmin;
+        const auto maxDist = std::sqrt(glm::dot(sceneDiff, sceneDiff));
 
         for (unsigned int i = 0; i < scene->num_lights; ++i) {
             Light* newLight = nullptr;
@@ -87,7 +91,7 @@ bool loadScenefiles(const std::string& scenefiles)
             {
                 auto* l = core::res::lights->createDirectionalLight(isShadowcasting);
                 l->setDirection(light->direction);
-                l->setSize(1000.f); // TODO
+                l->setSize(1000.f * scene_scale); // TODO
                 l->setRotation(.0f); // TODO
                 newLight = l;
                 break;
@@ -102,13 +106,13 @@ bool loadScenefiles(const std::string& scenefiles)
                 break;
             }
             if (newLight != nullptr) {
-                newLight->setPosition(light->position * static_cast<float>(vars.scene_scale));
+                newLight->setPosition(light->position * scene_scale);
                 newLight->setIntensity(light->color);
-                //newLight->setMaxDistance(light->max_distance);
-                newLight->setMaxDistance(100.f); // TODO
-                newLight->setLinearAttenuation(light->linear_attenuation);
+                newLight->setMaxDistance(light->max_distance);
+                newLight->setMaxDistance(maxDist);
+                newLight->setLinearAttenuation(light->linear_attenuation / scene_scale);
                 newLight->setConstantAttenuation(light->constant_attenuation);
-                newLight->setQuadraticAttenuation(light->quadratic_attenuation);
+                newLight->setQuadraticAttenuation(light->quadratic_attenuation / scene_scale);
             } else {
                 LOG_WARNING("Unsupported light type for light'",
                         light->name, '\'');
