@@ -111,6 +111,7 @@ void GraPro::update_gui(const double delta_t)
 
         ImGui::Spacing();
 
+        ImGui::SliderFloat("gamma", &vars.r_gamma, .1f, 4.f);
         ImGui::Checkbox("SMAA", &vars.r_smaa);
         ImGui::Checkbox("bounding boxes", &m_options.renderBBoxes);
         ImGui::Checkbox("show voxel boxes", &m_options.renderVoxelBoxes);
@@ -200,6 +201,18 @@ void GraPro::handle_keyboard(const double delta_t)
         m_showgui = !m_showgui;
     if (getKey(GLFW_KEY_ESCAPE) & framework::KeyState::RELEASE)
         glfwSetWindowShouldClose(*this, GL_TRUE);
+
+    // camera save/restore:
+    for (int i = 0; i < 10; ++i) {
+        const auto state = getKey(GLFW_KEY_0 + i);
+        if (state & framework::KeyState::PRESS) {
+            if (state & framework::KeyState::SHIFT) {
+                m_cam->save(i);
+            } else {
+                m_cam->restore(i);
+            }
+        }
+    }
 }
 
 /****************************************************************************/

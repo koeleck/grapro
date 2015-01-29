@@ -6,7 +6,8 @@ all: build/Makefile
 	@mkdir -p bin
 	@cp build/grapro bin
 
-build/Makefile: CMakeLists.txt
+build/Makefile: CMakeLists.txt src/framework/vars.def
+	@rm -rf build
 	@mkdir -p build
 	@cd build; cmake ..
 

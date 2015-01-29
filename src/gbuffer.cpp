@@ -273,6 +273,7 @@ void GBuffer::unbindFramebuffer()
     glDrawBuffers(2, drawBuffers);
     glClear(GL_COLOR_BUFFER_BIT);
     glUseProgram(m_gamma_prog);
+    glUniform1f(0, vars.r_gamma);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     // restore previous state:
