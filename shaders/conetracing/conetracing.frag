@@ -234,6 +234,7 @@ vec4 traceConeDiffuse(const vec3 normal, const vec3 pos)
     const float angle = degreesToRadians(179.99f / float(u_coneGridSize));
     const float tan_a = tan(angle / 2.0);
     const float stepSize = (u_bboxMax.x - u_bboxMin.x) / float(u_numStepsDiffuse);
+    const float maxDiameter = pow(2.0, u_treeLevels - 1);
 
     const float step = (1.0 / float(u_coneGridSize));
     for (uint y = 0; y < u_coneGridSize; ++y) {
@@ -254,7 +255,7 @@ vec4 traceConeDiffuse(const vec3 normal, const vec3 pos)
                 if (!inScene(pos))
                     break;
 
-                const float diameter = clamp(2.0 * (tan_a * dist), 0.0, pow(2.0, u_treeLevels - 1));
+                const float diameter = min(2.0 * tan_a * dist, maxDiameter);
                 const vec4 color = calculateColorAt(pos, diameter);
 
                 if(color.a > 0.0)
