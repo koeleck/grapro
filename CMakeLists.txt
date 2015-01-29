@@ -40,7 +40,7 @@ find_package(Threads)
 ExternalProject_Add(
     glfw
     PREFIX "contrib"
-    URL "http://heanet.dl.sourceforge.net/project/glfw/glfw/3.0.4/glfw-3.0.4.zip"
+    URL "${PROJECT_SOURCE_DIR}/contrib/glfw/glfw-3.0.4.zip"
     CMAKE_ARGS -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_DOCS=OFF -DCMAKE_INSTALL_PREFIX=/glfw
     INSTALL_COMMAND make DESTDIR=${PROJECT_SOURCE_DIR}/contrib install
 )
