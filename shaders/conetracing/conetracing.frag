@@ -117,7 +117,7 @@ vec3 toWorld(in const ONB onb, in const vec3 v)
 
 vec4 getColor(uint maxLevel, vec3 wpos)
 {
-    maxLevel = min(maxLevel, u_treeLevels - 1);
+    maxLevel = clamp(maxLevel, 0, u_treeLevels - 1);
     vec3 vpos = float(u_voxelDim) * (wpos - u_bboxMin) / (u_bboxMax - u_bboxMin);
     uvec3 pos = min(uvec3(vpos), uvec3(u_voxelDim - 1));
 
@@ -151,8 +151,10 @@ vec4 getColor(uint maxLevel, vec3 wpos)
     if ((octree[currentNode].id & 0x80000000u) == 0)
         return vec4(0.0);
 
+    ivec3 brickCoord = getBrickCoord(currentNode);
+    float alpha = imageLoad(octreeBrickTex, brickCoord).a;
     vec3 coord = getBrickTexCoord(currentNode, vpos - floor(vpos));
-    return texture(uOctree3DTex, coord);
+    return vec4(texture(uOctree3DTex, coord).rgb, alpha);
     //return imageLoad(octreeBrickTex, getBrickCoord(currentNode));
 }
 
@@ -162,28 +164,22 @@ vec4 calculateColorAt(in const vec3 pos, in const float diameter)
 {
     const float maxLevel = float(u_treeLevels - 1);
 
-    if (diameter <= voxelSize) {
-        // smaller or equal than lowest level -> no interpolating
-        return getColor(u_treeLevels - 1, pos);
-    } else {
-        // bigger than lowest level
-        const float ratio = diameter / voxelSize;
-        const float logSize = min(log2(ratio), maxLevel);
-        const float level = maxLevel - logSize;
-        if (float(uint(level)) == level) {
-            // exactly at a level -> no interpolating
-            return getColor(uint(level), pos);
-        } else {
-            // between two levels -> quadrilinear interpolating
-            const vec4 colorHigher = getColor(uint(level) + 1, pos);
-            const vec4 colorLower = getColor(uint(level), pos);
-            //const float alpha = ceil(level) - level;
-            //const float alpha = pow(2.0, ceil(level) - level) - 1;
-            const float alpha = (ratio / pow(2, floor(logSize))) - 1;
-            //clamp(alpha, 0.0, 1.0);
-            return (1.0 - alpha) * colorHigher + alpha * colorLower;
-        }
-    }
+    // bigger than lowest level
+    const float ratio = diameter / voxelSize;
+    const float logSize = min(log2(ratio), maxLevel);
+    const float level = min(maxLevel - logSize, maxLevel);
+
+    const float levelHigh = ceil(level);
+    const float levelLow = ceil(level - 1.0);
+
+    const vec4 colorHigher = getColor(uint(levelHigh), pos);
+    const vec4 colorLower = getColor(uint(levelLow), pos);
+
+    //const float alpha = pow(2.0, (level - float(levelLow)) / (levelHigh - levelLow)) - 1.0;
+    float alpha = level - float(levelLow);
+
+    alpha = clamp(alpha, 0.0, 1.0);
+    return alpha * colorHigher + (1.0 - alpha) * colorLower;
 }
 
 /******************************************************************************/
@@ -193,7 +189,7 @@ vec3 traceConeSpecular(in const vec3 origin, in const vec3 direction,
 {
     const float tan_a = tan(angle / 2.0);
     const float stepSize = (u_bboxMax.x - u_bboxMin.x) / float(steps);
-
+    const float maxDiameter = pow(2.0, u_treeLevels - 1);
     vec3 result = vec3(0.0);
     float alpha = 1.0;
     float dist = stepSize;
@@ -202,7 +198,7 @@ vec3 traceConeSpecular(in const vec3 origin, in const vec3 direction,
         if (!inScene(pos))
             break;
 
-        const float diameter = clamp(2.0 * (tan_a * dist), 0.0, pow(2.0, u_treeLevels - 1));
+        const float diameter = min(2.0 * (tan_a * dist), maxDiameter);
         const vec4 color = calculateColorAt(pos, diameter);
 
         result += alpha * color.a * color.rgb;
@@ -212,7 +208,7 @@ vec3 traceConeSpecular(in const vec3 origin, in const vec3 direction,
         }
 
         alpha *= (1.0 - color.a);
-        dist += max(stepSize, diameter);
+        dist += min(stepSize, diameter);
 
         // alpha correction because of step size
         alpha = 1.0 - pow(1.0 - alpha, stepSize / voxelSize);
@@ -345,8 +341,8 @@ vec3 calculateSpecularColor(in const vec3 wpos, in const vec3 normal,
                             in const float glossy, in const float specular)
 {
     const vec3 incident = normalize(wpos.xyz - cam.Position.xyz);
-    const vec3 refl = reflect(incident, normal);
-    const float angle = degreesToRadians(max(60.0, 180.0 * (1.0 - glossy)) * u_angleModifier);
+    const vec3 refl = normalize(reflect(incident, normal));
+    const float angle = degreesToRadians(60.0 * (40.0 / glossy) * u_angleModifier);
     return specular * traceConeSpecular(wpos.xyz, refl, angle, u_numStepsSpecular);
 }
 

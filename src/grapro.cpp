@@ -62,9 +62,9 @@ GraPro::GraPro(GLFWwindow* window)
         {
             continue;
         }
-        auto pos = light->getPosition();
-        pos.y = bbox.pmax.y;
-        light->setPosition(pos);
+        //auto pos = light->getPosition();
+        //pos.y = bbox.pmax.y;
+        //light->setPosition(pos);
         auto* dlight = static_cast<core::DirectionalLight*>(light.get());
         dlight->setSize(maxDist);
     }

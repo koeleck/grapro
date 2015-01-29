@@ -30,15 +30,14 @@ void main()
 
     ivec3 thisBrick = getBrickCoord(idx);
     ivec3 brick[8];
-    vec4 result = vec4(0.0);
+    float alpha = 0.0;
     for (int i = 0; i < 8; ++i) {
         brick[i] = getBrickCoord(childidx + i);
-        result += sampleBrick(brick[i], ivec3(0), true);
-        //result += imageLoad(octreeBrickTex, brick[i]);
+        //result += sampleBrick(brick[i], ivec3(0), true);
+        alpha += imageLoad(octreeBrickTex, brick[i]).a;
     }
-    result /= 4.0;
+    alpha /= 8.0;
 
-    /*
     for (int z = -1; z < 2; ++z) {
         for (int y = -1; y < 2; ++y) {
             for (int x = -1; x < 2; ++x) {
@@ -75,18 +74,17 @@ void main()
                     result += sampleBrick(brick[i], pos, false);
                 }
 
-                imageStore(octreeBrickTex, thisBrick + pos, result);
+                imageStore(octreeBrickTex, thisBrick + pos, vec4(result.rgb, alpha));
             }
         }
     }
-    */
 
-    for (int z = -1; z < 2; ++z) {
-        for (int y = -1; y < 2; ++y) {
-            for (int x = -1; x < 2; ++x) {
-                imageStore(octreeBrickTex, thisBrick + ivec3(x, y, z), result);
-            }
-        }
-    }
+    //for (int z = -1; z < 2; ++z) {
+    //    for (int y = -1; y < 2; ++y) {
+    //        for (int x = -1; x < 2; ++x) {
+    //            imageStore(octreeBrickTex, thisBrick + ivec3(x, y, z), result);
+    //        }
+    //    }
+    //}
 
 }

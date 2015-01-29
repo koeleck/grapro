@@ -44,7 +44,7 @@ void main()
     }
 
     if (materials[materialID].hasSpecularTex != 0) {
-        specular_color = pow(texture(uSpecularTex, uv).rgb, vec3(2.2));
+        specular_color = texture(uSpecularTex, uv).rgb;
     } else {
         specular_color = materials[materialID].specularColor;
     }
@@ -62,7 +62,7 @@ void main()
     }
 
     if (materials[materialID].hasGlossyTex != 0) {
-        glossiness = pow(texture(uGlossyTex, uv).r, 2.2);
+        glossiness = 255.0 * texture(uGlossyTex, uv).r;
     } else {
         glossiness = materials[materialID].glossiness;
     }
