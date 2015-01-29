@@ -16,7 +16,7 @@
 GraPro::GraPro(GLFWwindow* window)
   : framework::MainWindow(window),
     m_cam(core::res::cameras->getDefaultCam()),
-    m_showgui{false},
+    m_showgui{true},
     m_renderer{getWidth(), getHeight(), m_timers}
 {
 
