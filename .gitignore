@@ -8,3 +8,4 @@ bin/
 build/
 cache/
 imgui.ini
+camera.save

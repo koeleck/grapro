@@ -76,6 +76,10 @@ public:
 
     virtual bool inFrustum(const AABB& bbox) const = 0;
 
+    void save(int slot) const;
+
+    bool restore(int slot);
+
 protected:
     Camera(const glm::dvec3& pos, const glm::dvec3& center,
             CameraType type, shader::CameraStruct* ptr);

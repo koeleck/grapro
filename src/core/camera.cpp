@@ -1,6 +1,8 @@
 #include <cassert>
 #include <cstring>
 #include <limits>
+#include <fstream>
+#include <vector>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "camera.h"
@@ -9,6 +11,25 @@
 #include "aabb.h"
 
 #include "log/log.h"
+
+//////////////////////////////////////////////////////////////////////////
+
+namespace
+{
+
+struct CameraSaveState
+{
+    CameraSaveState()
+      : stateUsed{false}, position{0.0}, orientation{},
+        hasFixedYawAxis{false}, fixedYawAxis{0.0} {}
+    bool stateUsed;
+    glm::dvec3 position;
+    glm::dquat orientation;
+    bool hasFixedYawAxis;
+    glm::dvec3 fixedYawAxis;
+};
+
+} // anonymous namespace
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -274,6 +295,82 @@ void Camera::update() const
     std::memcpy(m_data, &data, sizeof(shader::CameraStruct));
 
     m_modified = false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void Camera::save(const int slot) const
+{
+    const auto idx = static_cast<std::size_t>(slot);
+    std::vector<CameraSaveState> saves;
+    std::ifstream is("camera.save", std::ifstream::binary);
+    if (!!is) {
+        is.seekg(0, std::ifstream::end);
+        const auto size = is.tellg();
+        is.seekg(0, std::ifstream::beg);
+
+        saves.resize(static_cast<std::size_t>(size) / sizeof(CameraSaveState));
+        is.read(reinterpret_cast<char*>(saves.data()),
+                static_cast<long>(saves.size() * sizeof(CameraSaveState)));
+        is.close();
+    }
+
+    if (saves.size() <= idx) {
+        saves.resize(idx + 1);
+    }
+
+    saves[idx].orientation = m_orientation;
+    saves[idx].position = m_position;
+    saves[idx].fixedYawAxis = m_fixedYawAxis;
+    saves[idx].hasFixedYawAxis = m_useFixedYawAxis;
+    saves[idx].stateUsed = true;
+
+    std::ofstream os("camera.save", std::ofstream::binary | std::ofstream::trunc);
+    if (!os) {
+        LOG_ERROR("Failed to open file 'camera.save'");
+        return;
+    }
+
+    os.write(reinterpret_cast<const char*>(saves.data()),
+            static_cast<long>(saves.size() * sizeof(CameraSaveState)));
+
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+bool Camera::restore(const int slot)
+{
+    const auto idx = static_cast<std::size_t>(slot);
+
+    std::ifstream is("camera.save", std::ifstream::binary);
+    if (!is)
+        return false;
+
+    is.seekg(0, std::ifstream::end);
+    const auto size = static_cast<unsigned long>(is.tellg());
+
+    if (size < (idx + 1) * sizeof(CameraSaveState))
+        return false;
+
+    is.seekg(static_cast<long>(idx * sizeof(CameraSaveState)));
+
+    CameraSaveState state;
+    is.read(reinterpret_cast<char*>(&state),
+            static_cast<long>(sizeof(CameraSaveState)));
+    is.close();
+
+    if (!state.stateUsed)
+        return false;
+
+    m_position = state.position;
+    m_orientation = state.orientation;
+    m_useFixedYawAxis = state.hasFixedYawAxis;
+    if (state.hasFixedYawAxis) {
+        m_fixedYawAxis = state.fixedYawAxis;
+    }
+
+    invalidate();
+    return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
