@@ -271,7 +271,7 @@ vec4 traceConeDiffuse(const vec3 normal, const vec3 pos)
                     occlusionPerCone += decay * color.a;
                 }
 
-                if(alpha > 0.4)
+                if(alpha < 0.01)
                     break;
 
                 dist += max(stepSize, diameter);
@@ -356,7 +356,7 @@ vec4 calculateDiffuseColorPlusAO(in const vec3 wpos, in const vec3 normal,
                                  in const vec3 diffuse)
 {
     const vec4 colorIndirect = traceConeDiffuse(normal, wpos);
-    const vec4 color = vec4(colorIndirect.rgb * diffuse, colorIndirect.a);
+    const vec4 color = vec4(colorIndirect.rgb/* * diffuse*/, colorIndirect.a);
     return color;
 }
 
