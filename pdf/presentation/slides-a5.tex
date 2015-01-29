@@ -9,7 +9,7 @@
 
 % rough template
 
-\title{Voxel Cone Tracing}
+\title{Sparse Voxel Octree (SVO) Cone Tracing}
 \subtitle{Graphics Project}
 \author{Team 2\\P. Kögel, B. Mattes, J. Dörntlein}
 \date{\today}
@@ -27,42 +27,60 @@
 \newcommand{\slide}[2]{\frame{\frametitle{#1} #2}}
 \newcommand{\topic}[1]{\frame{\begin{center}\huge\rm\textbf{#1}\end{center}}}
 
-\slide{Overview}{
-    \textbf{``Interactive indirect illumination using voxel cone tracing''}
-	\begin{itemize}
-        \item global illumination approach for game engines in realtime
-        \item fast approximation through voxelization
-        \item rays are bundled to cones -- intersection test with scene voxels
-	\end{itemize}
+% \slide{Overview}{
+%     \textbf{``Interactive indirect illumination using voxel cone tracing''}
+% 	\begin{itemize}
+%         \item global illumination approach for game engines in realtime
+%         \item fast approximation through voxelization
+%         \item rays are bundled to cones -- intersection test with scene voxels
+% 	\end{itemize}
 
-    \begin{figure}[h]
-    \centering
-    \includegraphics[width=150px]{img/voxel.png}
-    %\caption{Voxel Cone Tracing.}
-    \end{figure}
-}
+%     \begin{figure}[h]
+%     \centering
+%     \includegraphics[width=150px]{img/voxel.png}
+%     %\caption{Voxel Cone Tracing.}
+%     \end{figure}
+% }
 
-\slide{Voxelization}{
-    % explain voxelization
-}
+% \slide{Voxelization}{
+%     \begin{itemize}
+%         \item equal sized global bounding box is split into grid (eg 256x256x256)
+%         \vspace*{5pt}
+%         \item voxelization pass:
+%     \end{itemize}
 
-\slide{Octree}{
-    % explain the tree
-}
+%     \vspace*{-15pt}
 
-\slide{Compositing}{
-    \begin{itemize}
-        \item ambient occlusion
-        \item indirect diffuse phong
-        \item indirect specular phong
-    \end{itemize}
+%     \begin{figure}[h]
+%     \centering
+%     \includegraphics[width=300px]{img/voxelization.png}
+%     %\caption{Voxel Cone Tracing.}
+%     \end{figure}
+% }
 
-    % maybe point out some realworld examples like
-    % cryengine or unrealengine
-}
+% \slide{Sparse Octree}{
+%     \begin{itemize}
+%         \item each node is subdivided in 8 subnodes
+%         \item only those nodes are filled were the scene is present -> sparse tree
+%         \item mipmapping to lower levels
+%     \end{itemize}
+% }
 
 \slide{Live Demonstration}{
     % some example screenshots here
+    Features
+    \begin{itemize}
+        \item vertex pulling
+        \item frustum culling
+        \item texturing + normal mapping
+        \item GUI
+        \item deferred rendering
+        \item SMAA
+        \item shadow mapping + PCF
+        \item emissive + area lights
+        \item ambient occlusion
+        \item diffuse + specular indirect lighting
+    \end{itemize}
 }
 
 \end{document}
