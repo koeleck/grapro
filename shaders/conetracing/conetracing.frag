@@ -271,7 +271,7 @@ vec4 traceConeDiffuse(const vec3 normal, const vec3 pos)
                     occlusionPerCone += decay * color.a;
                 }
 
-                if(alpha < 0.01)
+                if(alpha > 0.4)
                     break;
 
                 dist += max(stepSize, diameter);
