@@ -36,7 +36,7 @@ void main()
         result += sampleBrick(brick[i], ivec3(0), true);
         //result += imageLoad(octreeBrickTex, brick[i]);
     }
-    result /= 4.0;
+    result /= 8.0;
 
     /*
     for (int z = -1; z < 2; ++z) {
