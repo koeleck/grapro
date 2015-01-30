@@ -39,8 +39,8 @@ GraPro::GraPro(GLFWwindow* window)
     m_options.debugGBuffer = false;
     m_options.renderDirectLighting = true;
     m_options.angleModifier = 1.f;
-    m_options.diffuseModifier = 2.5;
-    m_options.specularModifier = 1;
+    m_options.diffuseModifier = 1.f;
+    m_options.specularModifier = 0.f;
     m_options.normalizeOutput = false;
 
     const auto* instances = core::res::instances;
@@ -111,6 +111,7 @@ void GraPro::update_gui(const double delta_t)
 
         ImGui::Spacing();
 
+        ImGui::SliderFloat("gamma", &vars.r_gamma, .1f, 1.f);
         ImGui::Checkbox("SMAA", &vars.r_smaa);
         ImGui::Checkbox("bounding boxes", &m_options.renderBBoxes);
         ImGui::Checkbox("show voxel boxes", &m_options.renderVoxelBoxes);
