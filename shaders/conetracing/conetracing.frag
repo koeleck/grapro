@@ -356,7 +356,7 @@ vec4 calculateDiffuseColorPlusAO(in const vec3 wpos, in const vec3 normal,
                                  in const vec3 diffuse)
 {
     const vec4 colorIndirect = traceConeDiffuse(normal, wpos);
-    const vec4 color = vec4(colorIndirect.rgb/* * diffuse*/, colorIndirect.a);
+    const vec4 color = vec4(colorIndirect.rgb * diffuse, colorIndirect.a);
     return color;
 }
 
